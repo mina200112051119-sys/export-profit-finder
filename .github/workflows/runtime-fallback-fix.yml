@@ -1,0 +1,68 @@
+name: Fix ranking rendering
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject robust runtime fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          marker='<script id="runtime-fallback-fix">'
+          if marker in s:
+              raise SystemExit(0)
+          fix=r'''<script id="runtime-fallback-fix">
+          (function(){
+            const fallbackProducts=[
+              {name:'ポケモンカード 151 リザードンex SAR',cat:'ポケモンカード',cost:9800,sell:17500,ship:900,sold:72,list:35,trend:'上昇',source:'メルカリ',risk:'低'},
+              {name:'ポケモンカード 151 BOX',cat:'ポケモンカード',cost:8000,sell:15000,ship:1800,sold:84,list:29,trend:'安定',source:'メルカリ',risk:'低'},
+              {name:'ポケモンカード インフェルノX BOX',cat:'ポケモンカード',cost:6500,sell:11800,ship:1800,sold:61,list:27,trend:'上昇',source:'ヤフオク',risk:'低'},
+              {name:'Nikon 人気レンズ',cat:'カメラ',cost:22000,sell:41000,ship:4500,sold:34,list:24,trend:'上昇',source:'ヤフオク',risk:'低'},
+              {name:'ゲームボーイ用 人気ソフト',cat:'レトロゲーム',cost:3500,sell:7500,ship:1800,sold:57,list:20,trend:'上昇',source:'ヤフオク',risk:'低'}
+            ];
+            function getData(){try{return Array.isArray(window.products)?window.products:fallbackProducts}catch(e){return fallbackProducts}}
+            function showTabFallback(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));const p=document.getElementById(id);if(p)p.classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');const d=document.getElementById('detail');if(d)d.innerHTML=''}
+            if(typeof window.showTab!=='function') window.showTab=showTabFallback;
+            function render(){
+              const list=getData();
+              const box=document.getElementById('ranking');
+              if(!box)return;
+              const fee=.14;
+              const ranked=list.map(p=>{const profit=Math.round(p.sell*(1-fee)-p.ship-p.cost);const demand=p.sold/Math.max(p.list,1);return {...p,profit,demand,score:profit/1000+Math.min(demand,4)*1.5+(p.trend==='上昇'?2:0)+(p.risk==='低'?1:p.risk==='中'?.5:0)}}).sort((a,b)=>b.score-a.score).slice(0,10);
+              box.innerHTML='<div class="card"><h2>全カテゴリー｜おすすめTOP10</h2><p class="muted">商品をタップすると詳細を確認できます。</p>'+ranked.map((p,i)=>`<div class="card product" role="button" tabindex="0" onclick='window.runtimeDetail(${JSON.stringify(p.name)})' style="margin:10px 0"><span class="rank">#${i+1}</span> <span class="badge">${i<3?'注目候補':'おすすめ候補'}</span><h3>${p.name}</h3><div class="row"><span>予想利益</span><b class="green">+${p.profit.toLocaleString()}円</b></div><div class="row"><span>販売・出品比</span><b>${Math.round(p.demand*100)}%</b></div><div class="row"><span>リスク</span><b>${p.risk}</b></div><div class="muted" style="margin-top:8px;text-align:right">タップして詳細を見る ›</div></div>`).join('')+'</div>';
+              const st=document.getElementById('rankingStatus');if(st)st.textContent='データ：試作サンプル（試作）';
+            }
+            window.runtimeDetail=function(name){
+              const p=getData().find(x=>x.name===name)||fallbackProducts.find(x=>x.name===name);if(!p)return;
+              const profit=Math.round(p.sell*(1-.14)-p.ship-p.cost);
+              const d=document.getElementById('detail');if(!d)return;
+              d.innerHTML=`<div class="card"><h2>商品詳細</h2><h3>${p.name}</h3><div class="metric"><span>予想利益</span><br><b class="green">+${profit.toLocaleString()}円</b></div><div class="row"><span>カテゴリー</span><b>${p.cat}</b></div><div class="row"><span>仕入れ価格</span><b>${p.cost.toLocaleString()}円</b></div><div class="row"><span>eBay想定販売価格</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>送料</span><b>${p.ship.toLocaleString()}円</b></div><div class="row"><span>手数料</span><b>14%</b></div><div class="row"><span>90日販売数</span><b>${p.sold}件</b></div><div class="row"><span>現在の出品数</span><b>${p.list}件</b></div><div class="row"><span>価格トレンド</span><b>${p.trend}</b></div><div class="row"><span>仕入れ先</span><b>${p.source}</b></div><div class="row"><span>リスク</span><b>${p.risk}</b></div><div class="notice">おすすめ理由：利益が見込め、販売実績とリスクを合わせて候補になっています。現在は試作データです。</div><button class="primary" onclick="document.getElementById('detail').innerHTML='';window.scrollTo({top:0,behavior:'smooth'})">一覧に戻る</button></div>`;
+              d.scrollIntoView({behavior:'smooth',block:'start'});
+            };
+            function boot(){
+              try{if(typeof window.renderCats==='function'&&typeof window.renderOverallRank==='function'){window.renderCats();window.renderOverallRank();}else{render();}}catch(e){render();}
+            }
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+          })();
+          </script>'''
+          s=s.replace('</body>',fix+'\n</body>')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet || git commit -m "Fix ranking rendering and product detail"
+          git push
