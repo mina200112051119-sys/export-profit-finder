@@ -37,6 +37,10 @@ jobs:
           async function refreshRanking(){const status=document.getElementById('rankingStatus');status.textContent='おすすめデータを更新しています…';try{const live=await loadRankingData();renderCats();renderOverallRank();const t=rankingState.updatedAt.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});status.textContent=`データ：${rankingState.source}${live?'（外部取得）':'（試作）'}｜最終更新：${t}`}catch(e){rankingState.data=products;renderCats();renderOverallRank();status.textContent=`最新データ取得に失敗しました。試作データを表示中｜${e.message}`}}
           '''
           s = s[:start] + ranking + s[end:]
+          if 'function detailByName(name)' not in s:
+              marker = 'function detail'
+              helper = 'function detailByName(name){const p=rankingState.data.find(x=>x.name===name)||products.find(x=>x.name===name);if(p)detail(p)}\n'
+              s = s.replace(marker, helper + marker, 1)
           p.write_text(s, encoding='utf-8')
           PY
       - name: Commit ranking base
@@ -45,5 +49,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Add ranking base and refresh flow"
+          git commit -m "Fix ranking product detail action"
           git push origin HEAD:main
