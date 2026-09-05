@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Export Profit Finder - 試作</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;background:#f5f6f8;color:#222}
+header{background:#111827;color:white;padding:18px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:20px}header p{margin:5px 0 0;font-size:12px;color:#cbd5e1}
+main{max-width:900px;margin:auto;padding:16px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+button,.tab{border:0;border-radius:12px;padding:12px;background:white;box-shadow:0 1px 4px #0001;font-weight:700;cursor:pointer}
+.tab.active{background:#111827;color:white}.panel{display:none}.panel.active{display:block}
+.card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px #0000000d}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.cat{padding:16px;text-align:left}.cat small{display:block;color:#64748b;margin-top:4px}
+input,select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;margin:5px 0 10px}
+.primary{background:#2563eb;color:white;width:100%;margin-top:4px}.muted{color:#64748b;font-size:12px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #eee}.profit{font-size:26px;font-weight:800}.green{color:#15803d}.yellow{color:#a16207}.red{color:#b91c1c}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:800}
+.stars{letter-spacing:2px}.rank{font-size:12px;color:#64748b}.product{cursor:pointer}.product:hover{transform:translateY(-1px)}
+.notice{background:#eff6ff;padding:12px;border-radius:10px;font-size:13px;margin:10px 0}
+.preview{max-height:180px;max-width:100%;border-radius:12px;margin-top:8px;display:none}
+.result{margin-top:12px}.hidden{display:none}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.tabs{position:sticky;top:68px;background:#f5f6f8;padding:5px 0;z-index:4}}
+</style>
+<style id="fuzzy-card-search-style">
+.fuzzy-candidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:14px}
+.fuzzy-card{border:1px solid #ddd;border-radius:14px;padding:12px;background:#fff}
+.fuzzy-card img{width:100%;height:250px;object-fit:contain;border-radius:10px;background:#f5f5f5}
+.fuzzy-card .meta{font-size:13px;color:#666;margin:6px 0}.fuzzy-card button{width:100%;margin-top:8px}
+.match-badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eee;font-size:12px}
+.detail-card-image{width:min(100%,360px);max-height:520px;object-fit:contain;border-radius:14px;background:#f5f5f5;display:block;margin:10px auto}.image-fallback{padding:28px;text-align:center;background:#f5f5f5;border-radius:14px;color:#64748b;margin:10px auto}
+.search-hint{font-size:13px;color:#666;margin-top:6px}
+</style>
+</head>
+<body>
+<header><h1>Export Profit Finder</h1><p>輸出せどり支援ツール｜試作版・データはサンプルです</p></header>
+<main>
+<div class="tabs">
+<button class="tab active" onclick="showTab('recommend',this)">今おすすめ</button>
+<button class="tab" onclick="showTab('search',this)">商品検索</button>
+<button class="tab" onclick="showTab('photo',this)">写真から探す</button>
+</div>
+<section id="recommend" class="panel active"><div class="card"><h2>今おすすめの商品</h2><div class="notice">※試作版のため、現在の為替・eBay・仕入れ先データはサンプルです。実運用では最新データに更新します。</div><div class="grid" id="cats"></div></div><div id="ranking"></div></section>
+<section id="search" class="panel"><div class="card"><h2>商品名・型番から検索</h2><label>カテゴリー</label><select id="searchCat"><option>ポケモンカード</option><option>ポケモン関連サプライ用品</option><option>釣具</option><option>カメラ</option><option>レトロゲーム</option></select><label>商品名・型番</label><input id="searchName" placeholder="例：ポケモンカード 151 BOX"><label>仕入れ価格（円）</label><input id="searchCost" type="number" value="8000"><button class="primary" onclick="searchProduct()">利益を計算する</button><div id="searchResult" class="result"></div></div></section>
+<section id="photo" class="panel"><div class="card"><h2>写真から商品を探す</h2><div class="notice">写真をアップロード → 商品候補を確認 → ユーザーが確定、という安全設計の試作です。</div><input type="file" accept="image/*" onchange="previewPhoto(event)"><img id="preview" class="preview"><div id="photoCandidate" class="result hidden"></div></div></section>
+<div id="detail"></div>
+</main>
+<script>
+const products=[
+{name:"ポケモンカード 151 BOX",cat:"ポケモンカード",cost:8000,sell:15000,ship:1800,sold:84,list:29,trend:"安定",source:"メルカリ",risk:"低"},
+{name:"ポケモンカード 151 リザードンex SAR",cat:"ポケモンカード",cost:9800,sell:17500,ship:900,sold:72,list:35,trend:"上昇",source:"メルカリ",risk:"低",image:"https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0411/users/adb31f7117370e66e9bcdb61445c992430957e88/i-img1200x1200-1699149809394v511fy.jpg"},
+{name:"ポケモンカード インフェルノX BOX",cat:"ポケモンカード",cost:6500,sell:11800,ship:1800,sold:61,list:27,trend:"上昇",source:"ヤフオク",risk:"低"},
+{name:"ポケモンカード 30周年記念関連 BOX",cat:"ポケモンカード",cost:7200,sell:13500,ship:1800,sold:54,list:31,trend:"上昇",source:"ポケモンセンターオンライン",risk:"低"},
+{name:"ポケモンカード 人気プロモカード",cat:"ポケモンカード",cost:4200,sell:7900,ship:900,sold:48,list:42,trend:"安定",source:"メルカリ",risk:"中"},
+{name:"ポケモン デッキシールド 限定品",cat:"ポケモン関連サプライ用品",cost:2200,sell:7800,ship:1500,sold:46,list:18,trend:"上昇",source:"ポケモンセンターオンライン",risk:"低"},
+{name:"ポケモン プレイマット 限定品",cat:"ポケモン関連サプライ用品",cost:3500,sell:9200,ship:2200,sold:39,list:17,trend:"安定",source:"ポケモンセンターオンライン",risk:"低"},
+{name:"ポケモン デッキケース 限定品",cat:"ポケモン関連サプライ用品",cost:1800,sell:5200,ship:1500,sold:31,list:21,trend:"安定",source:"ポケモンセンターオンライン",risk:"中"},
+{name:"ポケモン カードファイル",cat:"ポケモン関連サプライ用品",cost:2500,sell:5900,ship:1800,sold:28,list:25,trend:"安定",source:"メルカリ",risk:"中"},
+{name:"ポケモン コレクション収納用品",cat:"ポケモン関連サプライ用品",cost:1600,sell:4800,ship:1500,sold:35,list:19,trend:"上昇",source:"ヤフオク",risk:"低"},
+{name:"SHIMANO 人気リール",cat:"釣具",cost:18000,sell:31500,ship:4500,sold:43,list:26,trend:"安定",source:"ヤフオク",risk:"低"},
+{name:"DAIWA 人気リール",cat:"釣具",cost:14000,sell:26500,ship:4300,sold:38,list:29,trend:"安定",source:"メルカリ",risk:"中"},
+{name:"人気ルアー 限定カラー",cat:"釣具",cost:4500,sell:8500,ship:1700,sold:31,list:22,trend:"安定",source:"ヤフオク",risk:"中"},
+{name:"日本限定フィッシングプライヤー",cat:"釣具",cost:5200,sell:9900,ship:1900,sold:29,list:16,trend:"上昇",source:"メルカリ",risk:"低"},
+{name:"釣具用小型アクセサリー",cat:"釣具",cost:2400,sell:5200,ship:1400,sold:24,list:18,trend:"安定",source:"ヤフオク",risk:"中"},
+{name:"Canon 人気フィルムカメラ",cat:"カメラ",cost:18000,sell:32000,ship:4500,sold:25,list:31,trend:"安定",source:"メルカリ",risk:"中"},
+{name:"Nikon 人気レンズ",cat:"カメラ",cost:22000,sell:41000,ship:4500,sold:34,list:24,trend:"上昇",source:"ヤフオク",risk:"低"},
+{name:"FUJIFILM 人気レンズ",cat:"カメラ",cost:28000,sell:52000,ship:5000,sold:29,list:22,trend:"上昇",source:"メルカリ",risk:"低"},
+{name:"Sony ミラーレス用レンズ",cat:"カメラ",cost:24000,sell:43000,ship:4800,sold:27,list:25,trend:"安定",source:"ヤフオク",risk:"中"},
+{name:"フィルムカメラ用レンズ",cat:"カメラ",cost:12000,sell:24500,ship:3500,sold:36,list:30,trend:"安定",source:"メルカリ",risk:"中"},
+{name:"ゲームボーイ用 人気ソフト",cat:"レトロゲーム",cost:3500,sell:7500,ship:1800,sold:57,list:20,trend:"上昇",source:"ヤフオク",risk:"低"},
+{name:"スーパーファミコン 人気ソフト",cat:"レトロゲーム",cost:2800,sell:6900,ship:1800,sold:44,list:24,trend:"安定",source:"メルカリ",risk:"低"},
+{name:"ゲームボーイカラー 本体",cat:"レトロゲーム",cost:9000,sell:17500,ship:2800,sold:33,list:29,trend:"安定",source:"ヤフオク",risk:"中"},
+{name:"ファミコン 人気ソフト",cat:"レトロゲーム",cost:2200,sell:5800,ship:1800,sold:41,list:32,trend:"安定",source:"メルカリ",risk:"中"},
+{name:"Nintendo 64 人気ソフト",cat:"レトロゲーム",cost:3000,sell:7200,ship:1900,sold:35,list:26,trend:"上昇",source:"ヤフオク",risk:"低"}
+];
+let feeRate=.14, fx=148;
+function profit(p,sell=p.sell){return Math.round(sell*(1-feeRate)-p.ship-p.cost)}
+function score(p){return Math.max(1,Math.min(5,Math.round((p.sold/(p.list+1))*1.2+(p.risk==="低"?1.2:p.risk==="中"?.6:0))))}
+function showTab(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('detail').innerHTML=''}
+function renderCats(){document.getElementById('cats').innerHTML=[...new Set(products.map(p=>p.cat))].map(c=>`<button class="cat" onclick="renderRank('${c}')">📦 ${c}<small>おすすめを見る</small></button>`).join('')}
+function renderRank(cat){let arr=products.filter(p=>p.cat===cat).sort((a,b)=>profit(b)-profit(a));document.getElementById('ranking').innerHTML=`<div class="card"><h2>${cat}｜今のおすすめ</h2><p class="muted">試作では予想利益を中心に並べています。完成版では売れやすさ・価格安定・仕入れ状況・リスクも含めて順位を決めます。</p>${arr.map((p,i)=>`<div class="card product" onclick='detail(${JSON.stringify(p)})'><span class="rank">🥇 ${i+1}位</span> <span class="badge">${p.risk==="低"?"仕入れおすすめ":"自分で確認して判断"}</span><h3>${p.name}</h3><div class="row"><span>仕入れ</span><b>${p.cost.toLocaleString()}円</b></div><div class="row"><span>eBay想定販売</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>予想利益</span><b class="green">${profit(p).toLocaleString()}円</b></div><div class="row"><span>売れやすさ</span><b class="stars">${"★".repeat(score(p))}${"☆".repeat(5-score(p))}</b></div></div>`).join('')}</div>`}
+function productImage(p){if(p.image)return `<img class="detail-card-image" src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';document.getElementById('imageFallback').style.display='block';">`;return `<div id="imageFallback" class="image-fallback">商品画像は準備中です</div>`}
+function detail(p){let levels=[0,-.1,-.2,-.3].map(x=>({price:Math.round(p.sell*(1+x)),profit:profit(p,Math.round(p.sell*(1+x)))}));document.getElementById('detail').innerHTML=`<div class="card"><h2>商品詳細</h2>${productImage(p)}<h3>${p.name}</h3><div class="row"><span>仕入れ先</span><b>${p.source}</b></div><div class="row"><span>仕入れ価格</span><b>${p.cost.toLocaleString()}円</b></div><div class="row"><span>eBay想定価格</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>海外送料</span><b>${p.ship.toLocaleString()}円</b></div><div class="row"><span>想定利益</span><b class="profit green">${profit(p).toLocaleString()}円</b></div><div class="row"><span>過去90日の販売数</span><b>${p.sold}個</b></div><div class="row"><span>現在の出品数</span><b>${p.list}件</b></div><div class="row"><span>価格の動き</span><b>${p.trend}</b></div><h3 style="margin-top:18px">📉 値下げシミュレーション</h3>${levels.map(x=>`<div class="row"><span>${x.price.toLocaleString()}円</span><b class="${x.profit>=0?'green':'red'}">${x.profit>=0?'+':''}${x.profit.toLocaleString()}円</b></div>`).join('')}<h3 style="margin-top:18px">🔍 おすすめ理由</h3><p class="muted">販売実績があり、現在価格と仕入れ価格の差がある商品。値下げしても利益が残るため、試作上では上位候補です。</p><div class="notice"><b>最終判断：</b> AIの判定をそのまま仕入れ決定には使わず、販売実績・仕入れ状況・商品状態を確認してユーザーが判断します。</div><button class="primary" onclick="document.getElementById('detail').innerHTML=''">閉じる</button></div>`;window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})}
+function searchProduct(){let name=document.getElementById('searchName').value||"入力した商品";let cost=+document.getElementById('searchCost').value||0;let p={name,cat:document.getElementById('searchCat').value,cost,sell:Math.max(cost*1.8,10000),ship:1800,sold:40,list:20,trend:"確認中",source:"仕入れ先を検索",risk:"中"};document.getElementById('searchResult').innerHTML=`<div class="notice">試作版では販売価格などを仮置きしています。実装時は最新データを取得します。</div>`;detail(p)}
+function previewPhoto(e){const f=e.target.files[0];if(!f)return;const img=document.getElementById('preview');img.src=URL.createObjectURL(f);img.style.display='block';const box=document.getElementById('photoCandidate');box.classList.remove('hidden');box.innerHTML=`<div class="card"><h3>AIの商品候補（試作）</h3><p>画像から商品名・型番・カード番号などを読み取り、候補を表示します。</p><select><option>ポケモンカード 151 BOX（候補1）</option><option>別の商品候補（候補2）</option></select><button class="primary" onclick="confirmPhoto()">この商品で合っている</button></div>`}
+function confirmPhoto(){let p=products[0];detail(p)}
+renderCats();renderRank("ポケモンカード");
+</script>
+<script id="fuzzy-card-search-script">
+(function(){const svg=(title,subtitle,hue)=>{const s=`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="840"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${hue},75%,92%)"/><stop offset="1" stop-color="hsl(${(hue+35)%360},70%,72%)"/></linearGradient></defs><rect x="8" y="8" width="584" height="824" rx="34" fill="url(#g)" stroke="#222" stroke-width="8"/><rect x="35" y="35" width="530" height="80" rx="18" fill="white" opacity=".9"/><text x="55" y="84" font-size="34" font-family="sans-serif" font-weight="700">${title}</text><circle cx="300" cy="390" r="150" fill="white" opacity=".55"/><text x="300" y="385" text-anchor="middle" font-size="42" font-family="sans-serif" font-weight="700">${subtitle}</text><text x="300" y="430" text-anchor="middle" font-size="24" font-family="sans-serif">カード画像プレビュー</text><rect x="35" y="710" width="530" height="70" rx="15" fill="white" opacity=".9"/><text x="55" y="755" font-size="25" font-family="sans-serif">PROTOTYPE IMAGE</text></svg>`;return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(s)};const candidates=[{keys:["リザードン","151"],name:"リザードンex SAR",number:"201/165",rarity:"SAR",set:"ポケモンカード151",hue:20,match:"かなり近い"},{keys:["リザードン","151"],name:"リザードンex SR",number:"187/165",rarity:"SR",set:"ポケモンカード151",hue:8,match:"かなり近い"},{keys:["リザードン","151"],name:"リザードンex RR",number:"006/165",rarity:"RR",set:"ポケモンカード151",hue:35,match:"近い"},{keys:["ピカチュウ","151"],name:"ピカチュウ C",number:"025/165",rarity:"C",set:"ポケモンカード151",hue:48,match:"かなり近い"},{keys:["ミュウ","151"],name:"ミュウex SAR",number:"205/165",rarity:"SAR",set:"ポケモンカード151",hue:285,match:"かなり近い"},{keys:["ナンジャモ"],name:"ナンジャモ SAR",number:"350/190",rarity:"SAR",set:"シャイニートレジャーex",hue:250,match:"かなり近い"}].map(x=>({...x,image:svg(x.name,x.rarity,x.hue)}));function normalize(s){return(s||"").toLowerCase().replace(/\s+/g,"").replace(/[　]/g,"")}function showCandidates(query){const q=normalize(query);const found=candidates.filter(c=>c.keys.some(k=>q.includes(normalize(k))));const list=found.length?found:candidates.filter(c=>q&&normalize(c.name).includes(q));let box=document.getElementById("fuzzyCandidateBox");if(!box){box=document.createElement("div");box.id="fuzzyCandidateBox";const target=document.querySelector('input[type="text"], input[type="search"]');if(target)target.closest("form")?.after(box)}if(!box)return;if(!q){box.innerHTML="";return}box.innerHTML=`<div class="search-hint"><b>候補を表示しています。</b> 名前が完全一致しなくても、近い商品を出します。画像・番号を確認してから確定してください。</div><div class="fuzzy-candidates">${(list.length?list:candidates.slice(0,3)).map(c=>`<div class="fuzzy-card"><img src="${c.image}" alt="${c.name}"><span class="match-badge">${c.match}</span><h4>${c.name}</h4><div class="meta">カード番号：${c.number}<br>レアリティ：${c.rarity}<br>収録：${c.set}</div><button type="button" class="fuzzy-confirm" data-i="${candidates.indexOf(c)}">この商品で合っている</button></div>`).join("")}</div>`;box.querySelectorAll(".fuzzy-confirm").forEach(btn=>btn.onclick=()=>{const c=candidates[+btn.dataset.i];localStorage.setItem("confirmedCardCandidate",JSON.stringify(c));alert("商品を確定しました。詳細画面ではこのカード画像を最上部に表示します。");showConfirmedDetail(c)})}function showConfirmedDetail(c){let d=document.getElementById("confirmedCardDetail");if(!d){d=document.createElement("section");d.id="confirmedCardDetail";d.style.cssText="margin-top:20px;padding:16px;border:2px solid #222;border-radius:16px;background:#fff";(document.getElementById("fuzzyCandidateBox")||document.body).after(d)}d.innerHTML=`<h3>確定した商品</h3><img class="detail-card-image" src="${c.image}" alt="${c.name}"><h2>${c.name}</h2><div>カード番号：${c.number}　｜　レアリティ：${c.rarity}</div><div>収録：${c.set}</div><p class="search-hint">この画像・カード番号を基準に、仕入れ先・eBay相場・利益計算へ進む想定です。</p>`;d.scrollIntoView({behavior:"smooth",block:"start"})}function attach(){const inputs=[...document.querySelectorAll('input')].filter(x=>/商品|型番|検索|product|model/i.test((x.placeholder||"")+" "+(x.name||"")));inputs.forEach(inp=>{if(inp.dataset.fuzzyAttached)return;inp.dataset.fuzzyAttached="1";inp.addEventListener("input",()=>showCandidates(inp.value))})}attach();new MutationObserver(attach).observe(document.body,{childList:true,subtree:true});const labels=[...document.querySelectorAll("label,h2,h3,h4")];const heading=labels.find(x=>/商品検索/.test(x.textContent||""));if(heading&&!document.getElementById("fuzzyHelper")){const h=document.createElement("div");h.id="fuzzyHelper";h.className="search-hint";h.textContent="商品名は完全一致じゃなくてOK。「リザードン 151」など、分かる範囲で入力してください。候補の画像を見て商品を確定できます。";heading.after(h)}})();
+</script>
+</body></html>
