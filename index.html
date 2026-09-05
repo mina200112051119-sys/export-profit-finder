@@ -80,73 +80,27 @@ function profit(p,sell=p.sell){return Math.round(sell*(1-feeRate)-p.ship-p.cost)
 function score(p){return Math.max(1,Math.min(5,Math.round((p.sold/(p.list+1))*1.2+(p.risk==="低"?1.2:p.risk==="中"?.6:0))))}
 function showTab(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('detail').innerHTML=''}
 function renderCats(){document.getElementById('cats').innerHTML=[...new Set(products.map(p=>p.cat))].map(c=>`<button class="cat" onclick="renderRank('${c}')">📦 ${c}<small>おすすめを見る</small></button>`).join('')}
-function renderRank(cat){let arr=products.filter(p=>p.cat===cat).sort((a,b)=>profit(b)-profit(a));document.getElementById('ranking').innerHTML=`<div class="card"><h2>${cat}｜今のおすすめ</h2><p class="muted">試作では予想利益を中心に並べています。完成版では売れやすさ・価格安定・仕入れ状況・リスクも含めて順位を決めます。</p>${arr.map((p,i)=>`<div class="card product" onclick='detail(${JSON.stringify(p)})'><span class="rank">🥇 ${i+1}位</span> <span class="badge">${p.risk==="低"?"仕入れおすすめ":"自分で確認して判断"}</span><h3>${p.name}</h3><div class="row"><span>仕入れ</span><b>${p.cost.toLocaleString()}円</b></div><div class="row"><span>eBay想定販売</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>予想利益</span><b class="green">${profit(p).toLocaleString()}円</b></div><div class="row"><span>売れやすさ</span><b>${'★'.repeat(score(p))}${'☆'.repeat(5-score(p))}</b></div></div>`).join('')}</div>`}
-function productImage(p){if(!p.image)return '';return `<img class="detail-card-image" src="${p.image}" alt="${p.name}">`}
+function renderRank(cat){let arr=products.filter(p=>p.cat===cat).sort((a,b)=>profit(b)-profit(a));document.getElementById('ranking').innerHTML=`<div class="card"><h2>${cat}｜今のおすすめ</h2><p class="muted">試作では予想利益を中心に並べています。完成版では売れやすさ・価格安定・仕入れ状況・リスクも含めて順位を決めます。</p>${arr.map((p,i)=>`<div class="card product" onclick='detail(${JSON.stringify(p)})'><span class="rank">🥇 ${i+1}位</span> <span class="badge">${p.risk==="低"?"仕入れおすすめ":"自分で確認して判断"}</span><h3>${p.name}</h3><div class="row"><span>仕入れ</span><b>${p.cost.toLocaleString()}円</b></div><div class="row"><span>eBay想定販売</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>予想利益</span><b class="green">${profit(p).toLocaleString()}円</b></div><div class="row"><span>売れやすさ</span><b class="stars">${"★".repeat(score(p))}${"☆".repeat(5-score(p))}</b></div></div>`).join('')}</div>`}
+function productImage(p){if(p.image)return `<img class="detail-card-image" src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><div class="image-fallback" style="display:none">商品画像は読み込めませんでした</div>`;return `<div class="image-fallback">商品画像は準備中です</div>`}
 function detail(p){
 let target=+document.getElementById('targetProfit')?.value||3000;
 let maxCost=Math.max(0,Math.floor(p.sell*(1-feeRate)-p.ship-target));
 let levels=[0,-.1,-.2,-.3].map(x=>({price:Math.round(p.sell*(1+x)),profit:profit(p,Math.round(p.sell*(1+x)))}));
-document.getElementById('detail').innerHTML=`<div class="card"><h2>商品詳細</h2>
-${productImage(p)}
-<h3>${p.name}</h3>
-<div class="row"><span>仕入れ先</span><b>${p.source}</b></div><div class="row"><span>仕入れ価格</span><b>${p.cost.toLocaleString()}円</b></div>
-<div class="row"><span>eBay想定価格</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>海外送料</span><b>${p.ship.toLocaleString()}円</b></div>
-<div class="row"><span>想定利益</span><b class="profit ${profit(p)>=0?"green":"red"}">${profit(p)>=0?"+":""}${profit(p).toLocaleString()}円</b></div>
-<div class="metric"><div>目標利益 ${target.toLocaleString()}円を残すための</div><b>仕入れ上限目安 ${maxCost.toLocaleString()}円</b><div class="muted" style="margin-top:6px">この金額以下なら、現在の想定販売価格・送料・手数料で目標利益を残せる計算です。</div></div>
-<div class="row"><span>過去90日の販売数</span><b>${p.sold}個</b></div><div class="row"><span>現在の出品数</span><b>${p.list}件</b></div>
-<div class="row"><span>価格の動き</span><b>${p.trend}</b></div>
-<h3 style="margin-top:18px">📉 値下げシミュレーション</h3>${levels.map(x=>`<div class="row"><span>${x.price.toLocaleString()}円</span><b class="${x.profit>=0?'green':'red'}">${x.profit>=0?'+':''}${x.profit.toLocaleString()}円</b></div>`).join('')}
-<h3 style="margin-top:18px">🔍 おすすめ理由</h3><p class="muted">販売実績があり、現在価格と仕入れ価格の差がある商品。値下げしても利益が残るため、試作上では上位候補です。</p>
-<div class="notice"><b>最終判断：</b> AIの判定をそのまま仕入れ決定には使わず、販売実績・仕入れ状況・商品状態を確認してユーザーが判断します。</div>
-<button class="primary" onclick="document.getElementById('detail').innerHTML=''">閉じる</button>
-</div>`;window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})}
-function normalizeSearch(s){return (s||'').toLowerCase().replace(/[\s　]+/g,'').replace(/[ー−‐-]/g,'')}
-function searchProduct(){
-let name=document.getElementById('searchName').value.trim()||"入力した商品";let cost=+document.getElementById('searchCost').value||0;let cat=document.getElementById('searchCat').value;
-let q=normalizeSearch(name);
-let match=products.find(p=>p.cat===cat && (normalizeSearch(p.name).includes(q)||q.includes(normalizeSearch(p.name))));
-let p=match?{...match,cost,name:match.name}:{name,cat,cost,sell:Math.max(cost*1.8,10000),ship:1800,sold:40,list:20,trend:"確認中",source:"仕入れ先を検索",risk:"中"};
-let note=match?`<div class="notice">試作データ内で近い商品を見つけました。販売価格・販売数などはサンプルです。</div>`:`<div class="warning">一致する商品がないため、販売価格などを仮置きしています。実運用ではここを最新の相場データに置き換えます。</div>`;
-document.getElementById('searchResult').innerHTML=note;
-detail(p);
-}
-function previewPhoto(e){
-const f=e.target.files[0];if(!f)return;const img=document.getElementById('preview');img.src=URL.createObjectURL(f);img.style.display='block';
-const box=document.getElementById('photoCandidate');box.classList.remove('hidden');box.innerHTML=`<div class="card"><h3>AIの商品候補（試作）</h3><p>画像から商品名・型番・カード番号などを読み取り、候補を表示します。</p><select><option>ポケモンカード 151 BOX（候補1）</option><option>別の商品候補（候補2）</option></select><button class="primary" onclick="confirmPhoto()">この商品で合っている</button></div>`;
-}
+document.getElementById('detail').innerHTML=`<div class="card"><h2>商品詳細</h2>${productImage(p)}<h3>${p.name}</h3><div class="row"><span>仕入れ先</span><b>${p.source}</b></div><div class="row"><span>仕入れ価格</span><b>${p.cost.toLocaleString()}円</b></div><div class="row"><span>eBay想定価格</span><b>${p.sell.toLocaleString()}円</b></div><div class="row"><span>海外送料</span><b>${p.ship.toLocaleString()}円</b></div><div class="row"><span>想定利益</span><b class="profit ${profit(p)>=0?"green":"red"}">${profit(p)>=0?"+":""}${profit(p).toLocaleString()}円</b></div><div class="metric"><div>目標利益 ${target.toLocaleString()}円を残すための</div><b>仕入れ上限目安 ${maxCost.toLocaleString()}円</b><div class="muted" style="margin-top:6px">この金額以下なら、現在の想定販売価格・送料・手数料で目標利益を残せる計算です。</div></div><div class="metric" style="margin-top:10px"><div>🛒 仕入れ判断</div><b class="${p.cost<=maxCost?"green":"red"}">${p.cost<=maxCost?"買ってOK候補":"この価格では見送り"}</b><div class="muted" style="margin-top:6px">${p.cost<=maxCost?`仕入れ価格 ${p.cost.toLocaleString()}円は上限より ${(maxCost-p.cost).toLocaleString()}円安く、目標利益を残せる範囲です。`:`仕入れ価格 ${p.cost.toLocaleString()}円は上限を ${(p.cost-maxCost).toLocaleString()}円超えています。`}</div></div><div class="row"><span>過去90日の販売数</span><b>${p.sold}個</b></div><div class="row"><span>現在の出品数</span><b>${p.list}件</b></div><div class="row"><span>価格の動き</span><b>${p.trend}</b></div><h3 style="margin-top:18px">📉 値下げシミュレーション</h3>${levels.map(x=>`<div class="row"><span>${x.price.toLocaleString()}円</span><b class="${x.profit>=0?'green':'red'}">${x.profit>=0?'+':''}${x.profit.toLocaleString()}円</b></div>`).join('')}<h3 style="margin-top:18px">🔍 おすすめ理由</h3><p class="muted">販売実績があり、現在価格と仕入れ価格の差がある商品。値下げしても利益が残るため、試作上では上位候補です。</p><div class="notice"><b>最終判断：</b> AIの判定をそのまま仕入れ決定には使わず、販売実績・仕入れ状況・商品状態を確認してユーザーが判断します。</div><button class="primary" onclick="document.getElementById('detail').innerHTML=''">閉じる</button></div>`;window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})}
+function normalizeSearch(s){return (s||"").toLowerCase().replace(/[\s　]+/g,"").replace(/[ー−‐-]/g,"")}
+function searchProduct(){let name=document.getElementById('searchName').value.trim()||"入力した商品";let cost=+document.getElementById('searchCost').value||0;let cat=document.getElementById('searchCat').value;let q=normalizeSearch(name);let match=products.find(p=>p.cat===cat&&(normalizeSearch(p.name).includes(q)||q.includes(normalizeSearch(p.name))));let p=match?{...match,cost,name:match.name}:{name,cat,cost,sell:Math.max(cost*1.8,10000),ship:1800,sold:40,list:20,trend:"確認中",source:"仕入れ先を検索",risk:"中"};let note=match?`<div class="notice">試作データ内で近い商品を見つけました。販売価格・販売数などはサンプルです。</div>`:`<div class="warning">一致する商品がないため、販売価格などを仮置きしています。実運用ではここを最新の相場データに置き換えます。</div>`;document.getElementById('searchResult').innerHTML=note;detail(p)}
+function previewPhoto(e){const f=e.target.files[0];if(!f)return;const img=document.getElementById('preview');img.src=URL.createObjectURL(f);img.style.display='block';const box=document.getElementById('photoCandidate');box.classList.remove('hidden');box.innerHTML=`<div class="card"><h3>AIの商品候補（試作）</h3><p>画像から商品名・型番・カード番号などを読み取り、候補を表示します。</p><select><option>ポケモンカード 151 BOX（候補1）</option><option>別の商品候補（候補2）</option></select><button class="primary" onclick="confirmPhoto()">この商品で合っている</button></div>`}
 function confirmPhoto(){let p=products[0];detail(p)}
 renderCats();renderRank("ポケモンカード");
 </script>
 <script id="fuzzy-card-search-script">
 (function(){
-  const svg = (title, subtitle, hue) => {
-    const s = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="840"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${hue},75%,92%)"/><stop offset="1" stop-color="hsl(${(hue+35)%360},70%,72%)"/></linearGradient></defs><rect x="8" y="8" width="584" height="824" rx="34" fill="url(#g)" stroke="#222" stroke-width="8"/><rect x="35" y="35" width="530" height="80" rx="18" fill="white" opacity=".9"/><text x="55" y="84" font-size="34" font-family="sans-serif" font-weight="700">${title}</text><circle cx="300" cy="390" r="150" fill="white" opacity=".55"/><text x="300" y="385" text-anchor="middle" font-size="42" font-family="sans-serif" font-weight="700">${subtitle}</text><text x="300" y="430" text-anchor="middle" font-size="24" font-family="sans-serif">カード画像プレビュー</text><rect x="35" y="710" width="530" height="70" rx="15" fill="white" opacity=".9"/><text x="55" y="755" font-size="25" font-family="sans-serif">PROTOTYPE IMAGE</text></svg>`;
-    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(s);
-  };
-  const candidates = [
-    {keys:["リザードン","151"], name:"リザードンex SAR", number:"201/165", rarity:"SAR", set:"ポケモンカード151", hue:20, match:"かなり近い"},
-    {keys:["リザードン","151"], name:"リザードンex SR", number:"187/165", rarity:"SR", set:"ポケモンカード151", hue:8, match:"かなり近い"},
-    {keys:["リザードン","151"], name:"リザードンex RR", number:"006/165", rarity:"RR", set:"ポケモンカード151", hue:35, match:"近い"},
-    {keys:["ピカチュウ","151"], name:"ピカチュウ C", number:"025/165", rarity:"C", set:"ポケモンカード151", hue:48, match:"かなり近い"},
-    {keys:["ミュウ","151"], name:"ミュウex SAR", number:"205/165", rarity:"SAR", set:"ポケモンカード151", hue:285, match:"かなり近い"},
-    {keys:["ナンジャモ"], name:"ナンジャモ SAR", number:"350/190", rarity:"SAR", set:"シャイニートレジャーex", hue:250, match:"かなり近い"}
-  ].map(x => ({...x, image:svg(x.name,x.rarity,x.hue)}));
-  function normalize(s){return (s||"").toLowerCase().replace(/\s+/g,"").replace(/[　]/g,"");}
-  function showCandidates(query){
-    const q=normalize(query);
-    const found=candidates.filter(c=>c.keys.some(k=>q.includes(normalize(k))));
-    const list=found.length?found:candidates.filter(c=>q && normalize(c.name).includes(q));
-    let box=document.getElementById("fuzzyCandidateBox");
-    if(!box){box=document.createElement("div");box.id="fuzzyCandidateBox";const target=document.querySelector('input[type="text"], input[type="search"]');if(target)target.closest(".card")?.after(box);}
-    if(!box)return;
-    if(!q){box.innerHTML="";return;}
-    box.innerHTML=`<div class="search-hint"><b>候補を表示しています。</b> 名前が完全一致しなくても、近い商品を出します。画像・番号を確認してから確定してください。</div><div class="fuzzy-candidates">${(list.length?list:candidates.slice(0,3)).map((c,i)=>`<div class="fuzzy-card"><img src="${c.image}" alt="${c.name}"><span class="match-badge">${c.match}</span><h4>${c.name}</h4><div class="meta">カード番号：${c.number}<br>レアリティ：${c.rarity}<br>収録：${c.set}</div><button type="button" class="fuzzy-confirm" data-i="${candidates.indexOf(c)}">この商品で合っている</button></div>`).join("")}</div>`;
-    box.querySelectorAll(".fuzzy-confirm").forEach(btn=>btn.onclick=()=>{const c=candidates[+btn.dataset.i];localStorage.setItem("confirmedCardCandidate",JSON.stringify(c));alert("商品を確定しました。詳細画面ではこのカード画像を最上部に表示します。");showConfirmedDetail(c);});
-  }
-  function showConfirmedDetail(c){let d=document.getElementById("confirmedCardDetail");if(!d){d=document.createElement("section");d.id="confirmedCardDetail";d.style.cssText="margin-top:20px;padding:16px;border:2px solid #222;border-radius:16px;background:#fff";(document.getElementById("fuzzyCandidateBox")||document.body).after(d);}d.innerHTML=`<h3>確定した商品</h3><img class="detail-card-image" src="${c.image}" alt="${c.name}"><h2>${c.name}</h2><div>カード番号：${c.number}　｜　レアリティ：${c.rarity}</div><div>収録：${c.set}</div><p class="search-hint">この画像・カード番号を基準に、仕入れ先・eBay相場・利益計算へ進む想定です。</p>`;d.scrollIntoView({behavior:"smooth",block:"start"});}
-  function attach(){const inputs=[...document.querySelectorAll('input')].filter(x=>/商品|型番|検索|product|model/i.test((x.placeholder||"")+" "+(x.name||"")));inputs.forEach(inp=>{if(inp.dataset.fuzzyAttached)return;inp.dataset.fuzzyAttached="1";inp.addEventListener("input",()=>showCandidates(inp.value));});}
-  attach();new MutationObserver(attach).observe(document.body,{childList:true,subtree:true});
-  const labels=[...document.querySelectorAll("label,h2,h3,h4")];const heading=labels.find(x=>/商品検索/.test(x.textContent||""));if(heading&&!document.getElementById("fuzzyHelper")){const h=document.createElement("div");h.id="fuzzyHelper";h.className="search-hint";h.textContent="商品名は完全一致じゃなくてOK。「リザードン 151」など、分かる範囲で入力してください。候補の画像を見て商品を確定できます。";heading.after(h);}
+const svg=(title,subtitle,hue)=>{const s=`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="840"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${hue},75%,92%)"/><stop offset="1" stop-color="hsl(${(hue+35)%360},70%,72%)"/></linearGradient></defs><rect x="8" y="8" width="584" height="824" rx="34" fill="url(#g)" stroke="#222" stroke-width="8"/><rect x="35" y="35" width="530" height="80" rx="18" fill="white" opacity=".9"/><text x="55" y="84" font-size="34" font-family="sans-serif" font-weight="700">${title}</text><circle cx="300" cy="390" r="150" fill="white" opacity=".55"/><text x="300" y="385" text-anchor="middle" font-size="42" font-family="sans-serif" font-weight="700">${subtitle}</text><text x="300" y="430" text-anchor="middle" font-size="24" font-family="sans-serif">カード画像プレビュー</text><rect x="35" y="710" width="530" height="70" rx="15" fill="white" opacity=".9"/><text x="55" y="755" font-size="25" font-family="sans-serif">PROTOTYPE IMAGE</text></svg>`;return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(s)};
+const candidates=[{keys:["リザードン","151"],name:"リザードンex SAR",number:"201/165",rarity:"SAR",set:"ポケモンカード151",hue:20,match:"かなり近い"},{keys:["リザードン","151"],name:"リザードンex SR",number:"187/165",rarity:"SR",set:"ポケモンカード151",hue:8,match:"かなり近い"},{keys:["リザードン","151"],name:"リザードンex RR",number:"006/165",rarity:"RR",set:"ポケモンカード151",hue:35,match:"近い"},{keys:["ピカチュウ","151"],name:"ピカチュウ C",number:"025/165",rarity:"C",set:"ポケモンカード151",hue:48,match:"かなり近い"},{keys:["ミュウ","151"],name:"ミュウex SAR",number:"205/165",rarity:"SAR",set:"ポケモンカード151",hue:285,match:"かなり近い"},{keys:["ナンジャモ"],name:"ナンジャモ SAR",number:"350/190",rarity:"SAR",set:"シャイニートレジャーex",hue:250,match:"かなり近い"}].map(x=>({...x,image:svg(x.name,x.rarity,x.hue)}));
+function normalize(s){return(s||"").toLowerCase().replace(/\s+/g,"").replace(/[　]/g,"")}
+function showCandidates(query){const q=normalize(query);const found=candidates.filter(c=>c.keys.some(k=>q.includes(normalize(k))));const list=found.length?found:candidates.filter(c=>q&&normalize(c.name).includes(q));let box=document.getElementById("fuzzyCandidateBox");if(!box){box=document.createElement("div");box.id="fuzzyCandidateBox";const target=document.querySelector('input[type="text"], input[type="search"]');if(target)target.closest(".card")?.after(box)}if(!box)return;if(!q){box.innerHTML="";return}box.innerHTML=`<div class="search-hint"><b>候補を表示しています。</b> 名前が完全一致しなくても、近い商品を出します。画像・番号を確認してから確定してください。</div><div class="fuzzy-candidates">${(list.length?list:candidates.slice(0,3)).map((c,i)=>`<div class="fuzzy-card"><img src="${c.image}" alt="${c.name}"><b>${c.name}</b><div class="meta">${c.set}｜${c.number}｜${c.rarity}</div><span class="match-badge">一致度：${c.match}</span><button onclick="document.getElementById('searchName').value='${c.name.replace(/'/g,"\\'")}';document.getElementById('fuzzyCandidateBox').innerHTML=''">この候補を使う</button></div>`).join("")}</div>`}
+const input=document.getElementById("searchName");if(input){input.addEventListener("input",e=>showCandidates(e.target.value))}
 })();
 </script>
-</body></html>
+</body>
+</html>
