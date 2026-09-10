@@ -25,3 +25,55 @@ function scoreProduct(raw,s={},universe=[]){const p=normalizeProduct(raw),c=calc
 function rank(products,s={},category=null){const n=products.map(normalizeProduct),base={...s,feeRateByCategory:s.feeRateByCategory||{}},src=category?n.filter(p=>p.cat===category):n;return src.map(p=>scoreProduct(p,{...base,feeRate:base.feeRateByCategory[p.cat]??base.feeRate},n)).sort((a,b)=>b.totalScore-a.totalScore||(b.costs.profit||-Infinity)-(a.costs.profit||-Infinity)||a.name.localeCompare(b.name,'ja'))}
 window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank};
 })();
+
+/* Daily snapshot bridge: the existing single-page UI can keep its current code
+   while the daily saved snapshot becomes the default recommendation source. */
+(() => {
+  'use strict';
+  const originalFetch = window.fetch.bind(window);
+  const queryToCategory = {
+    'Pokemon card Japan':'ポケモンカード',
+    'Pokemon TCG supplies Japan':'ポケモン関連サプライ用品',
+    'Japanese fishing tackle':'釣具',
+    'Japanese camera':'カメラ',
+    'Japanese retro game':'レトロゲーム'
+  };
+  let snapshot = null;
+  let snapshotPromise = originalFetch('/api/data-snapshot?ts='+Date.now(), {cache:'no-store'})
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
+  const makeResponse = payload => new Response(JSON.stringify(payload), {
+    status:200,
+    headers:{'Content-Type':'application/json'}
+  });
+  window.fetch = async function(input, init){
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (url.includes('/api/ebay-search?')) {
+      const u = new URL(url, location.origin);
+      const q = u.searchParams.get('q') || '';
+      const cat = queryToCategory[q];
+      if (cat) {
+        if (snapshot === null) snapshot = await snapshotPromise;
+        const found = snapshot?.categories?.find(x => x.category === cat);
+        if (found) return makeResponse({items:found.items||[],count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
+      }
+    }
+    return originalFetch(input, init);
+  };
+  async function useDailySnapshotFirst(){
+    snapshot = await snapshotPromise;
+    if (!snapshot) return;
+    const wait = setInterval(() => {
+      if (typeof window.refresh !== 'function') return;
+      clearInterval(wait);
+      window.__dailySnapshotLoaded = snapshot;
+      window.refresh();
+      setTimeout(() => {
+        const el=document.getElementById('status');
+        if(el) el.innerHTML='<b>保存済み自動更新データを表示中</b><br>最終更新：'+new Date(snapshot.refreshedAt).toLocaleString('ja-JP')+'<br><span class="muted">手動更新を押すと、この端末だけライブ検索します。</span>';
+      },1500);
+    },50);
+    setTimeout(()=>clearInterval(wait),10000);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',useDailySnapshotFirst); else useDailySnapshotFirst();
+})();
