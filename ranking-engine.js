@@ -1,238 +1,26 @@
 (() => {
-  'use strict';
-
-  const CATEGORIES = ['ポケモンカード', 'ポケモン関連サプライ用品', '釣具', 'カメラ', 'レトロゲーム'];
-  const WEIGHTS = { sellability: 30, margin: 25, profit: 15, stability: 10, inventoryRisk: 10, fees: 5, marketTrend: 5 };
-
-  function num(v, fallback = 0) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
-  }
-  function clamp(v, min = 0, max = 100) { return Math.max(min, Math.min(max, v)); }
-  function round(v) { return Math.round(num(v)); }
-
-  function normalizeProduct(raw = {}) {
-    return {
-      id: raw.id || raw.itemId || raw.url || `${raw.cat || raw.category || ''}|${raw.name || raw.title || ''}`,
-      name: raw.name || raw.title || '商品名不明',
-      cat: raw.cat || raw.category || 'その他',
-      cost: num(raw.cost),
-      sell: num(raw.sell ?? raw.price),
-      ship: num(raw.ship ?? raw.shipping),
-      image: raw.image || raw.imageUrl || '',
-      url: raw.url || raw.itemWebUrl || '',
-      sold: Number.isFinite(Number(raw.sold)) ? num(raw.sold) : null,
-      list: Number.isFinite(Number(raw.list)) ? num(raw.list) : null,
-      trend: raw.trend || '不明',
-      risk: raw.risk || '要確認',
-      source: raw.source || 'eBay',
-      condition: raw.condition || '',
-      confidence: raw.confidence || null,
-      historicalPrices: Array.isArray(raw.historicalPrices) ? raw.historicalPrices : []
-    };
-  }
-
-  function calcCosts(p, settings = {}) {
-    const fx = Math.max(num(settings.fxRate, 150), 0.0001);
-    const feeRate = num(settings.feeRate, 0.136);
-    const international = num(settings.internationalRate, 0.0135);
-    const orderFeeUsd = num(settings.orderFeeUsd, 0.40);
-    const conversionRate = num(settings.conversionFeeRate, 0) / 100;
-    const domestic = num(settings.domesticShipping);
-    const packaging = num(settings.packaging);
-    const other = num(settings.otherCost);
-
-    const saleUsd = Math.max(p.sell, 0);
-    const shipUsd = Math.max(p.ship, 0);
-    const grossUsd = saleUsd + shipUsd;
-    const saleJpy = saleUsd * fx;
-    const shipJpy = shipUsd * fx;
-    const finalValueFeeJpy = grossUsd * feeRate * fx;
-    const internationalFeeJpy = grossUsd * international * fx;
-    const fixedFeeJpy = orderFeeUsd * fx;
-    const conversionFeeJpy = (saleJpy + shipJpy) * conversionRate;
-    const localCosts = domestic + packaging + other;
-    const totalFees = finalValueFeeJpy + internationalFeeJpy + fixedFeeJpy + conversionFeeJpy;
-    const totalCosts = totalFees + shipJpy + localCosts + p.cost;
-    const profit = saleJpy - totalCosts;
-    const margin = p.cost > 0 ? profit / p.cost : null;
-    return {
-      saleJpy: round(saleJpy), shipJpy: round(shipJpy), finalValueFeeJpy: round(finalValueFeeJpy),
-      internationalFeeJpy: round(internationalFeeJpy), fixedFeeJpy: round(fixedFeeJpy),
-      conversionFeeJpy: round(conversionFeeJpy), localCosts: round(localCosts), totalFees: round(totalFees),
-      totalCosts: round(totalCosts), profit: round(profit), margin
-    };
-  }
-
-  function sellThrough(p) {
-    if (p.sold === null || p.list === null || p.sold < 0 || p.list < 0) return null;
-    const total = p.sold + p.list;
-    return total > 0 ? p.sold / total : null;
-  }
-
-  function confidence(p) {
-    const sold = p.sold === null ? 0 : p.sold;
-    const list = p.list === null ? 0 : p.list;
-    if (sold >= 50 && list >= 50) return { level: '高', factor: 1 };
-    if (sold >= 20 && list >= 20) return { level: '中', factor: 0.94 };
-    if (sold >= 5 && list >= 5) return { level: '中', factor: 0.86 };
-    if (sold > 0 || list > 0) return { level: '低', factor: 0.72 };
-    return { level: '低', factor: 0.55 };
-  }
-
-  function sellabilityScore(p) {
-    const rate = sellThrough(p);
-    if (rate === null) return 10;
-    const base = clamp(rate * 100);
-    const dataCount = (p.sold || 0) + (p.list || 0);
-    const reliability = dataCount >= 100 ? 1 : dataCount >= 40 ? 0.9 : dataCount >= 10 ? 0.75 : 0.55;
-    return clamp(base * reliability);
-  }
-
-  function trendScore(p) {
-    if (p.trend === '上昇') return 90;
-    if (p.trend === '横ばい') return 70;
-    if (p.trend === '下落') return 25;
-    return 50;
-  }
-
-  function stabilityScore(p) {
-    const prices = p.historicalPrices.map(num).filter(v => v > 0);
-    if (prices.length < 3) return 50;
-    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-    const variance = prices.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / prices.length;
-    const cv = avg > 0 ? Math.sqrt(variance) / avg : 1;
-    return clamp(100 - cv * 180);
-  }
-
-  function feeScore(p, costs) {
-    if (p.sell <= 0) return 0;
-    const feeRatio = costs.totalFees / Math.max(costs.saleJpy, 1);
-    return clamp(100 - feeRatio * 300);
-  }
-
-  function marginScore(costs) {
-    if (costs.margin === null) return 0;
-    if (costs.margin <= 0) return 0;
-    return clamp(costs.margin * 250);
-  }
-
-  function profitScore(costs, allProfits = []) {
-    const positive = allProfits.filter(v => v > 0).sort((a, b) => a - b);
-    if (!positive.length || costs.profit <= 0) return 0;
-    const max = positive[positive.length - 1];
-    return clamp((costs.profit / max) * 100);
-  }
-
-  function projectedPrice(p, days) {
-    const current = Math.max(p.sell, 0);
-    const trend = p.trend;
-    let factor = 1;
-    if (trend === '上昇') factor = days === 30 ? 1.01 : days === 60 ? 1.00 : 0.98;
-    else if (trend === '横ばい') factor = days === 30 ? 0.98 : days === 60 ? 0.96 : 0.94;
-    else if (trend === '下落') factor = days === 30 ? 0.93 : days === 60 ? 0.87 : 0.80;
-    else factor = days === 30 ? 0.97 : days === 60 ? 0.94 : 0.90;
-    const prices = p.historicalPrices.map(num).filter(v => v > 0);
-    if (prices.length >= 3) {
-      const recent = prices[prices.length - 1];
-      const older = prices[0];
-      const change = older > 0 ? (recent - older) / older : 0;
-      factor *= clamp(1 + change * (days / 90), 0.65, 1.15);
-    }
-    return round(current * factor);
-  }
-
-  function simulateRisk(p, settings = {}) {
-    const out = [30, 60, 90].map(days => {
-      const sale = projectedPrice(p, days);
-      const copy = { ...p, sell: sale };
-      const costs = calcCosts(copy, settings);
-      let risk = '低';
-      if (costs.profit < 0) risk = '高';
-      else if (costs.margin !== null && costs.margin < 0.10) risk = '高';
-      else if (costs.margin !== null && costs.margin < 0.20) risk = '中';
-      return { days, sale, profit: costs.profit, margin: costs.margin, risk };
-    });
-    const breakEven = breakEvenPrice(p, settings);
-    return { scenarios: out, breakEven };
-  }
-
-  function breakEvenPrice(p, settings = {}) {
-    const fx = Math.max(num(settings.fxRate, 150), 0.0001);
-    const feeRate = num(settings.feeRate, 0.136);
-    const international = num(settings.internationalRate, 0.0135);
-    const fixed = num(settings.orderFeeUsd, 0.40) * fx;
-    const local = num(settings.domesticShipping) + num(settings.packaging) + num(settings.otherCost);
-    const variable = feeRate + international;
-    const requiredJpy = p.cost + local + fixed;
-    const denominator = 1 - variable;
-    if (denominator <= 0) return null;
-    return round(requiredJpy / denominator);
-  }
-
-  function inventoryRiskScore(riskData, p) {
-    const s = riskData.scenarios;
-    let score = 100;
-    if (s[0].profit < 0) score -= 60;
-    else if (s[0].profit < p.cost * 0.10) score -= 30;
-    if (s[1].profit < 0) score -= 25;
-    else if (s[1].profit < p.cost * 0.10) score -= 12;
-    if (s[2].profit < 0) score -= 25;
-    else if (s[2].profit < p.cost * 0.10) score -= 12;
-    if (p.cost > 50000) score -= 10;
-    return clamp(score);
-  }
-
-  function riskFlags(p, costs, riskData) {
-    const flags = [];
-    if (p.sold === null || p.list === null) flags.push('販売実績データ不足');
-    if (p.trend === '下落') flags.push('相場下落傾向');
-    if (costs.profit < 0) flags.push('現在価格でも赤字');
-    if (riskData.scenarios[2].profit < 0) flags.push('90日後想定で赤字');
-    if (p.cost >= 50000) flags.push('高額仕入れ');
-    return flags;
-  }
-
-  function scoreProduct(p, settings = {}, universe = []) {
-    const product = normalizeProduct(p);
-    const costs = calcCosts(product, settings);
-    const allProfits = universe.map(x => calcCosts(normalizeProduct(x), settings).profit);
-    const riskData = simulateRisk(product, settings);
-    const sellability = sellabilityScore(product);
-    const margin = marginScore(costs);
-    const profit = profitScore(costs, allProfits);
-    const stability = stabilityScore(product);
-    const inventory = inventoryRiskScore(riskData, product);
-    const fees = feeScore(product, costs);
-    const market = trendScore(product);
-    const conf = confidence(product);
-
-    let raw =
-      sellability * 0.30 +
-      margin * 0.25 +
-      profit * 0.15 +
-      stability * 0.10 +
-      inventory * 0.10 +
-      fees * 0.05 +
-      market * 0.05;
-
-    raw *= conf.factor;
-    const flags = riskFlags(product, costs, riskData);
-    if (flags.includes('現在価格でも赤字')) raw -= 25;
-    if (flags.includes('90日後想定で赤字')) raw -= 12;
-    if (flags.includes('相場下落傾向')) raw -= 8;
-    raw = round(clamp(raw));
-
-    const stars = raw >= 90 ? '★★★★★' : raw >= 80 ? '★★★★☆' : raw >= 70 ? '★★★★☆' : raw >= 60 ? '★★★☆☆' : raw >= 50 ? '★★☆☆☆' : '★☆☆☆☆';
-    const risk = flags.includes('現在価格でも赤字') || flags.includes('90日後想定で赤字') ? '高' : inventory >= 75 ? '低' : inventory >= 50 ? '中' : '高';
-    return { ...product, costs, riskData, scores: { sellability, margin, profit, stability, inventory, fees, market }, totalScore: raw, stars, risk, confidence: conf.level, flags };
-  }
-
-  function rank(products, settings = {}, category = null) {
-    const normalized = products.map(normalizeProduct);
-    const source = category ? normalized.filter(p => p.cat === category) : normalized;
-    return source.map(p => scoreProduct(p, settings, normalized)).sort((a, b) => b.totalScore - a.totalScore || b.costs.profit - a.costs.profit || a.name.localeCompare(b.name, 'ja'));
-  }
-
-  window.RankingEngine = { CATEGORIES, WEIGHTS, normalizeProduct, calcCosts, sellThrough, confidence, simulateRisk, breakEvenPrice, scoreProduct, rank };
+'use strict';
+const CATEGORIES=['ポケモンカード','ポケモン関連サプライ用品','釣具','カメラ','レトロゲーム'];
+const WEIGHTS={sellability:30,margin:25,profit:15,stability:10,inventoryRisk:10,fees:5,marketTrend:5};
+const num=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
+const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,v));
+const round=v=>Math.round(num(v));
+function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:num(r.ship??r.shipping),image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:Number.isFinite(Number(r.sold))?num(r.sold):null,list:Number.isFinite(Number(r.list))?num(r.list):null,trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices:[]}}
+function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.feeRate,.136),international=num(s.internationalRate,.0135),fixedUsd=num(s.orderFeeUsd,.4),conv=num(s.conversionFeeRate)/100,dom=num(s.domesticShipping),pack=num(s.packaging),other=num(s.otherCost);const sale=p.sell>0?p.sell:0,ship=p.ship>0?p.ship:0,gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,finalValueFeeJpy=gross*fee*fx,internationalFeeJpy=gross*international*fx,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=(saleJpy+shipJpy)*conv,localCosts=dom+pack+other,totalFees=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,totalCosts=totalFees+shipJpy+localCosts+p.cost,profit=saleJpy-totalCosts;return{saleJpy:round(saleJpy),shipJpy:round(shipJpy),finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),conversionFeeJpy:round(conversionFeeJpy),localCosts:round(localCosts),totalFees:round(totalFees),totalCosts:round(totalCosts),profit:round(profit),margin:p.cost>0?profit/p.cost:null}}
+function sellThrough(p){if(p.sold===null||p.list===null||p.sold<0||p.list<0)return null;const t=p.sold+p.list;return t>0?p.sold/t:null}
+function confidence(p){const s=p.sold===null?0:p.sold,l=p.list===null?0:p.list;if(s>=50&&l>=50)return{level:'高',factor:1};if(s>=20&&l>=20)return{level:'中',factor:.94};if(s>=5&&l>=5)return{level:'中',factor:.86};return{level:'低',factor:(s>0||l>0)?.72:.55}}
+function sellabilityScore(p){const r=sellThrough(p);if(r===null)return 10;const count=(p.sold||0)+(p.list||0),rel=count>=100?1:count>=40?.9:count>=10?.75:.55;return clamp(r*100*rel)}
+function trendScore(p){return p.trend==='上昇'?90:p.trend==='横ばい'?70:p.trend==='下落'?25:50}
+function stabilityScore(p){const a=p.historicalPrices.map(num).filter(v=>v>0);if(a.length<3)return 50;const avg=a.reduce((x,y)=>x+y,0)/a.length,variance=a.reduce((x,y)=>x+Math.pow(y-avg,2),0)/a.length,cv=avg>0?Math.sqrt(variance)/avg:1;return clamp(100-cv*180)}
+function feeScore(p,c){if(p.sell<=0)return 0;return clamp(100-(c.totalFees/Math.max(c.saleJpy,1))*300)}
+function marginScore(c){return c.margin===null||c.margin<=0?0:clamp(c.margin*250)}
+function profitScore(c,profits=[]){const pos=profits.filter(v=>v>0),max=pos.length?Math.max(...pos):0;return max&&c.profit>0?clamp(c.profit/max*100):0}
+function projectedPrice(p,days){let f=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='横ばい'?(days===30?.98:days===60?.96:.94):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.97:days===60?.94:.9);const a=p.historicalPrices.map(num).filter(v=>v>0);if(a.length>=3){const change=a[0]>0?(a[a.length-1]-a[0])/a[0]:0;f*=clamp(1+change*(days/90),.65,1.15)}return round(Math.max(p.sell,0)*f)}
+function breakEvenPrice(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),variable=num(s.feeRate,.136)+num(s.internationalRate,.0135),fixed=num(s.orderFeeUsd,.4)*fx,local=num(s.domesticShipping)+num(s.packaging)+num(s.otherCost),d=1-variable;return d>0?round((p.cost+local+fixed)/d):null}
+function simulateRisk(p,s={}){const scenarios=[30,60,90].map(days=>{const sale=projectedPrice(p,days),c=calcCosts({...p,sell:sale},s);const risk=c.profit<0?'高':c.margin!==null&&c.margin<.1?'高':c.margin!==null&&c.margin<.2?'中':'低';return{days,sale,profit:c.profit,margin:c.margin,risk}});return{scenarios,breakEven:breakEvenPrice(p,s)}}
+function inventoryRiskScore(r,p){let x=100,s=r.scenarios;if(s[0].profit<0)x-=60;else if(s[0].profit<p.cost*.1)x-=30;if(s[1].profit<0)x-=25;else if(s[1].profit<p.cost*.1)x-=12;if(s[2].profit<0)x-=25;else if(s[2].profit<p.cost*.1)x-=12;if(p.cost>50000)x-=10;return clamp(x)}
+function riskFlags(p,c,r){const a=[];if(p.sold===null||p.list===null)a.push('販売実績データ不足');if(p.trend==='下落')a.push('相場下落傾向');if(c.profit<0)a.push('現在価格でも赤字');if(r.scenarios[2].profit<0)a.push('90日後想定で赤字');if(p.cost>=50000)a.push('高額仕入れ');return a}
+function scoreProduct(raw,s={},universe=[]){const p=normalizeProduct(raw),c=calcCosts(p,s),profits=universe.map(x=>calcCosts(normalizeProduct(x),{...s,feeRate:s.feeRateByCategory?.[normalizeProduct(x).cat]??s.feeRate}).profit),r=simulateRisk(p,s),scores={sellability:sellabilityScore(p),margin:marginScore(c),profit:profitScore(c,profits),stability:stabilityScore(p),inventory:inventoryRiskScore(r,p),fees:feeScore(p,c),market:trendScore(p)},conf=confidence(p);let total=(scores.sellability*.3+scores.margin*.25+scores.profit*.15+scores.stability*.1+scores.inventory*.1+scores.fees*.05+scores.market*.05)*conf.factor;const flags=riskFlags(p,c,r);if(flags.includes('現在価格でも赤字'))total-=25;if(flags.includes('90日後想定で赤字'))total-=12;if(flags.includes('相場下落傾向'))total-=8;total=round(clamp(total));const stars=total>=90?'★★★★★':total>=80?'★★★★☆':total>=70?'★★★★☆':total>=60?'★★★☆☆':total>=50?'★★☆☆☆':'★☆☆☆☆',risk=flags.includes('現在価格でも赤字')||flags.includes('90日後想定で赤字')?'高':scores.inventory>=75?'低':scores.inventory>=50?'中':'高';return{...p,costs:c,riskData:r,scores,totalScore:total,stars,risk,confidence:conf.level,flags}}
+function rank(products,s={},category=null){const n=products.map(normalizeProduct),base={...s,feeRateByCategory:s.feeRateByCategory||{}};const src=category?n.filter(p=>p.cat===category):n;return src.map(p=>{const ps={...base,feeRate:base.feeRateByCategory[p.cat]??base.feeRate};return scoreProduct(p,ps,n)}).sort((a,b)=>b.totalScore-a.totalScore||b.costs.profit-a.costs.profit||a.name.localeCompare(b.name,'ja'))}
+window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank};
 })();
