@@ -1,0 +1,15 @@
+(() => {
+'use strict';
+const rules={
+ 'ポケモンカード':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
+ 'ポケモン関連サプライ用品':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
+ '釣具':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
+ 'カメラ':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
+ 'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']]
+};
+const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
+const yen=v=>v==null?'—':Math.round(Number(v||0)).toLocaleString('ja-JP')+'円';
+function panel(p){const rs=rules[p.cat]||rules['釣具'],q=encodeURIComponent(p.name||'');return `<div id="source-panel" class="card" style="margin-top:12px"><h3>仕入れ価格の根拠・比較</h3><div class="notice"><b>価格の根拠を明示しています</b><br><span class="muted">仕入価格が登録されている場合は「登録値」と明示。各マーケットの現在価格は公式API等で取得できた場合のみ自動表示し、取得できない場合は検索結果で確認します。</span></div><div class="row"><span>商品名</span><b>${esc(p.name)}</b></div><div class="row"><span>eBay想定売値</span><b>${Number(p.sell||0).toLocaleString('en-US')} USD</b></div><div class="row"><span>現在の仕入価格</span><b class="${p.cost>0?'green':'yellow'}">${p.cost>0?yen(p.cost):'未入力'}</b></div><p class="muted">${p.cost>0?'根拠：ツールに登録された仕入価格（マーケット現在価格ではありません）。':'根拠：未登録。下の各サイトで現在の出品価格を確認してください。'}</p><button class="secondary" type="button" onclick="document.getElementById('source-compare').style.display=document.getElementById('source-compare').style.display==='none'?'block':'none'">その他の仕入れ先候補も比較する</button><div id="source-compare" style="display:none;margin-top:10px"><h3>仕入れ先比較</h3>${rs.map(([name,base])=>{const href=base+(name==='スニダン'?'':q);return `<div class="card" style="margin:8px 0;padding:12px"><div class="row"><b>${esc(name)}</b><span class="yellow">現在価格：サイトで確認</span></div><div class="row"><span>検索条件</span><span>${esc(p.name)}</span></div><div class="row"><span>価格根拠</span><span>マーケットの現在の検索結果</span></div><a href="${href}" target="_blank" rel="noopener" style="font-weight:800">現在の出品を確認 →</a></div>`}).join('')}<div class="notice"><b>比較の注意</b><br><span class="muted">中古品は状態・付属品・送料・手数料で実質仕入額が変わります。表示価格だけでなく総額を確認してから仕入れ判断してください。</span></div></div></div>`}
+function install(){if(typeof window.detail!=='function')return false;const d=window.detail;if(d.__compareInstalled)return true;const w=function(id){d(id);const decoded=decodeURIComponent(id);const p=(window.data||[]).find(x=>String(x.id)===decoded);const old=document.getElementById('source-panel');if(!p||!old||!old.parentNode)return;old.outerHTML=panel(p)};w.__compareInstalled=true;window.detail=w;return true}
+let n=0;const t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},50);
+})();
