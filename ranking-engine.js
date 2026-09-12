@@ -38,7 +38,7 @@ async function useDaily(){snapshot=await snapshotPromise;if(!snapshot)return;con
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',useDaily);else useDaily();
 })();
 
-/* Sourcing links: never label a marketplace as in-stock unless live source data exists. */
+/* Sourcing links */
 (() => {
 'use strict';
 const sourceRules={
@@ -53,4 +53,24 @@ const yen=v=>v==null?'—':Math.round(Number(v||0)).toLocaleString()+'円';
 function sourcing(p){const rules=sourceRules[p.cat]||sourceRules['釣具'],q=encodeURIComponent(p.name||'');return '<h3>仕入れ先候補</h3><div class="notice"><b>実際の仕入れ候補をここから探せます。</b><br><span class="muted">現在の在庫・価格をこの画面では確定していません。各サイトで最新の出品内容を確認してください。</span></div>'+(p.cost>0?'<div class="row"><span>登録されている仕入価格</span><b>'+yen(p.cost)+'</b></div>':'<div class="row"><span>仕入価格</span><b class="yellow">未入力</b></div>')+rules.map(([name,base])=>'<div class="row"><span>'+name+'</span><a href="'+base+(name==='スニダン'?'':q)+'" target="_blank" rel="noopener">商品名で検索</a></div>').join('')}
 function wrapDetail(){if(typeof window.detail!=='function')return false;const original=window.detail;if(original.__sourcingWrapped)return true;const wrapped=function(id){original(id);const p=(window.data||[]).find(x=>encodeURIComponent(x.id)===id);const body=document.getElementById('body');if(!p||!body)return;const marker='<div id="source-panel">'+sourcing(p)+'</div>';body.insertAdjacentHTML('afterbegin',marker);const first=body.querySelector('.detail-image');if(first&&p.image)first.insertAdjacentHTML('afterend','<div class="row"><span>商品名</span><b>'+esc(p.name)+'</b></div><div class="row"><span>eBay売値</span><b>'+yen(p.sell)+' USD</b></div><div class="row"><span>仕入元データ</span><b>'+esc(p.source||'eBay')+'</b></div>');};wrapped.__sourcingWrapped=true;window.detail=wrapped;return true}
 const wait=setInterval(()=>{if(wrapDetail())clearInterval(wait)},50);setTimeout(()=>clearInterval(wait),10000);
+})();
+
+/* Improved sourcing evidence and expandable comparison */
+(() => {
+'use strict';
+const rules={
+ 'ポケモンカード':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
+ 'ポケモン関連サプライ用品':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
+ '釣具':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
+ 'カメラ':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
+ 'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']]
+};
+const e=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
+const yen=v=>v==null?'—':Math.round(Number(v||0)).toLocaleString()+'円';
+const usd=v=>v==null?'—':'$'+Number(v||0).toLocaleString(undefined,{maximumFractionDigits:2});
+function panel(p){const q=encodeURIComponent(p.name||''),list=rules[p.cat]||rules['釣具'];return '<h3>仕入れ先・価格の根拠</h3><div class="notice"><b>現在の仕入価格は「登録値」です。</b><br><span class="muted">メルカリ等の現在の在庫・出品価格を自動確定したものではありません。購入前に各サイトの最新価格・状態・送料を確認してください。</span></div><div class="row"><span>商品名</span><b>'+e(p.name)+'</b></div><div class="row"><span>eBay想定売値</span><b>'+usd(p.sell)+'</b></div><div class="row"><span>登録仕入価格</span><b>'+(p.cost>0?yen(p.cost):'<span class="yellow">未入力</span>')+'</b></div><button id="source-compare-btn" class="secondary" type="button">その他の仕入れ先候補も比較する</button><div id="source-compare" style="display:none;margin-top:10px">'+list.map(([name,base])=>'<div class="card" style="margin:8px 0;padding:12px"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+name+'</b><b class="yellow">現在価格：未取得</b></div><div class="muted" style="margin:5px 0">商品名で検索し、現在の出品価格・状態・送料を比較</div><a href="'+base+q+'" target="_blank" rel="noopener">'+name+'で現在の候補を見る →</a></div>').join('')+'</div>'}
+function currentProduct(){const title=document.getElementById('title')?.textContent||'';return (window.data||[]).find(p=>p&&p.name&&title.includes(p.name))||null}
+function replacePanel(){const body=document.getElementById('body');const p=currentProduct();if(!body||!p)return;const old=document.getElementById('source-panel');if(old)old.remove();body.insertAdjacentHTML('afterbegin','<div id="source-panel">'+panel(p)+'</div>');const btn=document.getElementById('source-compare-btn'),box=document.getElementById('source-compare');if(btn&&box)btn.onclick=()=>{const open=box.style.display!=='none';box.style.display=open?'none':'block';btn.textContent=open?'その他の仕入れ先候補も比較する':'仕入れ先候補を閉じる'};const first=body.querySelector('.detail-image');if(first){const meta=body.querySelector('[data-source-meta]');if(meta)meta.remove();first.insertAdjacentHTML('afterend','<div data-source-meta><div class="row"><span>商品名</span><b>'+e(p.name)+'</b></div><div class="row"><span>eBay想定売値</span><b>'+usd(p.sell)+'</b></div></div>')}}
+document.addEventListener('click',ev=>{if(ev.target.closest('.product'))setTimeout(replacePanel,30)});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.closest('.product'))setTimeout(replacePanel,30)});
 })();
