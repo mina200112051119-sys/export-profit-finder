@@ -1,15 +1,97 @@
 (() => {
 'use strict';
+
 const rules={
- 'ポケモンカード':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
- 'ポケモン関連サプライ用品':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
- '釣具':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
- 'カメラ':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
- 'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']]
+  'ポケモンカード':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
+  'ポケモン関連サプライ用品':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
+  '釣具':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
+  'カメラ':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
+  'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']]
 };
+
 const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
 const yen=v=>v==null?'—':Math.round(Number(v||0)).toLocaleString('ja-JP')+'円';
-function panel(p){const rs=rules[p.cat]||rules['釣具'],q=encodeURIComponent(p.name||'');return `<div id="source-panel" class="card" style="margin-top:12px"><h3>仕入れ価格の根拠・比較</h3><div class="notice"><b>価格の根拠を明示しています</b><br><span class="muted">仕入価格が登録されている場合は「登録値」と明示。各マーケットの現在価格は公式API等で取得できた場合のみ自動表示し、取得できない場合は検索結果で確認します。</span></div><div class="row"><span>商品名</span><b>${esc(p.name)}</b></div><div class="row"><span>eBay想定売値</span><b>${Number(p.sell||0).toLocaleString('en-US')} USD</b></div><div class="row"><span>現在の仕入価格</span><b class="${p.cost>0?'green':'yellow'}">${p.cost>0?yen(p.cost):'未入力'}</b></div><p class="muted">${p.cost>0?'根拠：ツールに登録された仕入価格（マーケット現在価格ではありません）。':'根拠：未登録。下の各サイトで現在の出品価格を確認してください。'}</p><button class="secondary" type="button" onclick="document.getElementById('source-compare').style.display=document.getElementById('source-compare').style.display==='none'?'block':'none'">その他の仕入れ先候補も比較する</button><div id="source-compare" style="display:none;margin-top:10px"><h3>仕入れ先比較</h3>${rs.map(([name,base])=>{const href=base+(name==='スニダン'?'':q);return `<div class="card" style="margin:8px 0;padding:12px"><div class="row"><b>${esc(name)}</b><span class="yellow">現在価格：サイトで確認</span></div><div class="row"><span>検索条件</span><span>${esc(p.name)}</span></div><div class="row"><span>価格根拠</span><span>マーケットの現在の検索結果</span></div><a href="${href}" target="_blank" rel="noopener" style="font-weight:800">現在の出品を確認 →</a></div>`}).join('')}<div class="notice"><b>比較の注意</b><br><span class="muted">中古品は状態・付属品・送料・手数料で実質仕入額が変わります。表示価格だけでなく総額を確認してから仕入れ判断してください。</span></div></div></div>`}
-function install(){if(typeof window.detail!=='function')return false;const d=window.detail;if(d.__compareInstalled)return true;const w=function(id){d(id);const decoded=decodeURIComponent(id);const p=(window.data||[]).find(x=>String(x.id)===decoded);const old=document.getElementById('source-panel');if(!p||!old||!old.parentNode)return;old.outerHTML=panel(p)};w.__compareInstalled=true;window.detail=w;return true}
-let n=0;const t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},50);
+const moneyClass=v=>Number(v)<0?'red':Number(v)>=0?'green':'yellow';
+
+function getProductName(){
+  const title=document.getElementById('title');
+  return title?.textContent?.trim()||'この商品';
+}
+
+function installRiskDetail(){
+  if(typeof window.detail!=='function'||window.detail.__stableRiskInstalled)return false;
+  const original=window.detail;
+  const wrapped=function(id){
+    original(id);
+    requestAnimationFrame(()=>{
+      const body=document.getElementById('body');
+      if(!body)return;
+      const table=body.querySelector('.risk-table');
+      if(!table)return;
+      const rows=[...table.querySelectorAll('tr')].slice(1);
+      if(!rows.length)return;
+
+      let box=document.getElementById('risk-detail-box');
+      if(box)box.remove();
+      table.style.display='none';
+
+      const data=rows.map(row=>{
+        const cells=[...row.children].map(x=>x.textContent.trim());
+        return {days:cells[0]||'',sale:cells[1]||'—',profit:cells[2]||'—',risk:cells[3]||'要確認'};
+      });
+      const riskClass=r=>r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow';
+      const first=data[0];
+      box=document.createElement('div');
+      box.id='risk-detail-box';
+      box.innerHTML=`<div class="notice" style="margin-top:10px"><b>売れ残りリスク</b><br><span class="muted">売れなかった場合に、価格を下げたときの利益を30・60・90日後で確認できます。</span></div><div class="card" style="margin-top:10px;padding:12px"><div class="row"><span>30日後の想定利益</span><b class="${moneyClass(parseInt(first.profit.replace(/[^-0-9]/g,''),10))}">${esc(first.profit)}</b></div><div class="row"><span>30日後のリスク</span><b class="${riskClass(first.risk)}">${esc(first.risk)}</b></div><button id="risk-detail-toggle" class="secondary" type="button" aria-expanded="false">30・60・90日後の詳細を見る</button><div id="risk-detail-content" hidden style="margin-top:10px"><table class="risk-table" style="display:table"><thead><tr><th>期間</th><th>想定売価</th><th>利益</th><th>リスク</th></tr></thead><tbody>${data.map(x=>`<tr><td>${esc(x.days)}</td><td>${esc(x.sale)}</td><td>${esc(x.profit)}</td><td class="${riskClass(x.risk)}">${esc(x.risk)}</td></tr>`).join('')}</tbody></table><div class="notice" style="margin-top:10px"><b>見方</b><br><span class="muted">30日→60日→90日の順に、売れ残って価格を下げた場合を想定しています。利益がマイナスなら赤字です。</span></div></div></div>`;
+      table.parentNode.insertBefore(box,table);
+      const toggle=box.querySelector('#risk-detail-toggle');
+      const content=box.querySelector('#risk-detail-content');
+      toggle.addEventListener('click',()=>{
+        const open=!content.hidden;
+        content.hidden=open;
+        toggle.setAttribute('aria-expanded',String(!open));
+        toggle.textContent=open?'30・60・90日後の詳細を見る':'詳細を閉じる';
+      });
+    });
+  };
+  wrapped.__stableRiskInstalled=true;
+  window.detail=wrapped;
+  return true;
+}
+
+function installSourcing(){
+  if(typeof window.detail!=='function'||window.detail.__stableSourceInstalled)return false;
+  const original=window.detail;
+  const wrapped=function(id){
+    original(id);
+    requestAnimationFrame(()=>{
+      const body=document.getElementById('body');
+      if(!body||document.getElementById('source-panel'))return;
+      const name=getProductName();
+      const q=encodeURIComponent(name);
+      const category=(body.textContent.match(/ポケモン|釣具|カメラ|ゲーム/)||[])[0];
+      const rs=rules[category]||rules['釣具'];
+      const panel=document.createElement('div');
+      panel.id='source-panel';
+      panel.className='card';
+      panel.style.marginTop='12px';
+      panel.innerHTML=`<h3>仕入れ価格の根拠・比較</h3><div class="notice"><b>仕入れ価格を確認できます</b><br><span class="muted">下のサイトで現在の出品価格を確認して、実際にかかる送料なども含めて仕入れ判断してください。</span></div><div class="row"><span>商品名</span><b>${esc(name)}</b></div><button class="secondary" type="button" id="source-toggle">その他の仕入れ先候補も比較する</button><div id="source-content" hidden style="margin-top:10px"><h3>仕入れ先比較</h3>${rs.map(([label,base])=>`<div class="card" style="margin:8px 0;padding:12px"><div class="row"><b>${esc(label)}</b><span class="yellow">現在価格：サイトで確認</span></div><a href="${base}${q}" target="_blank" rel="noopener" style="font-weight:800">現在の出品を確認 →</a></div>`).join('')}<div class="notice"><b>比較の注意</b><br><span class="muted">中古品は状態・付属品・送料などで実際の仕入額が変わります。表示価格だけで決めないでください。</span></div></div>`;
+      body.appendChild(panel);
+      const toggle=panel.querySelector('#source-toggle');
+      const content=panel.querySelector('#source-content');
+      toggle.addEventListener('click',()=>{const open=!content.hidden;content.hidden=open;toggle.textContent=open?'その他の仕入れ先候補も比較する':'仕入れ先比較を閉じる';});
+    });
+  };
+  wrapped.__stableSourceInstalled=true;
+  window.detail=wrapped;
+  return true;
+}
+
+let tries=0;
+const timer=setInterval(()=>{
+  const a=installRiskDetail();
+  const b=installSourcing();
+  if((a||b)||++tries>200)clearInterval(timer);
+},50);
 })();
