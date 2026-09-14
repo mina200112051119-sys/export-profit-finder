@@ -10,88 +10,66 @@ const rules={
 };
 
 const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
-const yen=v=>v==null?'—':Math.round(Number(v||0)).toLocaleString('ja-JP')+'円';
 const moneyClass=v=>Number(v)<0?'red':Number(v)>=0?'green':'yellow';
 
-function getProductName(){
-  const title=document.getElementById('title');
-  return title?.textContent?.trim()||'この商品';
+function getProductName(){return document.getElementById('title')?.textContent?.trim()||'この商品';}
+
+function ensureModalScroll(){
+  const style=document.createElement('style');
+  style.id='stable-detail-style';
+  style.textContent='.modal-backdrop.open{overflow:hidden}.modal{max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}.modal #body{padding-bottom:24px}.risk-table{display:table}';
+  if(!document.getElementById(style.id))document.head.appendChild(style);
 }
 
-function installRiskDetail(){
-  if(typeof window.detail!=='function'||window.detail.__stableRiskInstalled)return false;
-  const original=window.detail;
-  const wrapped=function(id){
-    original(id);
-    requestAnimationFrame(()=>{
-      const body=document.getElementById('body');
-      if(!body)return;
-      const table=body.querySelector('.risk-table');
-      if(!table)return;
-      const rows=[...table.querySelectorAll('tr')].slice(1);
-      if(!rows.length)return;
-
-      let box=document.getElementById('risk-detail-box');
-      if(box)box.remove();
-      table.style.display='none';
-
-      const data=rows.map(row=>{
-        const cells=[...row.children].map(x=>x.textContent.trim());
-        return {days:cells[0]||'',sale:cells[1]||'—',profit:cells[2]||'—',risk:cells[3]||'要確認'};
-      });
-      const riskClass=r=>r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow';
-      const first=data[0];
-      box=document.createElement('div');
-      box.id='risk-detail-box';
-      box.innerHTML=`<div class="notice" style="margin-top:10px"><b>売れ残りリスク</b><br><span class="muted">売れなかった場合に、価格を下げたときの利益を30・60・90日後で確認できます。</span></div><div class="card" style="margin-top:10px;padding:12px"><div class="row"><span>30日後の想定利益</span><b class="${moneyClass(parseInt(first.profit.replace(/[^-0-9]/g,''),10))}">${esc(first.profit)}</b></div><div class="row"><span>30日後のリスク</span><b class="${riskClass(first.risk)}">${esc(first.risk)}</b></div><button id="risk-detail-toggle" class="secondary" type="button" aria-expanded="false">30・60・90日後の詳細を見る</button><div id="risk-detail-content" hidden style="margin-top:10px"><table class="risk-table" style="display:table"><thead><tr><th>期間</th><th>想定売価</th><th>利益</th><th>リスク</th></tr></thead><tbody>${data.map(x=>`<tr><td>${esc(x.days)}</td><td>${esc(x.sale)}</td><td>${esc(x.profit)}</td><td class="${riskClass(x.risk)}">${esc(x.risk)}</td></tr>`).join('')}</tbody></table><div class="notice" style="margin-top:10px"><b>見方</b><br><span class="muted">30日→60日→90日の順に、売れ残って価格を下げた場合を想定しています。利益がマイナスなら赤字です。</span></div></div></div>`;
-      table.parentNode.insertBefore(box,table);
-      const toggle=box.querySelector('#risk-detail-toggle');
-      const content=box.querySelector('#risk-detail-content');
-      toggle.addEventListener('click',()=>{
-        const open=!content.hidden;
-        content.hidden=open;
-        toggle.setAttribute('aria-expanded',String(!open));
-        toggle.textContent=open?'30・60・90日後の詳細を見る':'詳細を閉じる';
-      });
-    });
-  };
-  wrapped.__stableRiskInstalled=true;
-  window.detail=wrapped;
+function injectRiskDetail(){
+  const body=document.getElementById('body');
+  if(!body||document.getElementById('risk-detail-box'))return false;
+  const table=body.querySelector('.risk-table');
+  if(!table)return false;
+  const rows=[...table.querySelectorAll('tbody tr')];
+  if(!rows.length)return false;
+  const data=rows.map(row=>{
+    const cells=[...row.children].map(x=>x.textContent.trim());
+    return {days:cells[0]||'',sale:cells[1]||'—',profit:cells[2]||'—',risk:cells[3]||'要確認'};
+  });
+  const riskClass=r=>r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow';
+  table.style.display='none';
+  const first=data[0];
+  const box=document.createElement('div');
+  box.id='risk-detail-box';
+  box.innerHTML=`<div class="notice" style="margin-top:10px"><b>売れ残りリスク</b><br><span class="muted">売れなかった場合に、価格を下げたときの利益を30・60・90日後で確認できます。</span></div><div class="card" style="margin-top:10px;padding:12px"><div class="row"><span>30日後の想定利益</span><b class="${moneyClass(parseInt(first.profit.replace(/[^-0-9]/g,''),10))}">${esc(first.profit)}</b></div><div class="row"><span>30日後のリスク</span><b class="${riskClass(first.risk)}">${esc(first.risk)}</b></div><button id="risk-detail-toggle" class="secondary" type="button" aria-expanded="false">30・60・90日後の詳細を見る</button><div id="risk-detail-content" hidden style="margin-top:10px"><table class="risk-table"><thead><tr><th>期間</th><th>想定売価</th><th>利益</th><th>リスク</th></tr></thead><tbody>${data.map(x=>`<tr><td>${esc(x.days)}</td><td>${esc(x.sale)}</td><td>${esc(x.profit)}</td><td class="${riskClass(x.risk)}">${esc(x.risk)}</td></tr>`).join('')}</tbody></table><div class="notice" style="margin-top:10px"><b>見方</b><br><span class="muted">30日→60日→90日の順に、売れ残って価格を下げた場合を想定しています。利益がマイナスなら赤字です。</span></div></div></div>`;
+  table.parentNode.insertBefore(box,table);
+  const toggle=box.querySelector('#risk-detail-toggle');
+  const content=box.querySelector('#risk-detail-content');
+  toggle.addEventListener('click',()=>{const open=!content.hidden;content.hidden=open;toggle.setAttribute('aria-expanded',String(!open));toggle.textContent=open?'30・60・90日後の詳細を見る':'詳細を閉じる';});
   return true;
 }
 
-function installSourcing(){
-  if(typeof window.detail!=='function'||window.detail.__stableSourceInstalled)return false;
-  const original=window.detail;
-  const wrapped=function(id){
-    original(id);
-    requestAnimationFrame(()=>{
-      const body=document.getElementById('body');
-      if(!body||document.getElementById('source-panel'))return;
-      const name=getProductName();
-      const q=encodeURIComponent(name);
-      const category=(body.textContent.match(/ポケモン|釣具|カメラ|ゲーム/)||[])[0];
-      const rs=rules[category]||rules['釣具'];
-      const panel=document.createElement('div');
-      panel.id='source-panel';
-      panel.className='card';
-      panel.style.marginTop='12px';
-      panel.innerHTML=`<h3>仕入れ価格の根拠・比較</h3><div class="notice"><b>仕入れ価格を確認できます</b><br><span class="muted">下のサイトで現在の出品価格を確認して、実際にかかる送料なども含めて仕入れ判断してください。</span></div><div class="row"><span>商品名</span><b>${esc(name)}</b></div><button class="secondary" type="button" id="source-toggle">その他の仕入れ先候補も比較する</button><div id="source-content" hidden style="margin-top:10px"><h3>仕入れ先比較</h3>${rs.map(([label,base])=>`<div class="card" style="margin:8px 0;padding:12px"><div class="row"><b>${esc(label)}</b><span class="yellow">現在価格：サイトで確認</span></div><a href="${base}${q}" target="_blank" rel="noopener" style="font-weight:800">現在の出品を確認 →</a></div>`).join('')}<div class="notice"><b>比較の注意</b><br><span class="muted">中古品は状態・付属品・送料などで実際の仕入額が変わります。表示価格だけで決めないでください。</span></div></div>`;
-      body.appendChild(panel);
-      const toggle=panel.querySelector('#source-toggle');
-      const content=panel.querySelector('#source-content');
-      toggle.addEventListener('click',()=>{const open=!content.hidden;content.hidden=open;toggle.textContent=open?'その他の仕入れ先候補も比較する':'仕入れ先比較を閉じる';});
-    });
-  };
-  wrapped.__stableSourceInstalled=true;
-  window.detail=wrapped;
+function injectSourcing(){
+  const body=document.getElementById('body');
+  if(!body||document.getElementById('source-panel'))return false;
+  const name=getProductName();
+  const q=encodeURIComponent(name);
+  const text=(document.getElementById('title')?.textContent||'')+' '+body.textContent;
+  const category=text.includes('ポケモン')?'ポケモンカード':text.includes('釣具')?'釣具':text.includes('カメラ')?'カメラ':text.includes('ゲーム')?'レトロゲーム':'釣具';
+  const rs=rules[category];
+  const panel=document.createElement('div');
+  panel.id='source-panel';panel.className='card';panel.style.marginTop='12px';
+  panel.innerHTML=`<h3>仕入れ価格の根拠・比較</h3><div class="notice"><b>仕入れ価格を確認できます</b><br><span class="muted">下のサイトで現在の出品価格を確認して、実際にかかる送料なども含めて仕入れ判断してください。</span></div><div class="row"><span>商品名</span><b>${esc(name)}</b></div><button class="secondary" type="button" id="source-toggle">その他の仕入れ先候補も比較する</button><div id="source-content" hidden style="margin-top:10px"><h3>仕入れ先比較</h3>${rs.map(([label,base])=>`<div class="card" style="margin:8px 0;padding:12px"><div class="row"><b>${esc(label)}</b><span class="yellow">現在価格：サイトで確認</span></div><a href="${base}${q}" target="_blank" rel="noopener" style="font-weight:800">現在の出品を確認 →</a></div>`).join('')}<div class="notice"><b>比較の注意</b><br><span class="muted">中古品は状態・付属品・送料などで実際の仕入額が変わります。表示価格だけで決めないでください。</span></div></div>`;
+  body.appendChild(panel);
+  const toggle=panel.querySelector('#source-toggle');
+  const content=panel.querySelector('#source-content');
+  toggle.addEventListener('click',()=>{const open=!content.hidden;content.hidden=open;toggle.textContent=open?'その他の仕入れ先候補も比較する':'仕入れ先比較を閉じる';});
   return true;
 }
 
-let tries=0;
-const timer=setInterval(()=>{
-  const a=installRiskDetail();
-  const b=installSourcing();
-  if((a||b)||++tries>200)clearInterval(timer);
-},50);
+ensureModalScroll();
+const observer=new MutationObserver(()=>{
+  const modal=document.getElementById('modal');
+  if(!modal?.classList.contains('open'))return;
+  injectRiskDetail();
+  injectSourcing();
+});
+const start=()=>{const body=document.getElementById('body');if(body)observer.observe(body,{childList:true,subtree:true});};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
