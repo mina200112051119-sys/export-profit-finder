@@ -5,6 +5,7 @@ on:
     paths:
       - 'live-api.js'
       - 'cost-fix.js'
+      - 'sourcing-compare.js'
       - '.github/workflows/inject-live-api.yml'
 
 permissions:
@@ -30,7 +31,11 @@ jobs:
           new="const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':''; const API=API_BASE+'/api/ebay-search',SOLD=API_BASE+'/api/ebay-sold-search',FX=API_BASE+'/api/exchange-rate',IMAGE_API=API_BASE+'/api/ebay-search-by-image';"
           s=s.replace(old,new)
 
-          tags=['<script src="./live-api.js"></script>','<script src="./cost-fix.js"></script>']
+          tags=[
+              '<script src="./live-api.js"></script>',
+              '<script src="./cost-fix.js"></script>',
+              '<script src="./sourcing-compare.js"></script>'
+          ]
           marker='</body>'
           if marker not in s:
               raise SystemExit('index.html に </body> が見つかりません')
@@ -44,5 +49,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'fix: make GitHub Pages frontend load ranking engine and Vercel APIs'
+          git diff --cached --quiet || git commit -m 'fix: enable detail risk panel and stable modal scrolling'
           git push
