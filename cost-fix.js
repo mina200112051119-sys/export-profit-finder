@@ -69,4 +69,25 @@ function simulateRisk(p,s={}){
 E.breakEvenPrice=breakEvenPrice;
 E.simulateRisk=simulateRisk;
 window.ExportCostFix={breakEvenPrice,simulateRisk};
+
+// 詳細画面の意味を明確にする。数値そのものはRankingEngineの計算結果を使用する。
+function decorateDetail(){
+  const body=document.getElementById('body');
+  if(!body||!body.children.length)return;
+  const rows=[...body.querySelectorAll('.row')];
+  rows.forEach(row=>{
+    const label=row.querySelector('span');
+    if(!label)return;
+    if(label.textContent.trim()==='総合評価')label.textContent='総合評価（ツール独自）';
+    if(label.textContent.trim()==='損益分岐点')label.textContent='損益分岐点（現在の送料・手数料前提）';
+    if(label.textContent.trim()==='データ信頼度')label.textContent='データ信頼度（取得データ量ベース）';
+  });
+}
+
+const body=document.getElementById('body');
+if(body){
+  const observer=new MutationObserver(decorateDetail);
+  observer.observe(body,{childList:true,subtree:true});
+  decorateDetail();
+}
 })();
