@@ -9,7 +9,7 @@ const rules={
   'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']]
 };
 
-const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
+const esc=v=>String(v??'').replace(/[&<>\\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\"':'&quot;',"'":'&#39;'}[m]));
 const moneyClass=v=>Number(v)<0?'red':Number(v)>=0?'green':'yellow';
 
 function getProductName(){return document.getElementById('title')?.textContent?.trim()||'この商品';}
@@ -32,10 +32,13 @@ function injectRiskDetail(){
   if(!body||document.getElementById('risk-detail-box'))return false;
   const table=body.querySelector('.risk-table');
   if(!table)return false;
-  const rows=[...table.querySelectorAll('tbody tr')];
+
+  // 元の表には見出し行が tbody に入るため、td が4個あるデータ行だけを対象にする。
+  const rows=[...table.querySelectorAll('tr')].filter(row=>row.querySelectorAll('td').length===4);
   if(!rows.length)return false;
+
   const data=rows.map(row=>{
-    const cells=[...row.children].map(x=>x.textContent.trim());
+    const cells=[...row.querySelectorAll('td')].map(x=>x.textContent.trim());
     return {days:cells[0]||'',sale:cells[1]||'—',profit:cells[2]||'—',risk:cells[3]||'要確認'};
   });
   const riskClass=r=>r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow';
@@ -43,7 +46,7 @@ function injectRiskDetail(){
   const first=data[0];
   const box=document.createElement('div');
   box.id='risk-detail-box';
-  box.innerHTML=`<div class="notice" style="margin-top:10px"><b>売れ残りリスク</b><br><span class="muted">売れなかった場合に、価格を下げたときの利益を30・60・90日後で確認できます。</span></div><div class="card" style="margin-top:10px;padding:12px"><div class="row"><span>30日後の想定利益</span><b class="${moneyClass(parseInt(first.profit.replace(/[^-0-9]/g,''),10))}">${esc(first.profit)}</b></div><div class="row"><span>30日後のリスク</span><b class="${riskClass(first.risk)}">${esc(first.risk)}</b></div><button id="risk-detail-toggle" class="secondary" type="button" aria-expanded="false">30・60・90日後の詳細を見る</button><div id="risk-detail-content" hidden style="margin-top:10px"><table class="risk-table"><thead><tr><th>期間</th><th>想定売価</th><th>利益</th><th>リスク</th></tr></thead><tbody>${data.map(x=>`<tr><td>${esc(x.days)}</td><td>${esc(x.sale)}</td><td>${esc(x.profit)}</td><td class="${riskClass(x.risk)}">${esc(x.risk)}</td></tr>`).join('')}</tbody></table><div class="notice" style="margin-top:10px"><b>見方</b><br><span class="muted">30日→60日→90日の順に、売れ残って価格を下げた場合を想定しています。利益がマイナスなら赤字です。</span></div></div></div>`;
+  box.innerHTML=`<div class="notice" style="margin-top:10px"><b>売れ残りリスク</b><br><span class="muted">30・60・90日後は、売れ残って価格を下げた場合の<strong>想定・試算値</strong>です。将来の販売価格を保証するものではありません。</span></div><div class="card" style="margin-top:10px;padding:12px"><div class="row"><span>30日後の想定利益</span><b class="${moneyClass(parseInt(first.profit.replace(/[^-0-9]/g,''),10))}">${esc(first.profit)}</b></div><div class="row"><span>30日後のリスク</span><b class="${riskClass(first.risk)}">${esc(first.risk)}</b></div><button id="risk-detail-toggle" class="secondary" type="button" aria-expanded="false">30・60・90日後の詳細を見る</button><div id="risk-detail-content" hidden style="margin-top:10px"><table class="risk-table"><thead><tr><th>期間</th><th>想定売価</th><th>利益</th><th>リスク</th></tr></thead><tbody>${data.map(x=>`<tr><td>${esc(x.days)}</td><td>${esc(x.sale)}</td><td>${esc(x.profit)}</td><td class="${riskClass(x.risk)}">${esc(x.risk)}</td></tr>`).join('')}</tbody></table><div class="notice" style="margin-top:10px"><b>見方</b><br><span class="muted">30日→60日→90日の順に、売れ残って価格を下げた場合を想定しています。利益がマイナスなら赤字です。</span></div></div></div>`;
   table.parentNode.insertBefore(box,table);
   const toggle=box.querySelector('#risk-detail-toggle');
   const content=box.querySelector('#risk-detail-content');
