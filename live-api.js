@@ -1,56 +1,18 @@
 (function(){
-  const state={fx:null};
-  const yen=n=>Number.isFinite(Number(n))?Math.round(Number(n)).toLocaleString('ja-JP'):'-';
-  const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
-
-  async function loadFx(){
-    try{
-      const r=await fetch('/api/fx',{cache:'no-store'});
-      if(!r.ok) throw new Error('為替取得失敗');
-      state.fx=await r.json();
-      window.EXPORT_FX=state.fx.rate;
-      return state.fx.rate;
-    }catch(e){
-      state.fx=null;
-      return null;
-    }
-  }
-
-  function fee(){
-    const el=document.getElementById('marketFee');
-    return el?Number(el.value)/100:0.14;
-  }
-
-  async function liveSearch(){
-    const q=document.getElementById('searchName')?.value.trim();
-    const cat=document.getElementById('searchCat')?.value||'';
-    const cost=Number(document.getElementById('searchCost')?.value||0);
-    const target=Number(document.getElementById('targetProfit')?.value||0);
-    const box=document.getElementById('searchResult');
-    if(!box) return;
-    if(!q){box.innerHTML='<div class="warning">商品名・型番を入力してください。</div>';return;}
-    box.innerHTML='<div class="notice">eBayの現在の出品価格を取得しています…</div>';
-    try{
-      const fx=await loadFx();
-      if(!fx) throw new Error('為替レートを取得できませんでした');
-      const r=await fetch('/api/ebay-search?q='+encodeURIComponent(q),{cache:'no-store'});
-      const data=await r.json();
-      if(!r.ok) throw new Error(data.error||'eBay検索に失敗しました');
-      const items=(data.items||[]).map(x=>({...x,priceJpy:x.price*fx,shippingJpy:x.shipping*fx}));
-      if(!items.length){box.innerHTML='<div class="notice">eBayで現在の出品候補が見つかりませんでした。検索語を少し変えてください。</div>';return;}
-      const prices=items.map(x=>x.priceJpy).filter(x=>x>0);
-      const median=prices.sort((a,b)=>a-b)[Math.floor(prices.length/2)]||0;
-      const upper=Math.floor(median*(1-fee())-target);
-      box.innerHTML=`<div class="notice">カテゴリー：${esc(cat)}｜為替：1 USD = ${yen(fx)}円<br>現在のeBay出品 ${items.length}件を取得。目標利益 ${yen(target)}円を残すための仕入れ上限目安：<b>${yen(Math.max(0,upper))}円</b></div><div class="search-product-grid">${items.slice(0,12).map((p,i)=>`<div class="search-product-card"><${p.image?'img':'div'} class="search-product-image" ${p.image?`src="${esc(p.image)}" alt="" onerror="this.style.display='none'"`:''}>${p.image?'':'商品画像なし'}${p.image?'':'</div>'}<h3>${esc(p.title)}</h3><div class="row"><span>eBay価格</span><b>${yen(p.priceJpy)}円</b></div><div class="row"><span>送料</span><b>${yen(p.shippingJpy)}円</b></div><div class="muted">状態：${esc(p.condition||'不明')}</div><a class="primary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="${esc(p.url)}" target="_blank" rel="noopener">eBayで確認</a></div>`).join('')}</div><div class="warning">※これは現在出品されている価格です。売れた価格ではありません。実際の利益は送料・手数料・為替・商品の状態などで変わります。</div>`;
-    }catch(e){
-      box.innerHTML=`<div class="warning">最新データを取得できませんでした。${esc(e.message)}<br>eBayの認証情報がVercelに設定されているか確認してください。</div>`;
-    }
-  }
-
-  window.searchProduct=liveSearch;
-  window.addEventListener('DOMContentLoaded',async()=>{
-    const fx=await loadFx();
-    const status=document.getElementById('rankingStatus');
-    if(fx&&status) status.textContent=`為替：1 USD = ${yen(fx)}円｜eBayライブ検索を利用できます`;
-  });
+'use strict';
+const state={fx:null};
+const yen=n=>Number.isFinite(Number(n))?Math.round(Number(n)).toLocaleString('ja-JP'):'-';
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'';
+const SEARCH_API=API_BASE+'/api/ebay-search';
+const CATEGORY_API=API_BASE+'/api/ebay-categories';
+const SEEDS=['Pokemon trading cards','Pokemon TCG accessories','fishing tackle','camera','retro video games'];
+async function loadFx(){try{const r=await fetch(API_BASE+'/api/exchange-rate',{cache:'no-store'});if(!r.ok)throw Error('為替取得失敗');state.fx=await r.json();window.EXPORT_FX=state.fx.rate;return state.fx.rate;}catch(e){state.fx=null;return null;}}
+async function categorySuggestions(q){const r=await fetch(CATEGORY_API+'?q='+encodeURIComponent(q),{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'カテゴリー取得に失敗しました');return d.suggestions||[];}
+function injectCategoryUI(){if(document.getElementById('liveCategoryCard'))return;const host=document.querySelector('#recommend .card:nth-of-type(2)');if(!host)return;const card=document.createElement('div');card.id='liveCategoryCard';card.className='card';card.innerHTML='<h2>eBayカテゴリーから探す</h2><p class="muted">eBay公式カテゴリーを自動取得し、そのカテゴリーの現在の出品を取得してランキングします。カテゴリー構造の変更にも追従します。</p><div class="grid"><div><label>カテゴリー候補</label><select id="liveCategorySelect"><option value="">読み込み中…</option></select></div><div><label>カテゴリー名で検索</label><input id="liveCategoryQuery" placeholder="例：Nintendo Game Boy / Canon Camera"></div></div><button id="liveCategorySearch" class="primary">このカテゴリーをランキング</button><div id="liveCategoryStatus" class="status"></div>';host.parentNode.insertBefore(card,host.nextSibling);const sel=document.getElementById('liveCategorySelect');sel.addEventListener('change',()=>{sel.dataset.name=sel.options[sel.selectedIndex]?.textContent||'';});document.getElementById('liveCategoryQuery').addEventListener('keydown',e=>{if(e.key==='Enter')searchCategorySuggestions();});document.getElementById('liveCategorySearch').addEventListener('click',()=>runCategoryRanking(sel.value,sel.dataset.name||sel.options[sel.selectedIndex]?.textContent||''));}
+async function searchCategorySuggestions(){const q=document.getElementById('liveCategoryQuery')?.value.trim(),sel=document.getElementById('liveCategorySelect'),status=document.getElementById('liveCategoryStatus');if(!q||!sel)return;status.textContent='eBayカテゴリーを検索しています…';try{const list=await categorySuggestions(q);sel.innerHTML=list.length?list.slice(0,30).map(x=>'<option value="'+esc(x.categoryId)+'">'+esc(x.categoryName)+'</option>').join(''):'<option value="">候補なし</option>';if(list[0])sel.dataset.name=list[0].categoryName;status.textContent=list.length+'件のカテゴリー候補を取得しました。';}catch(e){status.textContent='カテゴリー取得エラー：'+e.message;}}
+async function runCategoryRanking(categoryId,categoryName){const status=document.getElementById('liveCategoryStatus'),ranking=document.getElementById('ranking');if(!categoryId||!ranking)return;status.textContent='eBayから現在の出品を取得してランキングを計算しています…';try{const fx=await loadFx();if(!fx)throw Error('為替レートを取得できませんでした');const r=await fetch(SEARCH_API+'?categoryId='+encodeURIComponent(categoryId)+'&limit=200',{cache:'no-store'}),d=await r.json();if(!r.ok)throw Error(d.error||'eBay検索に失敗しました');const items=(d.items||[]).map(x=>RankingEngine.normalizeProduct({id:x.itemId,name:x.title,cat:categoryName||'eBayカテゴリー',cost:0,sell:x.price,ship:x.shipping,image:x.image,url:x.url,condition:x.condition,source:'eBay現在出品（カテゴリー取得）'}));if(!items.length){status.textContent='このカテゴリーでは現在取得できる出品がありません。';return;}const ranked=RankingEngine.rank(items,{fxRate:fx,feeRate:.136,internationalRate:.0135,domesticShipping:+(document.getElementById('domestic')?.value||0),packaging:+(document.getElementById('pack')?.value||0),otherCost:+(document.getElementById('other')?.value||0),conversionFeeRate:+(document.getElementById('conv')?.value||0)});window.__LIVE_CATEGORY_DATA=ranked;ranking.innerHTML='<h2>eBayライブカテゴリーランキング：'+esc(categoryName||categoryId)+'</h2><p class="muted">現在取得できたeBay出品 '+items.length+'件（全体件数：'+Number(d.total||items.length).toLocaleString()+'件）を、利益・利益率・リスク等のツール独自基準で算出。実売履歴が取得できない商品は実売件数を推定していません。</p>'+ranked.slice(0,20).map((p,i)=>{const c=p.costs;return '<div class="card product" tabindex="0" onclick="detail(\''+encodeURIComponent(p.id)+'\')"><div style="display:flex;justify-content:space-between"><b>#'+(i+1)+'</b><span class="stars">'+p.stars+'</span></div><h3>'+esc(p.name)+'</h3><div class="row"><span>総合点</span><b class="score">'+p.totalScore+'点</b></div><div class="row"><span>eBay価格</span><b>'+yen(c.saleJpy)+'</b></div><div class="row"><span>予想利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit))+'</b></div><div class="row"><span>データ信頼度</span><b>'+p.confidence.level+'</b></div><button class="secondary" onclick="event.stopPropagation();detail(\''+encodeURIComponent(p.id)+'\')">詳細を見る</button></div>';}).join('');status.textContent='更新完了：'+new Date().toLocaleString('ja-JP')+'｜eBay総件数 '+Number(d.total||items.length).toLocaleString()+'｜取得 '+items.length+'件';localStorage.setItem('liveCategoryLastUpdate',Date.now().toString());}catch(e){status.textContent='最新カテゴリーランキングを取得できませんでした：'+e.message;}}
+async function liveSearch(){const q=document.getElementById('q')?.value.trim()||document.getElementById('searchName')?.value.trim(),box=document.getElementById('results')||document.getElementById('searchResult');if(!box)return;if(!q){box.innerHTML='<div class="warning">商品名・型番を入力してください。</div>';return;}box.innerHTML='<div class="notice">eBayの現在の出品価格を取得しています…</div>';try{const fx=await loadFx();if(!fx)throw Error('為替レートを取得できませんでした');const r=await fetch(SEARCH_API+'?q='+encodeURIComponent(q)+'&limit=50',{cache:'no-store'}),data=await r.json();if(!r.ok)throw Error(data.error||'eBay検索に失敗しました');const items=(data.items||[]).map(x=>({...x,priceJpy:x.price*fx,shippingJpy:x.shipping*fx}));if(!items.length){box.innerHTML='<div class="notice">eBayで現在の出品候補が見つかりませんでした。検索語を少し変えてください。</div>';return;}box.innerHTML=items.slice(0,20).map(p=>'<div class="search-card"><img src="'+esc(p.image)+'" alt=""><h3>'+esc(p.title)+'</h3><div class="row"><span>eBay価格</span><b>'+yen(p.priceJpy)+'</b></div><div class="row"><span>送料</span><b>'+yen(p.shippingJpy)+'</b></div><div class="muted">状態：'+esc(p.condition||'不明')+'</div><a class="primary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="'+esc(p.url)+'" target="_blank" rel="noopener">eBayで確認</a></div>').join('')+'<div class="warning" style="grid-column:1/-1">※現在出品されている価格です。売れた価格ではありません。実際の利益は状態・送料・手数料・為替等で変わります。</div>';}catch(e){box.innerHTML='<div class="warning">最新データを取得できませんでした。'+esc(e.message)+'<br>eBayの認証情報がVercelに設定されているか確認してください。</div>';}}
+window.searchProduct=liveSearch;window.search=liveSearch;window.runLiveCategoryRanking=runCategoryRanking;window.searchLiveCategory=searchCategorySuggestions;
+window.addEventListener('DOMContentLoaded',async()=>{const fx=await loadFx(),status=document.getElementById('rankingStatus');if(fx&&status)status.textContent='為替：1 USD = '+yen(fx)+'円｜eBayライブ検索を利用できます';injectCategoryUI();const sel=document.getElementById('liveCategorySelect');if(sel)try{const lists=await Promise.all(SEEDS.map(categorySuggestions)),seen=new Set(),opts=[];lists.flat().forEach(x=>{if(!seen.has(x.categoryId)){seen.add(x.categoryId);opts.push(x);}});sel.innerHTML=opts.slice(0,40).map(x=>'<option value="'+esc(x.categoryId)+'">'+esc(x.categoryName)+'</option>').join('')||'<option value="">候補なし</option>';if(opts[0])sel.dataset.name=opts[0].categoryName;const last=Number(localStorage.getItem('liveCategoryLastUpdate')||0);if(opts[0]&&(!last||Date.now()-last>86400000))runCategoryRanking(opts[0].categoryId,opts[0].categoryName);}catch(e){const s=document.getElementById('liveCategoryStatus');if(s)s.textContent='カテゴリー自動取得に失敗しました：'+e.message;}});
 })();
