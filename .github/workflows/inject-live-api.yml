@@ -16,12 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inject frontend scripts
+      - name: Fix GitHub Pages paths and inject frontend scripts
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
+
+          # GitHub Pages is hosted under /export-profit-finder/.
+          # Keep the frontend working there while Vercel provides /api/*.
+          s=s.replace('<script src="/ranking-engine.js"></script>', '<script src="./ranking-engine.js"></script>')
+          old="const API='/api/ebay-search',SOLD='/api/ebay-sold-search',FX='/api/exchange-rate',IMAGE_API='/api/ebay-search-by-image';"
+          new="const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':''; const API=API_BASE+'/api/ebay-search',SOLD=API_BASE+'/api/ebay-sold-search',FX=API_BASE+'/api/exchange-rate',IMAGE_API=API_BASE+'/api/ebay-search-by-image';"
+          s=s.replace(old,new)
+
           tags=['<script src="./live-api.js"></script>','<script src="./cost-fix.js"></script>']
           marker='</body>'
           if marker not in s:
@@ -31,10 +39,10 @@ jobs:
                   s=s.replace(marker, tag+'\n'+marker, 1)
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Commit injected script tags
+      - name: Commit fixed frontend
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Connect frontend to live eBay, FX, and cost calculation APIs'
+          git diff --cached --quiet || git commit -m 'fix: make GitHub Pages frontend load ranking engine and Vercel APIs'
           git push
