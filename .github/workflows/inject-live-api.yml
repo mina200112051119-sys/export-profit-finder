@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'live-api.js'
+      - 'cost-fix.js'
       - '.github/workflows/inject-live-api.yml'
 
 permissions:
@@ -15,24 +16,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inject script tag into index.html
+      - name: Inject frontend scripts
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          tag='<script src="./live-api.js"></script>'
-          if tag not in s:
-              marker='</body>'
-              if marker not in s:
-                  raise SystemExit('index.html に </body> が見つかりません')
-              s=s.replace(marker, tag+'\n'+marker, 1)
-              p.write_text(s,encoding='utf-8')
+          tags=['<script src="./live-api.js"></script>','<script src="./cost-fix.js"></script>']
+          marker='</body>'
+          if marker not in s:
+              raise SystemExit('index.html に </body> が見つかりません')
+          for tag in tags:
+              if tag not in s:
+                  s=s.replace(marker, tag+'\n'+marker, 1)
+          p.write_text(s,encoding='utf-8')
           PY
-      - name: Commit injected script tag
+      - name: Commit injected script tags
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || git commit -m 'Connect frontend to live eBay and FX APIs'
+          git diff --cached --quiet || git commit -m 'Connect frontend to live eBay, FX, and cost calculation APIs'
           git push
