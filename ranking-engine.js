@@ -85,7 +85,7 @@ function rankNeedsReview(products,s={},category=null){
     .filter(p=>!(p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0 && p.risk!=='要確認' && p.confidence!=='低'))
     .sort((a,b)=>b.totalScore-a.totalScore);
 }
-window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank:rankV2,evidenceSummary,riskAdjustedMetrics,scoreV2};
+window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank:rankV2,rankNeedsReview,evidenceSummary,riskAdjustedMetrics,scoreV2};
 
 })();
 
