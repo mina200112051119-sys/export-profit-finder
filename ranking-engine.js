@@ -70,8 +70,20 @@ function scoreV2(raw,s={},universe=[]){
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
-  return src.map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
+  // 「おすすめ」は仕入れ判断に必要な最低限の実データが揃った商品だけを対象にする。
+  // 仕入価格なし・過去90日販売データなしは、点数を付けてもおすすめ順位には入れない。
+  return src
+    .filter(p=>p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0)
+    .map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
+    .filter(p=>p.risk!=='要確認' && p.confidence!=='低')
     .sort((a,b)=>b.totalScore-a.totalScore||(b.riskMetrics.riskAdjustedProfit||-Infinity)-(a.riskMetrics.riskAdjustedProfit||-Infinity));
+}
+function rankNeedsReview(products,s={},category=null){
+  const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
+  return src
+    .map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
+    .filter(p=>!(p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0 && p.risk!=='要確認' && p.confidence!=='低'))
+    .sort((a,b)=>b.totalScore-a.totalScore);
 }
 window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank:rankV2,evidenceSummary,riskAdjustedMetrics,scoreV2};
 
