@@ -54,24 +54,28 @@ function scoreV2(raw,s={},universe=[]){
   const p=normalizeProduct(raw);
   const m=riskAdjustedMetrics(p,s);
   const base=scoreProduct(p,s,universe);
+  // 仕入価格が未入力でも、販売実績・売れ行き・相場安定性・手数料・トレンド等から
+  // 暫定総合点を算出する。利益だけは「判定保留」として0点扱いにしない。
   const confidenceScore=m.confidence==='高'?100:m.confidence==='中'?70:35;
-  const downsideScore=m.worst90==null?35:(m.worst90<=0?20:clamp(50+(m.worst90/Math.max(p.cost||1,1))*50));
-  const profitScoreV2=m.riskAdjustedProfit==null?0:clamp(50+(m.riskAdjustedProfit/Math.max(p.cost||1,1))*50);
+  const downsideScore=m.worst90==null?55:(m.worst90<=0?20:clamp(50+(m.worst90/Math.max(p.cost||1,1))*50));
+  const profitScoreV2=m.riskAdjustedProfit==null?null:clamp(50+(m.riskAdjustedProfit/Math.max(p.cost||1,1))*50);
+  const profitComponent=profitScoreV2==null?50:profitScoreV2;
   const total=round(clamp(
     base.scores.sellability*.30+
-    profitScoreV2*.25+
+    profitComponent*.25+
     base.scores.stability*.10+
     downsideScore*.15+
     confidenceScore*.15+
     base.scores.fees*.05
   ));
-  const risk=m.worst90==null?'要確認':m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
+  const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
   if(m.currentProfit!=null) recommendationReasons.push('予想利益 '+(m.currentProfit>=0?'+':'')+Math.round(m.currentProfit).toLocaleString()+'円');
+  else recommendationReasons.push('利益は仕入価格入力後に判定');
   if(m.soldHistoryAvailable) recommendationReasons.push('過去90日販売 '+m.soldHistoryCount+'件');
   recommendationReasons.push('リスク '+risk);
   recommendationReasons.push('信頼度 '+m.confidence);
-  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons};
+  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0};
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
