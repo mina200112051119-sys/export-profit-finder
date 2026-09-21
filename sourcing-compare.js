@@ -1,100 +1,217 @@
 (() => {
 'use strict';
 
-const rules={
-  'ポケモンカード':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
-  'ポケモン関連サプライ用品':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p='],['スニダン','https://snkrdunk.com/search']],
-  '釣具':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
-  'カメラ':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']],
-  'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword='],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=']]
-};
+const SOURCES = [
+  ['メルカリ','mercari','https://jp.mercari.com/search?keyword='],
+  ['スニダン','snkrdunk','https://snkrdunk.com/search?keyword='],
+  ['ヤフオク','yahooAuctions','https://auctions.yahoo.co.jp/search/search?p=']
+];
 
-const esc=v=>String(v??'').replace(/[&<>\\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\"':'&quot;',"'":'&#39;'}[m]));
-const moneyClass=v=>Number(v)<0?'red':Number(v)>=0?'green':'yellow';
+const CONDITIONS = ['新品','未使用','美品','中古','傷あり','ジャンク','状態不明'];
 
-function getProductName(){return document.getElementById('title')?.textContent?.trim()||'この商品';}
+const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[m]));
+const yen = v => Number.isFinite(Number(v))
+  ? Math.round(Number(v)).toLocaleString('ja-JP') + '円' : '—';
 
-function ensureModalScroll(){
-  if(document.getElementById('stable-detail-style'))return;
-  const style=document.createElement('style');
-  style.id='stable-detail-style';
-  style.textContent=`
-    .modal-backdrop.open{overflow:hidden}
-    .modal{max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-    .modal #body{padding-bottom:40px}
-    #risk-detail-box,#source-panel{display:block;width:100%}
+function keyFor(p) {
+  return 'sourcingCandidates:v1:' + String(p.id || p.name || '').slice(0,300);
+}
+function readCandidates(p) {
+  try { return JSON.parse(localStorage.getItem(keyFor(p)) || '[]'); }
+  catch { return []; }
+}
+function writeCandidates(p, rows) {
+  localStorage.setItem(keyFor(p), JSON.stringify(rows));
+}
+function categoryOf(p) {
+  return p.cat || '釣具';
+}
+function feeOf(p) {
+  const fees = {
+    'ポケモンカード':.1325,
+    'ポケモン関連サプライ用品':.136,
+    '釣具':.136,
+    'カメラ':.0935,
+    'レトロゲーム':.136
+  };
+  return fees[categoryOf(p)] ?? .136;
+}
+function settings() {
+  const g=id => Number(document.getElementById(id)?.value || 0);
+  return {
+    fxRate: Number(window.__exportApp?.getFx?.() || 150),
+    feeRate: feeOf(window.__exportSourcingProduct || {}),
+    internationalRate: .0135,
+    domesticShipping: g('domestic'),
+    packaging: g('pack'),
+    otherCost: g('other'),
+    conversionFeeRate: g('conv')
+  };
+}
+function candidateProfit(p, row) {
+  if (!(Number(p.sell) > 0) || !(Number(row.priceJpy) >= 0)) return null;
+  const fx = Number(window.__exportApp?.getFx?.() || 150);
+  const sellJpy = Number(p.sell) * fx;
+  const shipUsd = Number(p.ship) || 0;
+  const saleGross = Number(p.sell) + shipUsd;
+  const fee = feeOf(p);
+  const intl = .0135;
+  const conversion = saleGross * fx * (Number(document.getElementById('conv')?.value || 0) / 100);
+  const ebayFees = saleGross * (fee + intl) * fx + (saleGross <= 10 ? .30 : .40) * fx + conversion;
+  const domestic = Number(row.shippingJpy || 0) + Number(document.getElementById('pack')?.value || 0) + Number(document.getElementById('other')?.value || 0);
+  return Math.round(sellJpy - ebayFees - domestic - Number(row.priceJpy));
+}
+
+function currentProduct() {
+  const name = document.getElementById('title')?.textContent?.trim();
+  const list = window.__exportApp?.getData?.() || [];
+  return list.find(p => p && p.name === name) || null;
+}
+
+function searchUrl(p, source) {
+  const found = SOURCES.find(x => x[1] === source);
+  return found ? found[2] + encodeURIComponent(p.name || '') : '#';
+}
+
+function render(p) {
+  const panel = document.getElementById('source-panel');
+  if (!panel) return;
+  const rows = readCandidates(p);
+
+  panel.innerHTML = `
+    <h3>仕入れ候補を保存して比較</h3>
+    <div class="notice">
+      <b>検索した出品をここに登録できます。</b><br>
+      <span class="muted">価格・状態・送料を保存しておけば、後から3社を同じ画面で比較できます。自動取得した価格ではなく、ユーザーが確認して保存した情報です。</span>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3>① 現在の出品を探す</h3>
+      <div class="grid">
+        ${SOURCES.map(([label,source]) => `
+          <a class="tab" style="text-decoration:none;text-align:center" href="${esc(searchUrl(p,source))}" target="_blank" rel="noopener">
+            ${esc(label)}で検索
+          </a>`).join('')}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3>② 確認した出品を登録</h3>
+      <label>仕入先</label>
+      <select id="sc-source">
+        ${SOURCES.map(([label,source]) => `<option value="${source}">${label}</option>`).join('')}
+      </select>
+      <label>状態</label>
+      <select id="sc-condition">${CONDITIONS.map(x=>`<option>${x}</option>`).join('')}</select>
+      <label>商品価格（円）</label>
+      <input id="sc-price" type="number" min="0" placeholder="例：8000">
+      <label>国内送料（円）</label>
+      <input id="sc-shipping" type="number" min="0" value="0">
+      <label>出品URL（任意）</label>
+      <input id="sc-url" type="url" placeholder="確認した出品ページのURL">
+      <label>メモ（任意）</label>
+      <input id="sc-note" placeholder="付属品、傷、箱あり等">
+      <button id="sc-save" class="primary" type="button">保存する</button>
+      <div id="sc-message" class="status" style="display:none"></div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3>③ 保存済みの仕入れ候補</h3>
+      <div id="sc-list"></div>
+    </div>
   `;
-  document.head.appendChild(style);
+
+  const sourceLabel = s => SOURCES.find(x=>x[1]===s)?.[0] || s;
+  const list = document.getElementById('sc-list');
+
+  function drawList() {
+    const current = readCandidates(p);
+    if (!current.length) {
+      list.innerHTML='<div class="notice">まだ保存されていません。3社それぞれで確認した出品を保存できます。</div>';
+      return;
+    }
+    list.innerHTML = current.map((r,i) => {
+      const profit = candidateProfit(p,r);
+      const total = Number(r.priceJpy||0)+Number(r.shippingJpy||0);
+      return `
+        <div class="card" style="margin:8px 0;padding:12px">
+          <div class="row"><b>${esc(sourceLabel(r.source))}</b><span>${esc(r.checkedAtLabel)}</span></div>
+          <div class="row"><span>状態</span><b>${esc(r.condition)}</b></div>
+          <div class="row"><span>商品価格</span><b>${yen(r.priceJpy)}</b></div>
+          <div class="row"><span>国内送料</span><b>${yen(r.shippingJpy)}</b></div>
+          <div class="row"><span>実質仕入額</span><b>${yen(total)}</b></div>
+          <div class="row"><span>想定利益</span><b class="${profit==null?'yellow':profit>=0?'green':'red'}">${profit==null?'計算不可':(profit>=0?'+':'')+yen(profit)}</b></div>
+          ${r.note?`<div class="muted">メモ：${esc(r.note)}</div>`:''}
+          ${r.url?`<div style="margin-top:7px"><a href="${esc(r.url)}" target="_blank" rel="noopener">保存した出品を開く →</a></div>`:''}
+          <button class="secondary sc-delete" type="button" data-index="${i}">この保存情報を削除</button>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.sc-delete').forEach(btn => btn.onclick = () => {
+      const index = Number(btn.dataset.index);
+      if (!confirm('この仕入れ候補の保存情報を削除しますか？')) return;
+      const next = readCandidates(p);
+      next.splice(index,1);
+      writeCandidates(p,next);
+      drawList();
+    });
+  }
+
+  document.getElementById('sc-save').onclick = () => {
+    const price = Number(document.getElementById('sc-price').value);
+    if (!Number.isFinite(price) || price < 0) {
+      const m=document.getElementById('sc-message');m.style.display='block';m.textContent='商品価格を入力してください。';return;
+    }
+    const row = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      source: document.getElementById('sc-source').value,
+      condition: document.getElementById('sc-condition').value,
+      priceJpy: price,
+      shippingJpy: Number(document.getElementById('sc-shipping').value || 0),
+      url: document.getElementById('sc-url').value.trim(),
+      note: document.getElementById('sc-note').value.trim(),
+      checkedAt: new Date().toISOString(),
+      checkedAtLabel: new Date().toLocaleString('ja-JP')
+    };
+    const next=readCandidates(p);
+    next.unshift(row);
+    writeCandidates(p,next);
+    document.getElementById('sc-price').value='';
+    document.getElementById('sc-shipping').value='0';
+    document.getElementById('sc-url').value='';
+    document.getElementById('sc-note').value='';
+    const m=document.getElementById('sc-message');m.style.display='block';m.textContent='保存しました。下の比較表に反映しています。';
+    drawList();
+  };
+
+  drawList();
 }
 
-function injectRiskDetail(){
+function inject() {
   const body=document.getElementById('body');
-  if(!body||document.getElementById('risk-detail-box'))return false;
-  const table=body.querySelector('.risk-table');
-  if(!table)return false;
-
-  // 元の表には見出し行が tbody に入るため、td が4個あるデータ行だけを対象にする。
-  const rows=[...table.querySelectorAll('tr')].filter(row=>row.querySelectorAll('td').length===4);
-  if(!rows.length)return false;
-
-  const data=rows.map(row=>{
-    const cells=[...row.querySelectorAll('td')].map(x=>x.textContent.trim());
-    return {days:cells[0]||'',sale:cells[1]||'—',profit:cells[2]||'—',risk:cells[3]||'要確認'};
-  });
-  const riskClass=r=>r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow';
-  table.style.display='none';
-  const first=data[0];
-  const box=document.createElement('div');
-  box.id='risk-detail-box';
-  box.innerHTML=`<div class="notice" style="margin-top:10px"><b>売れ残りリスク</b><br><span class="muted">30・60・90日後は、売れ残って価格を下げた場合の<strong>想定・試算値</strong>です。将来の販売価格を保証するものではありません。</span></div><div class="card" style="margin-top:10px;padding:12px"><div class="row"><span>30日後の想定利益</span><b class="${moneyClass(parseInt(first.profit.replace(/[^-0-9]/g,''),10))}">${esc(first.profit)}</b></div><div class="row"><span>30日後のリスク</span><b class="${riskClass(first.risk)}">${esc(first.risk)}</b></div><button id="risk-detail-toggle" class="secondary" type="button" aria-expanded="false">30・60・90日後の詳細を見る</button><div id="risk-detail-content" hidden style="margin-top:10px"><table class="risk-table"><thead><tr><th>期間</th><th>想定売価</th><th>利益</th><th>リスク</th></tr></thead><tbody>${data.map(x=>`<tr><td>${esc(x.days)}</td><td>${esc(x.sale)}</td><td>${esc(x.profit)}</td><td class="${riskClass(x.risk)}">${esc(x.risk)}</td></tr>`).join('')}</tbody></table><div class="notice" style="margin-top:10px"><b>見方</b><br><span class="muted">30日→60日→90日の順に、売れ残って価格を下げた場合を想定しています。利益がマイナスなら赤字です。</span></div></div></div>`;
-  table.parentNode.insertBefore(box,table);
-  const toggle=box.querySelector('#risk-detail-toggle');
-  const content=box.querySelector('#risk-detail-content');
-  toggle.addEventListener('click',()=>{
-    const open=!content.hidden;
-    content.hidden=open;
-    toggle.setAttribute('aria-expanded',String(!open));
-    toggle.textContent=open?'30・60・90日後の詳細を見る':'詳細を閉じる';
-  });
-  return true;
+  const p=currentProduct();
+  if(!body || !p) return;
+  let panel=document.getElementById('source-panel');
+  if(!panel) {
+    panel=document.createElement('div');
+    panel.id='source-panel';
+    panel.className='card';
+    panel.style.marginTop='12px';
+    body.appendChild(panel);
+  }
+  window.__exportSourcingProduct=p;
+  render(p);
 }
 
-function injectSourcing(){
+const observer=new MutationObserver(() => {
   const body=document.getElementById('body');
-  if(!body||document.getElementById('source-panel'))return false;
-  const name=getProductName();
-  const q=encodeURIComponent(name);
-  const text=(document.getElementById('title')?.textContent||'')+' '+body.textContent;
-  const category=text.includes('ポケモン')?'ポケモンカード':text.includes('釣具')?'釣具':text.includes('カメラ')?'カメラ':text.includes('ゲーム')?'レトロゲーム':'釣具';
-  const rs=rules[category];
-  const panel=document.createElement('div');
-  panel.id='source-panel';panel.className='card';panel.style.marginTop='12px';
-  panel.innerHTML=`<h3>仕入れ価格の根拠・比較</h3><div class="notice"><b>仕入れ価格を確認できます</b><br><span class="muted">下のサイトで現在の出品価格を確認して、実際にかかる送料なども含めて仕入れ判断してください。</span></div><div class="row"><span>商品名</span><b>${esc(name)}</b></div><button class="secondary" type="button" id="source-toggle">その他の仕入れ先候補も比較する</button><div id="source-content" hidden style="margin-top:10px"><h3>仕入れ先比較</h3>${rs.map(([label,base])=>`<div class="card" style="margin:8px 0;padding:12px"><div class="row"><b>${esc(label)}</b><span class="yellow">現在価格：サイトで確認</span></div><a href="${base}${q}" target="_blank" rel="noopener" style="font-weight:800">現在の出品を確認 →</a></div>`).join('')}<div class="notice"><b>比較の注意</b><br><span class="muted">中古品は状態・付属品・送料などで実際の仕入額が変わります。表示価格だけで決めないでください。</span></div></div>`;
-  body.appendChild(panel);
-  const toggle=panel.querySelector('#source-toggle');
-  const content=panel.querySelector('#source-content');
-  toggle.addEventListener('click',()=>{
-    const open=!content.hidden;
-    content.hidden=open;
-    toggle.textContent=open?'その他の仕入れ先候補も比較する':'仕入れ先比較を閉じる';
-  });
-  return true;
-}
-
-ensureModalScroll();
-
-const observer=new MutationObserver(()=>{
-  injectRiskDetail();
-  injectSourcing();
+  if(body && body.textContent.trim()) setTimeout(inject,0);
 });
+observer.observe(document.body,{childList:true,subtree:true});
 
-function start(){
-  const body=document.getElementById('body');
-  if(!body)return;
-  observer.observe(body,{childList:true,subtree:true});
-  injectRiskDetail();
-  injectSourcing();
-}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',inject);
+else inject();
 
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
