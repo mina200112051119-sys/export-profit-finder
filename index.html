@@ -4,7 +4,7 @@ const FEES={'ポケモンカード':.1325,'ポケモン関連サプライ用品'
 const INT=.0135;
 const SOLD_CATEGORY={'ポケモンカード':'183454','ポケモン関連サプライ用品':'183460','釣具':'261030','カメラ':'31388','レトロゲーム':'139973'};
 let data=[],fxRate=150,fxDate='',updated='',soldAccess=false,photoDataUrl='';
-window.__exportApp={getData:()=>data,getFx:()=>fxRate,applySourcingCost:(id,cost,meta={})=>{const p=data.find(x=>String(x.id)===String(id));if(!p)return false;p.cost=Number(cost);p.sourcingSource=meta.source||'';p.sourcingCondition=meta.condition||'';p.sourcingCheckedAt=meta.checkedAt||'';try{localStorage.setItem('selectedSourcingCost:v1:'+String(id),JSON.stringify({cost:p.cost,...meta}))}catch(e){}render();return true}};
+window.__exportApp={getData:()=>data,getFx:()=>fxRate,getSelectedSourcing:(id)=>{try{return JSON.parse(localStorage.getItem('selectedSourcingCost:v1:'+String(id))||'null')}catch(e){return null}},applySourcingCost:(id,cost,meta={})=>{const p=data.find(x=>String(x.id)===String(id));if(!p)return false;p.cost=Number(cost);p.sourcingSource=meta.source||'';p.sourcingCondition=meta.condition||'';p.sourcingCheckedAt=meta.checkedAt||'';try{localStorage.setItem('selectedSourcingCost:v1:'+String(id),JSON.stringify({cost:p.cost,...meta}))}catch(e){}render();return true}};
 const $=x=>document.getElementById(x);
 function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');b.classList.add('active')}
 function yen(v){return v==null?'—':Math.round(Number(v||0)).toLocaleString()+'円'}
