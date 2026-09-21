@@ -173,7 +173,7 @@ function render(p) {
       if (!row) return;
       const total = Number(row.priceJpy||0) + Number(row.shippingJpy||0);
       if (!Number.isFinite(total) || total < 0) return;
-      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt,candidateIndex:index});
+      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt,candidateIndex:index,itemPrice:Number(row.priceJpy||0),shippingJpy:Number(row.shippingJpy||0)});
       const m=document.getElementById('sc-message');
       if(m){m.style.display='block';m.textContent=ok?'この仕入れ候補を現在の仕入価格として分析に反映しました。':'分析への反映に失敗しました。';}
       drawList();
