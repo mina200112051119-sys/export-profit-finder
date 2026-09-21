@@ -5,7 +5,7 @@ const WEIGHTS={sellability:30,margin:25,profit:15,stability:10,inventoryRisk:10,
 const num=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,v));
 const round=v=>Math.round(num(v));
-function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',displayName:r.displayName||r.titleJa||r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:num(r.ship??r.shipping),image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:r.sold==null?null:num(r.sold),list:r.list==null?null:num(r.list),trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices.map(num).filter(v=>v>0):[],soldMedian:num(r.soldMedian),soldHistoryCount:num(r.soldHistoryCount),soldHistoryAvailable:Boolean(r.soldHistoryAvailable),activeListingsTotal:num(r.activeListingsTotal),sourcingShippingJpy:num(r.sourcingShippingJpy),sourcingSource:r.sourcingSource||'',sourcingCondition:r.sourcingCondition||'',sourcingCheckedAt:r.sourcingCheckedAt||''}}
+function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',displayName:r.displayName||r.titleJa||r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:num(r.ship??r.shipping),image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:r.sold==null?null:num(r.sold),list:r.list==null?null:num(r.list),trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices.map(num).filter(v=>v>0):[],soldMedian:num(r.soldMedian),soldHistoryCount:num(r.soldHistoryCount),soldHistoryAvailable:Boolean(r.soldHistoryAvailable),activeListingsTotal:num(r.activeListingsTotal),searchResultTotal:num(r.searchResultTotal),sourcingShippingJpy:num(r.sourcingShippingJpy),sourcingSource:r.sourcingSource||'',sourcingCondition:r.sourcingCondition||'',sourcingCheckedAt:r.sourcingCheckedAt||''}}
 function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.feeRate,.136),international=num(s.internationalRate,.0135),conv=num(s.conversionFeeRate),dom=num(s.domesticShipping),pack=num(s.packaging),other=num(s.otherCost);const sale=p.sell>0?p.sell:0,ship=p.ship>0?p.ship:0,gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,finalValueFeeJpy=gross*fee*fx,internationalFeeJpy=gross*international*fx,fixedUsd=gross<=10?.30:.40,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=(saleJpy+shipJpy)*(conv/100),localCosts=(p.sourcingShippingJpy>0?p.sourcingShippingJpy:dom)+pack+other,totalFees=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,totalCosts=totalFees+shipJpy+localCosts+p.cost,profit=p.cost>0?round(saleJpy-totalCosts):null,margin=p.cost>0?profit/p.cost:null;return{saleJpy:round(saleJpy),shipJpy:round(shipJpy),finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),fixedFeeUsd:fixedUsd,conversionFeeJpy:round(conversionFeeJpy),domesticShippingJpy:round(dom),packagingJpy:round(pack),otherCostJpy:round(other),localCosts:round(localCosts),totalFees:round(totalFees),totalCosts:round(totalCosts),profit,margin}}
 function sellThrough(p){if(p.sold!==null&&p.list!==null&&p.sold>=0&&p.list>=0){const t=p.sold+p.list;return t>0?p.sold/t:null}return null}
 function salesActivityScore(p){if(!p.soldHistoryAvailable)return 10;const s=p.soldHistoryCount;if(s<=0)return 8;if(s<5)return 25;if(s<10)return 40;if(s<20)return 55;if(s<50)return 70;if(s<100)return 82;if(s<200)return 92;return 98}
@@ -63,12 +63,17 @@ function scoreV2(raw,s={},universe=[]){
   // 仕入価格がなくても、現在のeBay売価・競争量などから商品ごとの差を出す。
   const peers=universe.map(normalizeProduct).filter(x=>x.cat===p.cat&&x.sell>0);
   const prices=peers.map(x=>x.sell).sort((a,b)=>a-b);
-  const rankIndex=prices.findIndex(v=>v>=p.sell);
-  const pricePercentile=prices.length&&p.sell>0?clamp(((rankIndex<0?prices.length-1:rankIndex)/Math.max(prices.length-1,1))*100):50;
-  const priceScore=prices.length?clamp(35+pricePercentile*.65):50;
+  const median=prices.length?prices[Math.floor(prices.length/2)]:p.sell;
+  // 価格そのものではなく「同カテゴリー内でどの位置か」を連続値で評価する。
+  const belowOrEqual=prices.filter(v=>v<=p.sell).length;
+  const pricePercentile=prices.length&&p.sell>0?clamp((belowOrEqual/Math.max(prices.length,1))*100):50;
+  const priceScore=prices.length?clamp(30+pricePercentile*.7):50;
   const competitionValues=peers.map(x=>x.searchResultTotal).filter(v=>v>0);
   const avgCompetition=competitionValues.length?competitionValues.reduce((a,b)=>a+b,0)/competitionValues.length:0;
-  const competitionScore=avgCompetition>0&&p.searchResultTotal>0?clamp(100-(p.searchResultTotal/avgCompetition-1)*35):50;
+  const competitionScore=avgCompetition>0&&p.searchResultTotal>0?clamp(100-(p.searchResultTotal/avgCompetition-1)*45):50;
+  // 送料負担率も商品ごとの差になるため、利益計算前でも評価材料にする。
+  const shippingRatio=p.sell>0?p.ship/p.sell:1;
+  const shippingScore=clamp(100-shippingRatio*120);
   const total=round(clamp(
     base.scores.sellability*.25+
     priceScore*.15+
@@ -77,7 +82,8 @@ function scoreV2(raw,s={},universe=[]){
     downsideScore*.10+
     confidenceScore*.10+
     base.scores.fees*.05+
-    competitionScore*.05
+    competitionScore*.03+
+    shippingScore*.02
   ));
   const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
