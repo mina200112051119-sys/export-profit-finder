@@ -82,7 +82,7 @@ function rankNeedsReview(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
   return src
     .map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
-    .filter(p=>!(p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0 && p.risk!=='要確認' && p.confidence!=='低'))
+    .filter(p=>!(p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0 && p.risk!=='要確認' && p.risk!=='高' && p.confidence!=='低' && p.riskMetrics.currentProfit!=null && p.riskMetrics.currentProfit>=0))
     .sort((a,b)=>b.totalScore-a.totalScore);
 }
 window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank:rankV2,rankNeedsReview,evidenceSummary,riskAdjustedMetrics,scoreV2};
