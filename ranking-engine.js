@@ -6,7 +6,7 @@ const num=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,v));
 const round=v=>Math.round(num(v));
 function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',displayName:r.displayName||r.titleJa||r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:num(r.ship??r.shipping),image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:r.sold==null?null:num(r.sold),list:r.list==null?null:num(r.list),trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices.map(num).filter(v=>v>0):[],soldMedian:num(r.soldMedian),soldHistoryCount:num(r.soldHistoryCount),soldHistoryAvailable:Boolean(r.soldHistoryAvailable),activeListingsTotal:num(r.activeListingsTotal)}}
-function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.feeRate,.136),international=num(s.internationalRate,.0135),conv=num(s.conversionFeeRate),dom=num(s.domesticShipping),pack=num(s.packaging),other=num(s.otherCost);const sale=p.sell>0?p.sell:0,ship=p.ship>0?p.ship:0,gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,finalValueFeeJpy=gross*fee*fx,internationalFeeJpy=gross*international*fx,fixedUsd=gross<=10?.30:.40,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=(saleJpy+shipJpy)*(conv/100),localCosts=dom+pack+other,totalFees=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,totalCosts=totalFees+shipJpy+localCosts+p.cost,profit=p.cost>0?round(saleJpy-totalCosts):null,margin=p.cost>0?profit/p.cost:null;return{saleJpy:round(saleJpy),shipJpy:round(shipJpy),finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),fixedFeeUsd:fixedUsd,conversionFeeJpy:round(conversionFeeJpy),localCosts:round(localCosts),totalFees:round(totalFees),totalCosts:round(totalCosts),profit,margin}}
+function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.feeRate,.136),international=num(s.internationalRate,.0135),conv=num(s.conversionFeeRate),dom=num(s.domesticShipping),pack=num(s.packaging),other=num(s.otherCost);const sale=p.sell>0?p.sell:0,ship=p.ship>0?p.ship:0,gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,finalValueFeeJpy=gross*fee*fx,internationalFeeJpy=gross*international*fx,fixedUsd=gross<=10?.30:.40,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=(saleJpy+shipJpy)*(conv/100),localCosts=dom+pack+other,totalFees=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,totalCosts=totalFees+shipJpy+localCosts+p.cost,profit=p.cost>0?round(saleJpy-totalCosts):null,margin=p.cost>0?profit/p.cost:null;return{saleJpy:round(saleJpy),shipJpy:round(shipJpy),finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),fixedFeeUsd:fixedUsd,conversionFeeJpy:round(conversionFeeJpy),domesticShippingJpy:round(dom),packagingJpy:round(pack),otherCostJpy:round(other),localCosts:round(localCosts),totalFees:round(totalFees),totalCosts:round(totalCosts),profit,margin}}
 function sellThrough(p){if(p.sold!==null&&p.list!==null&&p.sold>=0&&p.list>=0){const t=p.sold+p.list;return t>0?p.sold/t:null}return null}
 function salesActivityScore(p){if(!p.soldHistoryAvailable)return 10;const s=p.soldHistoryCount;if(s<=0)return 8;if(s<5)return 25;if(s<10)return 40;if(s<20)return 55;if(s<50)return 70;if(s<100)return 82;if(s<200)return 92;return 98}
 function confidence(p){const s=p.soldHistoryAvailable?p.soldHistoryCount:(p.sold||0),l=p.list||0;if(s>=50&&l>=50)return{level:'高',factor:1};if(s>=20&&l>=20)return{level:'中',factor:.94};if(s>=5&&l>=5)return{level:'中',factor:.86};if(p.soldHistoryAvailable&&s>=10)return{level:'中',factor:.88};return{level:'低',factor:(s>0||l>0)?.72:.55}}
@@ -77,18 +77,45 @@ window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,
 
 })();
 
-/* Daily snapshot bridge */
+/* Daily snapshot bridge
+   自動更新データは初回表示時だけ利用し、「今すぐ更新・再計算」は必ずeBayライブAPIを取得する。 */
 (() => {
 'use strict';
 const originalFetch=window.fetch.bind(window),queryToCategory={'Pokemon card Japan':'ポケモンカード','Pokemon TCG supplies Japan':'ポケモン関連サプライ用品','Japanese fishing tackle':'釣具','Japanese camera':'カメラ','Japanese retro game':'レトロゲーム'};
 let snapshot=null;
 const snapshotPromise=originalFetch('/api/data-snapshot?ts='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
 const makeResponse=p=>new Response(JSON.stringify(p),{status:200,headers:{'Content-Type':'application/json'}});
-window.fetch=async function(input,init){const url=typeof input==='string'?input:(input&&input.url)||'';if(url.includes('/api/ebay-search?')){const u=new URL(url,location.origin),q=u.searchParams.get('q')||'',cat=queryToCategory[q];if(cat){if(snapshot===null)snapshot=await snapshotPromise;const found=snapshot?.categories?.find(x=>x.category===cat);if(found)return makeResponse({items:found.items||[],count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt})}}return originalFetch(input,init)};
-async function useDaily(){snapshot=await snapshotPromise;if(!snapshot)return;const wait=setInterval(()=>{if(typeof window.refresh!=='function')return;clearInterval(wait);window.__dailySnapshotLoaded=snapshot;window.refresh();setTimeout(()=>{const el=document.getElementById('status');if(el)el.innerHTML='<b>保存済み自動更新データを表示中</b><br>最終更新：'+new Date(snapshot.refreshedAt).toLocaleString('ja-JP')+'<br><span class="muted">手動更新を押すと、この端末だけライブ検索します。</span>'},1500)},50);setTimeout(()=>clearInterval(wait),10000)}
+window.fetch=async function(input,init){
+  const url=typeof input==='string'?input:(input&&input.url)||'';
+  if(window.__dailySnapshotMode&&url.includes('/api/ebay-search?')){
+    const u=new URL(url,location.origin),q=u.searchParams.get('q')||'',cat=queryToCategory[q];
+    if(cat){
+      if(snapshot===null)snapshot=await snapshotPromise;
+      const found=snapshot?.categories?.find(x=>x.category===cat);
+      if(found)return makeResponse({items:found.items||[],count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
+    }
+  }
+  return originalFetch(input,init);
+};
+async function useDaily(){
+  snapshot=await snapshotPromise;
+  if(!snapshot)return;
+  const wait=setInterval(()=>{
+    if(typeof window.refresh!=='function')return;
+    clearInterval(wait);
+    window.__dailySnapshotLoaded=snapshot;
+    window.__dailySnapshotMode=true;
+    window.refresh();
+    setTimeout(()=>{
+      window.__dailySnapshotMode=false;
+      const el=document.getElementById('status');
+      if(el)el.innerHTML='<b>保存済み自動更新データを表示中</b><br>最終更新：'+new Date(snapshot.refreshedAt).toLocaleString('ja-JP')+'<br><span class="muted">「今すぐ更新・再計算」を押すと、この端末からeBayの最新データを取得します。</span>';
+    },1500);
+  },50);
+  setTimeout(()=>clearInterval(wait),10000);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',useDaily);else useDaily();
 })();
-
 /* Sourcing links */
 (() => {
 'use strict';
