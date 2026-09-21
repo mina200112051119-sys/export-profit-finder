@@ -63,17 +63,21 @@ function scoreV2(raw,s={},universe=[]){
   // 仕入価格がなくても、現在のeBay売価・競争量などから商品ごとの差を出す。
   const peers=universe.map(normalizeProduct).filter(x=>x.cat===p.cat&&x.sell>0);
   const prices=peers.map(x=>x.sell).sort((a,b)=>a-b);
-  const median=prices.length?prices[Math.floor(prices.length/2)]:p.sell;
-  // 価格そのものではなく「同カテゴリー内でどの位置か」を連続値で評価する。
-  const belowOrEqual=prices.filter(v=>v<=p.sell).length;
-  const pricePercentile=prices.length&&p.sell>0?clamp((belowOrEqual/Math.max(prices.length,1))*100):50;
-  const priceScore=prices.length?clamp(30+pricePercentile*.7):50;
+  const minPrice=prices.length?prices[0]:p.sell;
+  const maxPrice=prices.length?prices[prices.length-1]:p.sell;
+  const priceSpread=maxPrice-minPrice;
+  // 同カテゴリー内の価格差を連続値で使う。価格が違えば順位が同率になりにくい。
+  const pricePosition=prices.length&&p.sell>0&&priceSpread>0?clamp((p.sell-minPrice)/priceSpread*100):50;
+  const priceScore=prices.length&&priceSpread>0?clamp(25+pricePosition*.75):50;
   const competitionValues=peers.map(x=>x.searchResultTotal).filter(v=>v>0);
   const avgCompetition=competitionValues.length?competitionValues.reduce((a,b)=>a+b,0)/competitionValues.length:0;
-  const competitionScore=avgCompetition>0&&p.searchResultTotal>0?clamp(100-(p.searchResultTotal/avgCompetition-1)*45):50;
-  // 送料負担率も商品ごとの差になるため、利益計算前でも評価材料にする。
+  const competitionScore=avgCompetition>0&&p.searchResultTotal>0?clamp(100-(p.searchResultTotal/avgCompetition-1)*50):50;
+  // 送料・商品状態も仕入価格なしで比較できる実データ。
   const shippingRatio=p.sell>0?p.ship/p.sell:1;
   const shippingScore=clamp(100-shippingRatio*120);
+  const conditionScore=p.condition==='NEW'||p.condition==='New'||p.condition==='新品'?90:
+    p.condition==='USED'||p.condition==='Used'||p.condition==='中古'?65:
+    p.condition?50:40;
   const total=round(clamp(
     base.scores.sellability*.25+
     priceScore*.15+
@@ -83,7 +87,8 @@ function scoreV2(raw,s={},universe=[]){
     confidenceScore*.10+
     base.scores.fees*.05+
     competitionScore*.03+
-    shippingScore*.02
+    shippingScore*.02+
+    conditionScore*.03
   ));
   const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
