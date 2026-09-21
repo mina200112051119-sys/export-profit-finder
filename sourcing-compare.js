@@ -132,10 +132,21 @@ function render(p) {
       list.innerHTML='<div class="notice">まだ保存されていません。3社それぞれで確認した出品を保存できます。</div>';
       return;
     }
-    list.innerHTML = current.map((r,i) => {
-      const profit = candidateProfit(p,r);
-      const total = Number(r.priceJpy||0)+Number(r.shippingJpy||0);
-      return `
+    const ranked = current.map((r,i) => ({r,i,total:Number(r.priceJpy||0)+Number(r.shippingJpy||0),profit:candidateProfit(p,r)}))
+      .sort((a,b)=>(b.profit??-Infinity)-(a.profit??-Infinity));
+    list.innerHTML = `
+      <div class="notice" style="margin-bottom:10px">
+        <b>仕入れ候補比較</b><br>
+        利益は「商品価格＋国内送料」を実質仕入額として計算しています。状態や付属品などの違いは、最終判断前に必ず確認してください。
+      </div>
+      <div class="card" style="overflow:auto;margin-bottom:10px">
+        <table class="risk-table">
+          <tr><th>仕入先</th><th>状態</th><th>実質仕入額</th><th>想定利益</th><th>採用</th></tr>
+          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${window.__exportApp?.getSelectedSourcing?.(p.id)?.index===x.i?'✓':''}</td></tr>`).join('')}
+        </table>
+      </div>
+    `;
+    list.innerHTML += ranked.map(({r,i,total,profit}) => `
         <div class="card" style="margin:8px 0;padding:12px">
           <div class="row"><b>${esc(sourceLabel(r.source))}</b><span>${esc(r.checkedAtLabel)}</span></div>
           <div class="row"><span>状態</span><b>${esc(r.condition)}</b></div>
