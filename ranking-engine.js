@@ -23,7 +23,58 @@ function inventoryRiskScore(r,p){let x=100,s=r.scenarios;if(p.cost<=0)return 45;
 function riskFlags(p,c,r){const a=[];if(!p.soldHistoryAvailable&&p.sold===null)a.push('販売実績データ不足');if(p.cost<=0)a.push('仕入価格未入力');if(p.trend==='下落')a.push('相場下落傾向');if(c.profit!==null&&c.profit<0)a.push('現在価格でも赤字');if(r.scenarios[2].profit!==null&&r.scenarios[2].profit<0)a.push('90日後想定で赤字');if(p.cost>=50000)a.push('高額仕入れ');if(p.soldHistoryAvailable)a.push(`過去90日販売データ：${p.soldHistoryCount}件`);return a}
 function scoreProduct(raw,s={},universe=[]){const p=normalizeProduct(raw),c=calcCosts(p,s),profits=universe.map(x=>calcCosts(normalizeProduct(x),{...s,feeRate:s.feeRateByCategory?.[normalizeProduct(x).cat]??s.feeRate}).profit).filter(v=>v!==null),r=simulateRisk(p,s),scores={sellability:sellabilityScore(p),margin:marginScore(c),profit:profitScore(c,profits),stability:stabilityScore(p),inventory:inventoryRiskScore(r,p),fees:feeScore(p,c),market:trendScore(p)},conf=confidence(p);let total=(scores.sellability*.3+scores.margin*.25+scores.profit*.15+scores.stability*.1+scores.inventory*.1+scores.fees*.05+scores.market*.05)*conf.factor;const flags=riskFlags(p,c,r);if(flags.includes('現在価格でも赤字'))total-=25;if(flags.includes('90日後想定で赤字'))total-=12;if(flags.includes('相場下落傾向'))total-=8;total=round(clamp(total));const stars=total>=90?'★★★★★':total>=80?'★★★★☆':total>=70?'★★★★☆':total>=60?'★★★☆☆':total>=50?'★★☆☆☆':'★☆☆☆☆',risk=flags.includes('現在価格でも赤字')||flags.includes('90日後想定で赤字')?'高':scores.inventory>=75?'低':scores.inventory>=50?'中':'高';return{...p,costs:c,riskData:r,scores,totalScore:total,stars,risk,confidence:conf.level,flags,sellabilityBasis:sellThrough(p)!==null?'販売件数÷（販売件数＋掲載件数）':'過去90日販売件数ベース（売れ行き率ではありません）'}}
 function rank(products,s={},category=null){const n=products.map(normalizeProduct),base={...s,feeRateByCategory:s.feeRateByCategory||{}},src=category?n.filter(p=>p.cat===category):n;return src.map(p=>scoreProduct(p,{...base,feeRate:base.feeRateByCategory[p.cat]??base.feeRate},n)).sort((a,b)=>b.totalScore-a.totalScore||(b.costs.profit||-Infinity)-(a.costs.profit||-Infinity)||a.name.localeCompare(b.name,'ja'))}
-window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank};
+
+function evidenceSummary(p){
+  const active=Number(p.activeListingsTotal||0);
+  const sold=Number(p.soldHistoryCount||0);
+  const hasSold=Boolean(p.soldHistoryAvailable);
+  return {
+    activeListings: active,
+    sold90d: hasSold ? sold : null,
+    soldMedianUsd: hasSold && p.soldMedian>0 ? p.soldMedian : null,
+    currentPriceUsd: p.sell>0 ? p.sell : null,
+    condition: p.condition || '不明',
+    source: p.source || 'eBay'
+  };
+}
+function riskAdjustedMetrics(p,s={}){
+  const c=calcCosts(p,s);
+  const r=simulateRisk(p,s);
+  const current=c.profit;
+  const p30=r.scenarios.find(x=>x.days===30)?.profit ?? null;
+  const p60=r.scenarios.find(x=>x.days===60)?.profit ?? null;
+  const p90=r.scenarios.find(x=>x.days===90)?.profit ?? null;
+  const conf=confidence(p);
+  const downside=p90==null?null:Math.min(current??p90,p90);
+  const capitalRisk=p.cost>0 && downside!=null ? Math.max(0, -downside) : null;
+  const adjusted=current==null?null:round(current*conf.factor);
+  return {currentProfit:current,profit30:p30,profit60:p60,profit90:p90,worst90:downside,riskLoss:capitalRisk,riskAdjustedProfit:adjusted,confidence:conf.level,confidenceFactor:conf.factor,evidence:evidenceSummary(p)};
+}
+function scoreV2(raw,s={},universe=[]){
+  const p=normalizeProduct(raw);
+  const m=riskAdjustedMetrics(p,s);
+  const base=scoreProduct(p,s,universe);
+  const confidenceScore=m.confidence==='高'?100:m.confidence==='中'?70:35;
+  const downsideScore=m.worst90==null?35:(m.worst90<=0?20:clamp(50+(m.worst90/Math.max(p.cost||1,1))*50));
+  const profitScoreV2=m.riskAdjustedProfit==null?0:clamp(50+(m.riskAdjustedProfit/Math.max(p.cost||1,1))*50);
+  const total=round(clamp(
+    base.scores.sellability*.30+
+    profitScoreV2*.25+
+    base.scores.stability*.10+
+    downsideScore*.15+
+    confidenceScore*.15+
+    base.scores.fees*.05
+  ));
+  const risk=m.worst90==null?'要確認':m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
+  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m};
+}
+function rankV2(products,s={},category=null){
+  const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
+  return src.map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
+    .sort((a,b)=>b.totalScore-a.totalScore||(b.riskMetrics.riskAdjustedProfit||-Infinity)-(a.riskMetrics.riskAdjustedProfit||-Infinity));
+}
+window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,salesActivityScore,confidence,simulateRisk,breakEvenPrice,scoreProduct,rank:rankV2,evidenceSummary,riskAdjustedMetrics,scoreV2};
+
 })();
 
 /* Daily snapshot bridge */
