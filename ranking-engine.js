@@ -51,6 +51,7 @@ function riskAdjustedMetrics(p,s={}){
   return {currentProfit:current,profit30:p30,profit60:p60,profit90:p90,worst90:downside,riskLoss:capitalRisk,riskAdjustedProfit:adjusted,confidence:conf.level,confidenceFactor:conf.factor,evidence:evidenceSummary(p)};
 }
 function scoreV2(raw,s={},universe=[]){
+  // Score V3: 仕入価格がなくても、現在の市場データだけで商品ごとの差を出す。
   const p=normalizeProduct(raw);
   const m=riskAdjustedMetrics(p,s);
   const base=scoreProduct(p,s,universe);
@@ -78,17 +79,20 @@ function scoreV2(raw,s={},universe=[]){
   const conditionScore=p.condition==='NEW'||p.condition==='New'||p.condition==='新品'?90:
     p.condition==='USED'||p.condition==='Used'||p.condition==='中古'?65:
     p.condition?50:40;
+  const marketDataScore=clamp(
+    priceScore*.34+
+    competitionScore*.20+
+    shippingScore*.16+
+    conditionScore*.10+
+    base.scores.sellability*.10+
+    base.scores.stability*.10
+  );
   const total=round(clamp(
-    base.scores.sellability*.25+
-    priceScore*.15+
-    profitComponent*.20+
-    base.scores.stability*.10+
-    downsideScore*.10+
-    confidenceScore*.10+
-    base.scores.fees*.05+
-    competitionScore*.03+
-    shippingScore*.02+
-    conditionScore*.03
+    marketDataScore*.60+
+    profitComponent*.18+
+    downsideScore*.08+
+    confidenceScore*.08+
+    base.scores.fees*.06
   ));
   const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
@@ -97,7 +101,7 @@ function scoreV2(raw,s={},universe=[]){
   if(m.soldHistoryAvailable) recommendationReasons.push('過去90日販売 '+m.soldHistoryCount+'件');
   recommendationReasons.push('リスク '+risk);
   recommendationReasons.push('信頼度 '+m.confidence);
-  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0};
+  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0,scoreVersion:'v3',scoreBreakdown:{marketData:round(marketDataScore),price:round(priceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
