@@ -16,6 +16,26 @@ async function getAppToken() {
   return tokenCache.token;
 }
 
+
+async function translateText(text, from, to) {
+  const value = String(text || '').trim();
+  if (!value || from === to) return value;
+  try {
+    const url = new URL('https://translate.googleapis.com/translate_a/single');
+    url.searchParams.set('client','gtx');
+    url.searchParams.set('sl',from);
+    url.searchParams.set('tl',to);
+    url.searchParams.set('dt','t');
+    url.searchParams.set('q',value);
+    const r = await fetch(url);
+    if (!r.ok) return value;
+    const data = await r.json();
+    return Array.isArray(data?.[0]) ? data[0].map(x => x?.[0] || '').join('') || value : value;
+  } catch (_) {
+    return value;
+  }
+}
+
 function median(values) {
   const a = values.filter(Number.isFinite).sort((x, y) => x - y);
   if (!a.length) return null;
@@ -31,6 +51,8 @@ module.exports = async (req, res) => {
 
   const q = String(req.query?.q || '').trim();
   const categoryId = String(req.query?.categoryId || '').trim();
+  const isJapanese = /[ぁ-んァ-ヶ一-龯々〆ヵ]/.test(q);
+  const searchQuery = isJapanese ? await translateText(q, 'ja', 'en') : q;
   const limit = Math.min(200, Math.max(1, Number(req.query?.limit || 50)));
   const offset = Math.max(0, Number(req.query?.offset || 0));
   if (!q && !categoryId) return res.status(400).json({ error: 'q or categoryId is required' });
@@ -38,7 +60,7 @@ module.exports = async (req, res) => {
   try {
     const token = await getAppToken();
     const url = new URL(EBAY_API);
-    if (q) url.searchParams.set('q', q);
+    if (searchQuery) url.searchParams.set('q', searchQuery);
     if (categoryId) url.searchParams.set('category_ids', categoryId);
     url.searchParams.set('limit', String(limit));
     if (offset) url.searchParams.set('offset', String(offset));
@@ -67,6 +89,7 @@ module.exports = async (req, res) => {
 
     res.json({
       query: q,
+      translatedQuery: searchQuery,
       categoryId,
       marketplace: 'EBAY_US',
       count: items.length,
