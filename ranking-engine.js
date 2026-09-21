@@ -75,12 +75,11 @@ function scoreV2(raw,s={},universe=[]){
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
-  // 「おすすめ」は仕入れ判断に必要な最低限の実データが揃った商品だけを対象にする。
-  // 仕入価格なし・過去90日販売データなしは、点数を付けてもおすすめ順位には入れない。
+  // ランキング自体は、データ不足の商品も含めて全候補を点数順に並べる。
+  // 仕入価格・販売実績が不足している商品は「要確認」側にも残し、
+  // 「1位が存在しない」「22点の商品しか表示されない」という状態を避ける。
   return src
-    .filter(p=>p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0)
     .map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
-    .filter(p=>p.risk!=='要確認' && p.risk!=='高' && p.confidence!=='低' && p.riskMetrics.currentProfit!=null && p.riskMetrics.currentProfit>=0)
     .sort((a,b)=>b.totalScore-a.totalScore||(b.riskMetrics.riskAdjustedProfit||-Infinity)-(a.riskMetrics.riskAdjustedProfit||-Infinity));
 }
 function rankNeedsReview(products,s={},category=null){
