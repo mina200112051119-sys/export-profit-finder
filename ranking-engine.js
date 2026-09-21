@@ -66,7 +66,12 @@ function scoreV2(raw,s={},universe=[]){
     base.scores.fees*.05
   ));
   const risk=m.worst90==null?'要確認':m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
-  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m};
+  const recommendationReasons=[];
+  if(m.currentProfit!=null) recommendationReasons.push('予想利益 '+(m.currentProfit>=0?'+':'')+Math.round(m.currentProfit).toLocaleString()+'円');
+  if(m.soldHistoryAvailable) recommendationReasons.push('過去90日販売 '+m.soldHistoryCount+'件');
+  recommendationReasons.push('リスク '+risk);
+  recommendationReasons.push('信頼度 '+m.confidence);
+  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons};
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
