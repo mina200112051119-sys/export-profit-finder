@@ -60,13 +60,24 @@ function scoreV2(raw,s={},universe=[]){
   const downsideScore=m.worst90==null?55:(m.worst90<=0?20:clamp(50+(m.worst90/Math.max(p.cost||1,1))*50));
   const profitScoreV2=m.riskAdjustedProfit==null?null:clamp(50+(m.riskAdjustedProfit/Math.max(p.cost||1,1))*50);
   const profitComponent=profitScoreV2==null?50:profitScoreV2;
+  // 仕入価格がなくても、現在のeBay売価・競争量などから商品ごとの差を出す。
+  const peers=universe.map(normalizeProduct).filter(x=>x.cat===p.cat&&x.sell>0);
+  const prices=peers.map(x=>x.sell).sort((a,b)=>a-b);
+  const rankIndex=prices.findIndex(v=>v>=p.sell);
+  const pricePercentile=prices.length&&p.sell>0?clamp(((rankIndex<0?prices.length-1:rankIndex)/Math.max(prices.length-1,1))*100):50;
+  const priceScore=prices.length?clamp(35+pricePercentile*.65):50;
+  const competitionValues=peers.map(x=>x.searchResultTotal).filter(v=>v>0);
+  const avgCompetition=competitionValues.length?competitionValues.reduce((a,b)=>a+b,0)/competitionValues.length:0;
+  const competitionScore=avgCompetition>0&&p.searchResultTotal>0?clamp(100-(p.searchResultTotal/avgCompetition-1)*35):50;
   const total=round(clamp(
-    base.scores.sellability*.30+
-    profitComponent*.25+
+    base.scores.sellability*.25+
+    priceScore*.15+
+    profitComponent*.20+
     base.scores.stability*.10+
-    downsideScore*.15+
-    confidenceScore*.15+
-    base.scores.fees*.05
+    downsideScore*.10+
+    confidenceScore*.10+
+    base.scores.fees*.05+
+    competitionScore*.05
   ));
   const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
