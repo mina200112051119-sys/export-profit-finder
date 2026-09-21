@@ -75,7 +75,7 @@ function rankV2(products,s={},category=null){
   return src
     .filter(p=>p.cost>0 && p.soldHistoryAvailable && p.soldHistoryCount>0)
     .map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
-    .filter(p=>p.risk!=='要確認' && p.confidence!=='低')
+    .filter(p=>p.risk!=='要確認' && p.risk!=='高' && p.confidence!=='低' && p.riskMetrics.currentProfit!=null && p.riskMetrics.currentProfit>=0)
     .sort((a,b)=>b.totalScore-a.totalScore||(b.riskMetrics.riskAdjustedProfit||-Infinity)-(a.riskMetrics.riskAdjustedProfit||-Infinity));
 }
 function rankNeedsReview(products,s={},category=null){
