@@ -146,7 +146,11 @@ function render(p) {
         </table>
       </div>
     `;
-    list.innerHTML += ranked.map(({r,i,total,profit}) => `
+    list.innerHTML += ranked.map(({r,i,total,profit}) => {
+      const conditionScore = {'新品':5,'未使用':5,'美品':4,'中古':3,'傷あり':2,'ジャンク':1,'状態不明':0}[r.condition] ?? 0;
+      const selected = window.__exportApp?.getSelectedSourcing?.(p.id)?.index===i;
+      const comparisonNote = conditionScore >= 4 ? '状態面の確認度が高い候補' : conditionScore >= 2 ? '状態を確認してから採用' : '状態リスクが高いため要確認';
+      return `
         <div class="card" style="margin:8px 0;padding:12px">
           <div class="row"><b>${esc(sourceLabel(r.source))}</b><span>${esc(r.checkedAtLabel)}</span></div>
           <div class="row"><span>状態</span><b>${esc(r.condition)}</b></div>
@@ -158,6 +162,7 @@ function render(p) {
           ${r.url?`<div style="margin-top:7px"><a href="${esc(r.url)}" target="_blank" rel="noopener">保存した出品を開く →</a></div>`:''}
           ${window.__exportApp?.getSelectedSourcing?.(p.id)?.index===i?'<div class="notice" style="margin-top:8px"><b>✓ 現在の分析に採用中</b></div>':''}
           <button class="primary sc-apply" type="button" data-index="${i}">この仕入れ価格を分析に反映</button>
+          <div class="muted" style="margin:8px 0">比較メモ：${comparisonNote}</div>
           <button class="secondary sc-delete" type="button" data-index="${i}">この保存情報を削除</button>
         </div>`;
     }).join('');
