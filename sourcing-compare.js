@@ -145,10 +145,22 @@ function render(p) {
           <div class="row"><span>想定利益</span><b class="${profit==null?'yellow':profit>=0?'green':'red'}">${profit==null?'計算不可':(profit>=0?'+':'')+yen(profit)}</b></div>
           ${r.note?`<div class="muted">メモ：${esc(r.note)}</div>`:''}
           ${r.url?`<div style="margin-top:7px"><a href="${esc(r.url)}" target="_blank" rel="noopener">保存した出品を開く →</a></div>`:''}
+          <button class="primary sc-apply" type="button" data-index="${i}">この仕入れ価格を分析に反映</button>
           <button class="secondary sc-delete" type="button" data-index="${i}">この保存情報を削除</button>
         </div>`;
     }).join('');
 
+    list.querySelectorAll('.sc-apply').forEach(btn => btn.onclick = () => {
+      const index = Number(btn.dataset.index);
+      const row = readCandidates(p)[index];
+      if (!row) return;
+      const total = Number(row.priceJpy||0) + Number(row.shippingJpy||0);
+      if (!Number.isFinite(total) || total < 0) return;
+      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt});
+      const m=document.getElementById('sc-message');
+      if(m){m.style.display='block';m.textContent=ok?'この仕入れ候補を現在の仕入価格として分析に反映しました。':'分析への反映に失敗しました。';}
+      drawList();
+    });
     list.querySelectorAll('.sc-delete').forEach(btn => btn.onclick = () => {
       const index = Number(btn.dataset.index);
       if (!confirm('この仕入れ候補の保存情報を削除しますか？')) return;
