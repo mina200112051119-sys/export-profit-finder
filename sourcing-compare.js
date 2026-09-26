@@ -65,9 +65,10 @@ function candidateProfit(p, row) {
 }
 
 function currentProduct() {
+  if (window.__detailProduct) return window.__detailProduct;
   const name = document.getElementById('title')?.textContent?.trim();
   const list = window.__exportApp?.getData?.() || [];
-  return list.find(p => p && p.name === name) || null;
+  return list.find(p => p && (p.name === name || p.displayName === name)) || null;
 }
 
 function searchUrl(p, source) {
