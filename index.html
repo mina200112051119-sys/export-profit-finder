@@ -31,6 +31,49 @@ function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&
 function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:INT,domesticShipping:+$('domestic').value||0,packaging:+$('pack').value||0,otherCost:+$('other').value||0,conversionFeeRate:+$('conv').value||0}}
 function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
 function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value))}
+const CLOUD_STORAGE_API='/api/translate?action=storage';
+function getExportUserId(){
+  let id=localStorage.getItem('exportUserId:v1');
+  if(!id){
+    id=(crypto.randomUUID?crypto.randomUUID():'u'+Date.now()+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
+    localStorage.setItem('exportUserId:v1',id);
+  }
+  return id;
+}
+function cloudStorageData(){
+  const sourcingCandidates={},selectedSourcing={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i)||'';
+    if(k.startsWith('sourcingCandidates:v1:')){
+      try{sourcingCandidates[k.slice(23)]=JSON.parse(localStorage.getItem(k)||'[]')}catch(e){}
+    }
+    if(k.startsWith('selectedSourcingCost:v1:')){
+      try{const v=JSON.parse(localStorage.getItem(k)||'null');if(v)selectedSourcing[k.slice(24)]=v}catch(e){}
+    }
+  }
+  return {sourcingCandidates,selectedSourcing};
+}
+async function saveCloudStorage(){
+  try{
+    await fetch(CLOUD_STORAGE_API,{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':getExportUserId()},body:JSON.stringify({data:cloudStorageData()})});
+  }catch(e){}
+}
+async function loadCloudStorage(){
+  try{
+    const r=await fetch(CLOUD_STORAGE_API,{headers:{'X-User-Id':getExportUserId()},cache:'no-store'});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(!d.configured||!d.data)return;
+    Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
+    Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row)));
+  }catch(e){}
+}
+const _setItem=Storage.prototype.setItem;
+Storage.prototype.setItem=function(k,v){
+  const out=_setItem.call(this,k,v);
+  if(this===localStorage&&(String(k).startsWith('sourcingCandidates:v1:')||String(k).startsWith('selectedSourcingCost:v1:')))clearTimeout(window.__cloudSaveTimer),window.__cloudSaveTimer=setTimeout(saveCloudStorage,800);
+  return out;
+};
 function load(){['domestic','pack','other','conv'].forEach(id=>{const v=localStorage.getItem(id);if(v!==null)$(id).value=v})}
 function samples(){return[{name:'ポケモンカード 人気カード（サンプル）',cat:'ポケモンカード',cost:8000,sell:95,ship:18,sold:72,list:28,trend:'横ばい',risk:'低',source:'サンプル'},{name:'ポケモンTCG デッキケース（サンプル）',cat:'ポケモン関連サプライ用品',cost:2500,sell:39,ship:14,sold:46,list:34,trend:'上昇',risk:'低',source:'サンプル'},{name:'日本製フィッシングリール（サンプル）',cat:'釣具',cost:18000,sell:165,ship:35,sold:31,list:29,trend:'横ばい',risk:'中',source:'サンプル'},{name:'日本製中古カメラ（サンプル）',cat:'カメラ',cost:30000,sell:285,ship:42,sold:18,list:42,trend:'下落',risk:'中',source:'サンプル'},{name:'レトロゲーム本体（サンプル）',cat:'レトロゲーム',cost:9000,sell:105,ship:30,sold:39,list:21,trend:'横ばい',risk:'低',source:'サンプル'}].map(RankingEngine.normalizeProduct)}
 async function fx(){try{const r=await fetch(FX,{cache:'no-store'}),d=await r.json();if(d.rate){fxRate=+d.rate;fxDate=d.date||''}}catch(e){}}
