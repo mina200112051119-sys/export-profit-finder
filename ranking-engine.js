@@ -48,7 +48,7 @@ function riskAdjustedMetrics(p,s={}){
   const downside=p90==null?null:Math.min(current??p90,p90);
   const capitalRisk=p.cost>0 && downside!=null ? Math.max(0, -downside) : null;
   const adjusted=current==null?null:round(current*conf.factor);
-  return {currentProfit:current,profit30:p30,profit60:p60,profit90:p90,worst90:downside,riskLoss:capitalRisk,riskAdjustedProfit:adjusted,confidence:conf.level,confidenceFactor:conf.factor,evidence:evidenceSummary(p)};
+  return {currentProfit:current,profit30:p30,profit60:p60,profit90:p90,worst90:downside,riskLoss:capitalRisk,riskAdjustedProfit:adjusted,confidence:conf.level,confidenceFactor:conf.factor,breakEven:r.breakEven,scenarios:r.scenarios,evidence:evidenceSummary(p)};
 }
 function scoreV2(raw,s={},universe=[]){
   // Score V3: 仕入価格がなくても、現在の市場データだけで商品ごとの差を出す。
