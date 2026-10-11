@@ -191,8 +191,8 @@ function render(p) {
 
   document.getElementById('sc-save').onclick = () => {
     const price = Number(document.getElementById('sc-price').value);
-    if (!Number.isFinite(price) || price < 0) {
-      const m=document.getElementById('sc-message');m.style.display='block';m.textContent='商品価格を入力してください。';return;
+    if (!Number.isFinite(price) || price <= 0) {
+      const m=document.getElementById('sc-message');m.style.display='block';m.textContent='商品価格を1円以上で入力してください。';return;
     }
     const row = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
