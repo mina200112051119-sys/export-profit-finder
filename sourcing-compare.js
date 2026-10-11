@@ -60,7 +60,7 @@ function candidateProfit(p, row) {
   const intl = .0135;
   const conversion = saleGross * fx * (Number(document.getElementById('conv')?.value || 0) / 100);
   const ebayFees = saleGross * (fee + intl) * fx + (saleGross <= 10 ? .30 : .40) * fx + conversion;
-  const domestic = Number(row.shippingJpy || 0) + Number(document.getElementById('pack')?.value || 0) + Number(document.getElementById('other')?.value || 0);
+  const domestic = Number(row.shippingJpy || 0) + Number(document.getElementById('domestic')?.value || 0) + Number(document.getElementById('pack')?.value || 0) + Number(document.getElementById('other')?.value || 0);
   return Math.round(sellJpy - ebayFees - domestic - Number(row.priceJpy));
 }
 
@@ -143,13 +143,13 @@ function render(p) {
       <div class="card" style="overflow:auto;margin-bottom:10px">
         <table class="risk-table">
           <tr><th>仕入先</th><th>状態</th><th>実質仕入額</th><th>想定利益</th><th>採用</th></tr>
-          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${window.__exportApp?.getSelectedSourcing?.(p.id)?.index===x.i?'✓':''}</td></tr>`).join('')}
+          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${window.__exportApp?.getSelectedSourcing?.(p.id)?.candidateIndex===x.i?'✓':''}</td></tr>`).join('')}
         </table>
       </div>
     `;
     list.innerHTML += ranked.map(({r,i,total,profit}) => {
       const conditionScore = {'新品':5,'未使用':5,'美品':4,'中古':3,'傷あり':2,'ジャンク':1,'状態不明':0}[r.condition] ?? 0;
-      const selected = window.__exportApp?.getSelectedSourcing?.(p.id)?.index===i;
+      const selected = window.__exportApp?.getSelectedSourcing?.(p.id)?.candidateIndex===i;
       const comparisonNote = conditionScore >= 4 ? '状態面の確認度が高い候補' : conditionScore >= 2 ? '状態を確認してから採用' : '状態リスクが高いため要確認';
       return `
         <div class="card" style="margin:8px 0;padding:12px">
