@@ -37,7 +37,7 @@ function breakEvenPrice(p,s={}){
 
 function simulateRisk(p,s={}){
   const projected=(days)=>{
-    if(num(p.soldMedian)>0){
+    if(p.soldHistoryAvailable && num(p.soldMedian)>0 && (num(p.sell)<=0 || (num(p.soldMedian)>=num(p.sell)*0.5 && num(p.soldMedian)<=num(p.sell)*2))){
       const base=num(p.soldMedian), f=p.trend==='上昇'
         ?(days===30?1.01:days===60?1:0.98)
         :p.trend==='下落'
