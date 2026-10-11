@@ -17,7 +17,9 @@ window.__exportApp={getData:()=>data,getFx:()=>fxRate,getSelectedSourcing:(id)=>
       productId:String(id),cost:p.cost,itemPrice:p.cost,shippingJpy:p.sourcingShippingJpy,...meta
     }));
   }catch(e){}
-  render();return true
+  render();
+  if($('modal')?.classList.contains('open')) detail(encodeURIComponent(String(id)));
+  return true
 },
 clearSourcingCost:(id)=>{
   const p=data.find(x=>String(x.id)===String(id));
