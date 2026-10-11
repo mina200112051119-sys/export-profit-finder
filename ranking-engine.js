@@ -76,9 +76,15 @@ function scoreV2(raw,s={},universe=[]){
   // 送料・商品状態も仕入価格なしで比較できる実データ。
   const shippingRatio=p.sell>0?p.ship/p.sell:1;
   const shippingScore=clamp(100-shippingRatio*120);
-  const conditionScore=p.condition==='NEW'||p.condition==='New'||p.condition==='新品'?90:
-    p.condition==='USED'||p.condition==='Used'||p.condition==='中古'?65:
-    p.condition?50:40;
+  // 仕入れ候補でユーザーが入力した状態を優先して評価する。
+  // 未入力の場合だけeBay側の商品状態を使う。
+  const chosenCondition=p.sourcingCondition||p.condition||'';
+  const conditionScore=['新品','未使用','NEW','New'].includes(chosenCondition)?90:
+    ['美品'].includes(chosenCondition)?80:
+    ['中古','USED','Used'].includes(chosenCondition)?65:
+    ['傷あり'].includes(chosenCondition)?40:
+    ['ジャンク'].includes(chosenCondition)?20:
+    chosenCondition?50:40;
   const marketDataScore=clamp(
     priceScore*.34+
     competitionScore*.20+
