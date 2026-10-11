@@ -235,11 +235,19 @@ function inject() {
   render(p);
 }
 
-const observer=new MutationObserver(() => {
+const observer=new MutationObserver(records => {
+  // Ignore changes made inside the sourcing panel itself. Otherwise render(p)
+  // changes panel.innerHTML, retriggers this observer, and continually replaces
+  // the inputs while the user is trying to type.
+  const changedOutsidePanel = records.some(record => {
+    const target = record.target;
+    return !(target instanceof Element && target.closest('#source-panel'));
+  });
+  if (!changedOutsidePanel) return;
   const body=document.getElementById('body');
   if(body && body.textContent.trim()) setTimeout(inject,0);
 });
-observer.observe(document.body,{childList:true,subtree:true});
+observer.observe(document.getElementById('body') || document.body,{childList:true,subtree:true});
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',inject);
 else inject();
