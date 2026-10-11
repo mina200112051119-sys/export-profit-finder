@@ -67,13 +67,12 @@ function scoreV2(raw,s={},universe=[]){
   const minPrice=prices.length?prices[0]:p.sell;
   const maxPrice=prices.length?prices[prices.length-1]:p.sell;
   const priceSpread=maxPrice-minPrice;
-  // 同カテゴリー内の価格差を連続値で使う。価格が違えば順位が同率になりにくい。
-  const pricePosition=prices.length&&p.sell>0&&priceSpread>0?clamp((p.sell-minPrice)/priceSpread*100):50;
-  const priceScore=prices.length&&priceSpread>0?clamp(25+pricePosition*.75):50;
-  const competitionValues=peers.map(x=>x.searchResultTotal).filter(v=>v>0);
-  const avgCompetition=competitionValues.length?competitionValues.reduce((a,b)=>a+b,0)/competitionValues.length:0;
-  const competitionScore=avgCompetition>0&&p.searchResultTotal>0?clamp(100-(p.searchResultTotal/avgCompetition-1)*50):50;
-  // 送料・商品状態も仕入価格なしで比較できる実データ。
+  // 商品ごとの売価の高低は、売れやすさや利益の根拠にならないため順位点にしない。
+  // searchResultTotal は検索語全体の件数で、商品ごとの競合出品数ではない。
+  // activeListingsTotal が実際に取得できるまでは競合点を中立値に固定する。
+  const priceScore=50;
+  const competitionScore=p.activeListingsTotal>0?clamp(100-Math.log10(p.activeListingsTotal+1)*25):35;
+  // 送料比率は補助情報にとどめ、販売実績より重く扱わない。
   const shippingRatio=p.sell>0?p.ship/p.sell:1;
   const shippingScore=clamp(100-shippingRatio*120);
   // 仕入れ候補でユーザーが入力した状態を優先して評価する。
@@ -85,13 +84,20 @@ function scoreV2(raw,s={},universe=[]){
     ['傷あり'].includes(chosenCondition)?40:
     ['ジャンク'].includes(chosenCondition)?20:
     chosenCondition?50:40;
+  // 仕入価格を調べる前は、販売実績・価格履歴・根拠の量を主軸にする。
+  // 販売実績がない商品は、現在出品価格だけで上位に来ないよう明確に減点する。
+  const salesEvidenceScore=p.soldHistoryAvailable
+    ? clamp(20+salesActivityScore(p)*.8)
+    : 8;
+  const historyEvidenceScore=p.historicalPrices.length>=10?90:p.historicalPrices.length>=5?75:p.historicalPrices.length>=3?60:25;
   const marketDataScore=clamp(
-    priceScore*.34+
-    competitionScore*.20+
-    shippingScore*.16+
-    conditionScore*.10+
-    base.scores.sellability*.10+
-    base.scores.stability*.10
+    salesEvidenceScore*.38+
+    base.scores.stability*.20+
+    historyEvidenceScore*.16+
+    competitionScore*.10+
+    shippingScore*.06+
+    conditionScore*.05+
+    (p.sell>0?priceScore:0)*.05
   );
   const total=round(clamp(
     marketDataScore*.60+
@@ -104,11 +110,15 @@ function scoreV2(raw,s={},universe=[]){
   const recommendationReasons=[];
   if(m.currentProfit!=null) recommendationReasons.push('予想利益 '+(m.currentProfit>=0?'+':'')+Math.round(m.currentProfit).toLocaleString()+'円');
   else recommendationReasons.push('利益は仕入価格入力後に判定');
-  if(m.soldHistoryAvailable) recommendationReasons.push('過去90日販売 '+m.soldHistoryCount+'件');
+  if(m.soldHistoryAvailable) recommendationReasons.push('過去90日販売データ '+m.soldHistoryCount+'件');
+  else recommendationReasons.push('過去90日販売データなし（売れ行き未確認）');
+  if(p.activeListingsTotal>0) recommendationReasons.push('現在出品数 '+p.activeListingsTotal+'件');
+  else recommendationReasons.push('商品単位の現在出品数は未取得');
+  if(p.historicalPrices.length<3) recommendationReasons.push('価格履歴が少ない');
   recommendationReasons.push('リスク '+risk);
   recommendationReasons.push('信頼度 '+m.confidence);
   const stars=total>=90?'★★★★★':total>=80?'★★★★☆':total>=65?'★★★☆☆':total>=45?'★★☆☆☆':'★☆☆☆☆';
-  return {...base,totalScore:total,stars,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0,scoreVersion:'v3',scoreBreakdown:{marketData:round(marketDataScore),price:round(priceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
+  return {...base,totalScore:total,stars,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0,scoreVersion:'v3',scoreBreakdown:{marketData:round(marketDataScore),salesEvidence:round(salesEvidenceScore),priceHistory:round(historyEvidenceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
