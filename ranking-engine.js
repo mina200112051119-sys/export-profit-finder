@@ -101,7 +101,8 @@ function scoreV2(raw,s={},universe=[]){
   if(m.soldHistoryAvailable) recommendationReasons.push('過去90日販売 '+m.soldHistoryCount+'件');
   recommendationReasons.push('リスク '+risk);
   recommendationReasons.push('信頼度 '+m.confidence);
-  return {...base,totalScore:total,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0,scoreVersion:'v3',scoreBreakdown:{marketData:round(marketDataScore),price:round(priceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
+  const stars=total>=90?'★★★★★':total>=80?'★★★★☆':total>=65?'★★★☆☆':total>=45?'★★☆☆☆':'★☆☆☆☆';
+  return {...base,totalScore:total,stars,risk,confidence:m.confidence,riskMetrics:m,recommendationReasons,provisional:p.cost<=0,scoreVersion:'v3',scoreBreakdown:{marketData:round(marketDataScore),price:round(priceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
