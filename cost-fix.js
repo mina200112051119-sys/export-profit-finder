@@ -15,6 +15,7 @@ function breakEvenPrice(p,s={}){
     +Math.max(0,num(s.internationalRate,0.0135))
     +Math.max(0,num(s.conversionFeeRate,0))/100;
   const local=Math.max(0,num(s.domesticShipping))
+    +Math.max(0,num(p.sourcingShippingJpy))
     +Math.max(0,num(s.packaging))
     +Math.max(0,num(s.otherCost));
   const cost=Math.max(0,num(p.cost));
