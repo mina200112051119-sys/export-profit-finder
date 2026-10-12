@@ -1,8 +1,7 @@
-
 async function storage(req,res){
   const id=String(req.headers?.['x-user-id']||'').trim();
   if(!/^[a-zA-Z0-9_-]{12,80}$/.test(id)) return res.status(400).json({error:'valid x-user-id is required'});
-  const base=String(process.env.KV_REST_API_URL||process.env.UPSTASH_REDIS_REST_URL||'').replace(/\\/$/,'');
+  const base=String(process.env.KV_REST_API_URL||process.env.UPSTASH_REDIS_REST_URL||'').replace(/\/+$/,'');
   const token=String(process.env.KV_REST_API_TOKEN||process.env.UPSTASH_REDIS_REST_TOKEN||'');
   if(!base||!token) return res.status(503).json({configured:false,error:'cloud storage is not configured'});
   const key='export-profit:user:'+id;
