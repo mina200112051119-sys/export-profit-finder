@@ -19,17 +19,18 @@ function breakEvenPrice(p,s={}){
     +Math.max(0,num(s.packaging))
     +Math.max(0,num(s.otherCost));
   const cost=Math.max(0,num(p.cost));
-  const ship=Math.max(0,num(p.ship));
+  const buyerShipping=Math.max(0,num(p.ship));
   const denominator=fx*(1-variable);
   if(cost<=0||denominator<=0)return null;
 
+  // 購入者負担送料は売上に加算し、手数料計算には含めるが経費として二重控除しない。
   const solve=(fixedUsd)=>round(
-    (cost+local+ship*fx*(1+variable)+fixedUsd*fx)/denominator
+    (cost+local+fixedUsd*fx)/denominator-buyerShipping
   );
   const candidates=[0.30,0.40].map(fixedUsd=>({
     fixedUsd,
     sale:solve(fixedUsd)
-  })).filter(x=>x.sale>=0 && ((x.sale+ship)<=10)===(x.fixedUsd===0.30));
+  })).filter(x=>x.sale>=0 && ((x.sale+buyerShipping)<=10)===(x.fixedUsd===0.30));
 
   if(candidates.length)return candidates[0].sale;
   return solve(0.40);
