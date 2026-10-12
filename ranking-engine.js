@@ -10,7 +10,7 @@ function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.
 function sellThrough(p){if(p.sold!==null&&p.list!==null&&p.sold>=0&&p.list>=0){const t=p.sold+p.list;return t>0?p.sold/t:null}return null}
 function salesActivityScore(p){if(!p.soldHistoryAvailable)return 0;const s=Math.max(0,num(p.soldHistoryCount));return clamp(20+Math.log1p(s)*17)}
 function confidence(p){if(p.soldHistoryAvailable){const s=p.soldHistoryCount,l=p.list||0;if(s>=50&&l>=50)return{level:'高',factor:1};if(s>=20&&l>=20)return{level:'中',factor:.94};if(s>=5&&l>=5)return{level:'中',factor:.86};return{level:'低',factor:.72}}return p.sell>0?{level:'中',factor:1}:{level:'低',factor:.75}}
-function sellabilityScore(p){const r=sellThrough(p);if(r!==null){const count=p.sold+p.list,rel=count>=100?1:count>=40?.9:count>=10?.75:.55;return clamp(r*100*rel)}const listings=Math.max(0,num(p.activeListingsTotal||p.searchResultTotal));if(listings>0)return clamp(88-Math.log10(listings+1)*18,25,80);return p.sell>0?50:0}
+function sellabilityScore(p){const r=sellThrough(p);if(r!==null){const count=p.sold+p.list,rel=count>=100?1:count>=40?.9:count>=10?.75:.55;return clamp(r*100*rel)}const listings=Math.max(0,num(p.activeListingsTotal));if(listings>0)return clamp(88-Math.log10(listings+1)*18,25,80);return p.sell>0?50:0}
 function trendScore(p){return p.trend==='上昇'?90:p.trend==='横ばい'?70:p.trend==='下落'?25:50}
 function stabilityScore(p){const a=p.historicalPrices.map(num).filter(v=>v>0);if(a.length<3)return 50;const avg=a.reduce((x,y)=>x+y,0)/a.length,variance=a.reduce((x,y)=>x+Math.pow(y-avg,2),0)/a.length,cv=avg>0?Math.sqrt(variance)/avg:1;return clamp(100-cv*180)}
 function feeScore(p,c){if(p.sell<=0)return 0;return clamp(100-(c.totalFees/Math.max(c.saleJpy,1))*300)}
@@ -30,7 +30,7 @@ function dataCompleteness(p){
   const fields=[
     ['現在の出品価格',p.sell>0,25],['送料情報',Number.isFinite(Number(p.ship))&&p.ship>=0,15],
     ['商品状態',Boolean(p.condition),10],['商品画像',Boolean(p.image),10],['eBay商品ページ',Boolean(p.url),10],
-    ['カテゴリー',Boolean(p.cat&&p.cat!=='その他'),10],['検索結果件数',Number(p.searchResultTotal)>0,10],['商品ID',Boolean(p.id),10]
+    ['カテゴリー',Boolean(p.cat&&p.cat!=='その他'),10],['検索語の検索結果件数',Number(p.searchResultTotal)>0,10],['商品ID',Boolean(p.id),10]
   ];
   const available=fields.filter(x=>x[1]);
   const score=available.reduce((n,x)=>n+x[2],0);
