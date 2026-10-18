@@ -68,7 +68,10 @@ function currentProduct() {
   if (window.__detailProduct) return window.__detailProduct;
   const name = document.getElementById('title')?.textContent?.trim();
   const list = window.__exportApp?.getData?.() || [];
-  return list.find(p => p && (p.name === name || p.displayName === name)) || null;
+  const regular = list.find(p => p && (p.name === name || p.displayName === name));
+  if (regular) return regular;
+  const live = window.__LIVE_CATEGORY_DATA || [];
+  return live.find(p => p && (p.name === name || p.displayName === name || (name && name.startsWith(p.name + '｜詳細')))) || null;
 }
 
 function searchUrl(p, source) {
