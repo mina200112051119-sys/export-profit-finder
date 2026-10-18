@@ -5,8 +5,9 @@ const INT=.0135;
 const SOLD_CATEGORY={'ポケモンカード':'183454','ポケモン関連サプライ用品':'183460','釣具':'261030','カメラ':'31388','レトロゲーム':'139973'};
 let data=[],fxRate=150,fxDate='',updated='',photoDataUrl='';
 function findProductForSourcing(id){
-  return data.find(x=>String(x.id)===String(id))
-    || (window.__LIVE_CATEGORY_DATA||[]).find(x=>String(x.id)===String(id))
+  if(window.__detailProduct&&String(window.__detailProduct.id)===String(id))return window.__detailProduct;
+  return (window.__LIVE_CATEGORY_DATA||[]).find(x=>String(x.id)===String(id))
+    || data.find(x=>String(x.id)===String(id))
     || null;
 }
 function updateVisibleProfit(p){
