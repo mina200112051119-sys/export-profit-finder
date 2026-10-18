@@ -4,27 +4,43 @@ const FEES={'ポケモンカード':.1325,'ポケモン関連サプライ用品'
 const INT=.0135;
 const SOLD_CATEGORY={'ポケモンカード':'183454','ポケモン関連サプライ用品':'183460','釣具':'261030','カメラ':'31388','レトロゲーム':'139973'};
 let data=[],fxRate=150,fxDate='',updated='',photoDataUrl='';
+function findProductForSourcing(id){
+  return data.find(x=>String(x.id)===String(id))
+    || (window.__LIVE_CATEGORY_DATA||[]).find(x=>String(x.id)===String(id))
+    || null;
+}
+function updateVisibleProfit(p){
+  const card=[...document.querySelectorAll('[data-product-id]')].find(x=>x.getAttribute('data-product-id')===String(p.id));
+  if(!card)return;
+  const c=RankingEngine.calcCosts(p,settings(p));
+  const el=card.querySelector('.ranking-profit');
+  if(el){
+    el.className='ranking-profit '+(c.profit==null?'yellow':c.profit>=0?'green':'red');
+    el.textContent=c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit);
+  }
+}
 window.__exportApp={getData:()=>data,getFx:()=>fxRate,getSelectedSourcing:(id)=>{try{return JSON.parse(localStorage.getItem('selectedSourcingCost:v1:'+String(id))||'null')}catch(e){return null}},applySourcingCost:(id,cost,meta={})=>{
-  const p=data.find(x=>String(x.id)===String(id));
+  const p=findProductForSourcing(id);
   if(!p)return false;
   p.cost=Number(meta.itemPrice ?? cost);
   p.sourcingShippingJpy=Number(meta.shippingJpy||0);
   p.sourcingSource=meta.source||'';
   p.sourcingCondition=meta.condition||'';
   p.sourcingCheckedAt=meta.checkedAt||'';
+  if(p.costs)p.costs=RankingEngine.calcCosts(p,settings(p));
   try{
     localStorage.setItem('selectedSourcingCost:v1:'+String(id),JSON.stringify({
       productId:String(id),cost:p.cost,itemPrice:p.cost,shippingJpy:p.sourcingShippingJpy,...meta
     }));
   }catch(e){}
-  render();
+  updateVisibleProfit(p);
   if($('modal')?.classList.contains('open')) detail(encodeURIComponent(String(id)));
   return true
 },
 clearSourcingCost:(id)=>{
-  const p=data.find(x=>String(x.id)===String(id));
-  if(p){p.cost=0;p.sourcingShippingJpy=0;p.sourcingSource='';p.sourcingCondition='';p.sourcingCheckedAt='';}
-  clearSourcingOverride(id);render();return true
+  const p=findProductForSourcing(id);
+  if(p){p.cost=0;p.sourcingShippingJpy=0;p.sourcingSource='';p.sourcingCondition='';p.sourcingCheckedAt='';if(p.costs)p.costs=RankingEngine.calcCosts(p,settings(p));}
+  clearSourcingOverride(id);if(p)updateVisibleProfit(p);return true
 }};
 const $=x=>document.getElementById(x);
 function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');b.classList.add('active')}
@@ -121,7 +137,7 @@ async function enrichSold(items){return items}
 function rankAll(cat=null){return RankingEngine.rank(data,baseSettings(),cat)}
 function rank(cat=null){return rankAll(cat).filter(p=>p.sell*fxRate>=1000)}
 function rankWithoutPositiveSales(cat=null){return []}
-function renderList(list,title,reviewList=[]){const ranked=list.slice(0,20).map((p,i)=>{const c=p.costs;return '<div class="card product" tabindex="0" onclick="detail(\''+encodeURIComponent(p.id)+'\')"><div style="display:flex;justify-content:space-between"><b>#'+(i+1)+'</b><span class="stars">'+p.stars+'</span></div><h3>'+esc(p.displayName||p.name)+'</h3><div class="row"><span>現在のeBay価格（円換算・送料別）</span><b>'+yen(p.sell*fxRate)+'円</b></div><div class="row"><span>eBay送料（円換算）</span><b>'+yen(p.ship*fxRate)+'円</b></div><div class="row"><span>候補スコア</span><b class="score">'+p.totalScore+'点</b></div><div class="row"><span>基本情報の充実度</span><b>'+(p.dataCompleteness?.level||'要確認')+'（'+(p.dataCompleteness?.score??'—')+'点）</b></div><div class="row"><span>予想利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit))+'</b></div><div class="row"><span>データの種類</span><b>現在の出品情報のみ</b></div><div class="row"><span>リスク目安</span><b class="'+riskClass(p.risk)+'">'+p.risk+'</b></div><div class="muted">※販売済み価格・販売件数は使用していません。候補スコアは出品価格、利益見込み、手数料、価格下落シナリオ等による比較用です。</div><button class="secondary" type="button" onclick="event.stopPropagation();detail(\''+encodeURIComponent(p.id)+'\')">利益・仕入れ判断の詳細</button></div>'}).join('');$('ranking').innerHTML='<h2>'+esc(title)+'</h2><p class="muted">過去90日販売実績を使わない仕入れ候補ランキングです。現在のeBay出品価格・送料・利益見込みを比較します。現在の出品は販売済み商品ではなく、売れやすさを断定できません。まず商品価格＋送料が1,000円相当以上の候補を表示します。</p>'+(ranked||'<div class="notice">条件に合う候補がまだありません。カテゴリー検索または商品名・型番検索で探してください。商品価格＋送料が1,000円相当未満の商品は候補ランキングに表示していません。</div>')}function finalJudgment(r,c,p){if(!p.cost||p.cost<=0)return '要仕入価格確認';if(c.profit!=null&&c.profit<0)return 'おすすめしない';if(['ジャンク','傷あり'].includes(p.sourcingCondition))return '慎重（商品の状態を要確認）';if(p.sourcingCondition==='状態不明')return '要確認（状態情報不足）';if(r.risk==='高'||r.totalScore<45)return '慎重';if(r.totalScore<65||r.risk==='中')return '要確認';if(c.profit!=null&&c.profit>=0&&r.risk!=='高')return '仕入れ候補';return '要確認'}
+function renderList(list,title,reviewList=[]){const ranked=list.slice(0,20).map((p,i)=>{const c=p.costs;return '<div class="card product" data-product-id="'+esc(p.id)+'" tabindex="0" onclick="detail(\''+encodeURIComponent(p.id)+'\')"><div style="display:flex;justify-content:space-between"><b>#'+(i+1)+'</b><span class="stars">'+p.stars+'</span></div><h3>'+esc(p.displayName||p.name)+'</h3><div class="row"><span>現在のeBay価格（円換算・送料別）</span><b>'+yen(p.sell*fxRate)+'円</b></div><div class="row"><span>eBay送料（円換算）</span><b>'+yen(p.ship*fxRate)+'円</b></div><div class="row"><span>候補スコア</span><b class="score">'+p.totalScore+'点</b></div><div class="row"><span>基本情報の充実度</span><b>'+(p.dataCompleteness?.level||'要確認')+'（'+(p.dataCompleteness?.score??'—')+'点）</b></div><div class="row"><span>予想利益</span><b class="ranking-profit '+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit))+'</b></div><div class="row"><span>データの種類</span><b>現在の出品情報のみ</b></div><div class="row"><span>リスク目安</span><b class="'+riskClass(p.risk)+'">'+p.risk+'</b></div><div class="muted">※販売済み価格・販売件数は使用していません。候補スコアは出品価格、利益見込み、手数料、価格下落シナリオ等による比較用です。</div><button class="secondary" type="button" onclick="event.stopPropagation();detail(\''+encodeURIComponent(p.id)+'\')">利益・仕入れ判断の詳細</button></div>'}).join('');$('ranking').innerHTML='<h2>'+esc(title)+'</h2><p class="muted">過去90日販売実績を使わない仕入れ候補ランキングです。現在のeBay出品価格・送料・利益見込みを比較します。現在の出品は販売済み商品ではなく、売れやすさを断定できません。まず商品価格＋送料が1,000円相当以上の候補を表示します。</p>'+(ranked||'<div class="notice">条件に合う候補がまだありません。カテゴリー検索または商品名・型番検索で探してください。商品価格＋送料が1,000円相当未満の商品は候補ランキングに表示していません。</div>')}function finalJudgment(r,c,p){if(!p.cost||p.cost<=0)return '要仕入価格確認';if(c.profit!=null&&c.profit<0)return 'おすすめしない';if(['ジャンク','傷あり'].includes(p.sourcingCondition))return '慎重（商品の状態を要確認）';if(p.sourcingCondition==='状態不明')return '要確認（状態情報不足）';if(r.risk==='高'||r.totalScore<45)return '慎重';if(r.totalScore<65||r.risk==='中')return '要確認';if(c.profit!=null&&c.profit>=0&&r.risk!=='高')return '仕入れ候補';return '要確認'}
 function judgmentReason(r,c,p){const a=[];a.push('総合点 '+r.totalScore+'点');if(c.profit!=null)a.push('現在利益 '+(c.profit>=0?'+':'')+yen(c.profit));a.push('出品情報ベースの参考評価 '+Math.round(r.scores?.sellability||0)+'点');a.push('リスク '+r.risk);a.push('基本情報の充実度 '+(r.dataCompleteness?.level||'要確認'));return a.join('／')}
 function riskClass(r){return r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow'}
 function renderCats(){$('cats').innerHTML=RankingEngine.CATEGORIES.map(c=>{const all=data.filter(p=>p.cat===c&&p.sell*fxRate>=1000).length;return '<button class="cat" onclick="category(\''+c.replaceAll("'","\\'")+'\')"><b>'+c+'</b><small>候補 '+all+'件（商品価格のみ1,000円相当以上）</small></button>'}).join('')}
