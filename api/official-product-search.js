@@ -41,12 +41,19 @@ async function searchGunpla(query) {
   const html = await response.text();
   const matches = [];
   // 公式検索結果のHTMLから商品詳細リンクと商品名を抽出。抽出できない場合は候補を作らない。
-  const linkPattern = /<a\b[^>]*href=["']([^"']*(?:detail\.php|products\/[^"']+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const linkPattern = /<a\b([^>]*href=["']([^"']*(?:detail\.php|products\/[^"']+)[^"']*)["'][^>]*)>([\s\S]*?)<\/a>/gi;
   let match;
-  while ((match = linkPattern.exec(html)) && matches.length < 80) {
-    const href = decodeHtml(match[1]);
-    const title = decodeHtml(match[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
-    if (!title || title.length < 4 || /^(商品情報|詳しくはこちら|詳細)$/u.test(title)) continue;
+  while ((match = linkPattern.exec(html)) && matches.length < 160) {
+    const attrs = match[1] || '';
+    const href = decodeHtml(match[2]);
+    const inner = match[3] || '';
+    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
+    const attrTitle = decodeHtml((attrs.match(/\btitle=["']([^"']+)["']/i) || [])[1] || '');
+    const imageAlt = decodeHtml((inner.match(/<img\b[^>]*\balt=["']([^"']+)["']/i) || [])[1] || '');
+    const title = [textTitle, attrTitle, imageAlt].find(value =>
+      value && value.length >= 4 && !/^(商品情報|詳しくはこちら|詳細)$/u.test(value)
+    ) || '';
+    if (!title) continue;
     if (!/ガンダム|ガンプラ|HG\b|MG\b|RG\b|PG\b|ENTRY GRADE|SD\b|\b1\//iu.test(title)) continue;
     const url = new URL(href, 'https://www.bandaispirits.co.jp/').toString();
     if (!url.startsWith('https://www.bandaispirits.co.jp/')) continue;
@@ -56,7 +63,9 @@ async function searchGunpla(query) {
     const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
     const score = q && normalizedTitle.includes(q) ? 100 :
       terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
-    if (score >= 45) matches.push({ title, url, image: '', date: '', sourceName: 'BANDAI SPIRITS公式商品検索', score });
+    const imagePath = (inner.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+    const image = imagePath ? new URL(decodeHtml(imagePath), 'https://www.bandaispirits.co.jp/').toString() : '';
+    if (score >= 45) matches.push({ title, url, image, date: '', sourceName: 'BANDAI SPIRITS公式商品検索', score });
   }
   const unique = [...new Map(matches.map(row => [row.url + '|' + row.title, row])).values()];
   return unique.sort((a,b) => b.score-a.score).slice(0,10);
