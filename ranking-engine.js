@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const CATEGORIES=['ポケモンカード','ポケモン関連サプライ用品','釣具','カメラ','レトロゲーム'];
+const CATEGORIES=['ポケモンカード','ポケモン関連サプライ用品','釣具','カメラ','レトロゲーム','ガンプラ'];
 const WEIGHTS={sellability:30,margin:25,profit:15,stability:10,inventoryRisk:10,fees:5,marketTrend:5};
 const num=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,v));
