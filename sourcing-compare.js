@@ -127,6 +127,14 @@ function saveDomesticSearchName(p, value) {
   return name;
 }
 
+function originalModelTokens(value) {
+  const matches = String(value || '').match(/[A-Za-z]{1,10}[- ]?\\d{1,5}[A-Za-z0-9-]*/g) || [];
+  return matches.map(raw => ({
+    raw,
+    compact: raw.normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '')
+  })).filter(token => token.compact && /\\d/.test(token.compact));
+}
+
 function searchUrl(p, source, query = getDomesticSearchName(p)) {
   const found = SOURCES.find(x => x[1] === source);
   return found ? found[2] + encodeURIComponent(query || p.name || '') : '#';
@@ -276,18 +284,42 @@ function render(p) {
         if (!response.ok) throw new Error(data.message || data.error || '取得に失敗しました');
         if (Array.isArray(data.candidates) && data.candidates.length) {
           officialResults.innerHTML = '<div class="notice"><b>公式情報の候補（自動一致確定ではありません）</b><br>' + esc(data.message || '') + '</div>' +
-            data.candidates.map(row => '<div class="card" style="margin-top:8px;padding:10px">' +
-              (row.image ? '<img src="' + esc(row.image) + '" alt="" style="max-width:100px;max-height:100px;object-fit:contain">' : '') +
-              '<div><b>' + esc(row.title || '') + '</b></div>' +
-              (row.date ? '<div class="muted">掲載日：' + esc(row.date) + '</div>' : '') +
-              '<div class="muted">候補スコア：' + esc(row.score) + '（名称一致の参考値。本人確認ではありません）</div>' +
-              '<a href="' + esc(row.url || '#') + '" target="_blank" rel="noopener noreferrer">公式情報を開いて照合</a> ' +
-              '<button type="button" class="secondary sc-use-official-name" data-name="' + esc(row.title || '') + '">検索名に使用</button></div>').join('');
+            data.candidates.map(row => {
+              const originalTokens = originalModelTokens(query);
+              const candidateText = String(row.title || '').normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+              const missingTokens = originalTokens.filter(token => !candidateText.includes(token.compact));
+              const modelCheck = originalTokens.length
+                ? (missingTokens.length
+                  ? '<div class="notice" style="margin-top:6px"><b>型番照合：未確認</b><br>元の検索語にある表記「' + esc(missingTokens.map(token => token.raw).join('、')) + '」が候補名に見つかりません。画像・公式ページで確認してください。</div>'
+                  : '<div class="muted">型番照合：元の検索語に含まれる数字付き表記と一致（最終確認は必要）</div>')
+                : '<div class="muted">型番照合：対象となる数字付き表記なし</div>';
+              return '<div class="card" style="margin-top:8px;padding:10px">' +
+                (row.image ? '<img src="' + esc(row.image) + '" alt="公式候補の商品画像" style="max-width:140px;max-height:140px;object-fit:contain">' : '<div class="muted">公式候補の画像なし</div>') +
+                '<div><b>' + esc(row.title || '') + '</b></div>' +
+                '<div class="muted">情報源：' + esc(row.sourceName || '公式情報') + '</div>' +
+                (row.date ? '<div class="muted">掲載日：' + esc(row.date) + '</div>' : '') +
+                modelCheck +
+                '<div class="muted">候補スコア：' + esc(row.score) + '（名称一致の参考値。商品同一性の保証ではありません）</div>' +
+                '<a href="' + esc(row.url || '#') + '" target="_blank" rel="noopener noreferrer">公式情報を開いて照合</a> ' +
+                '<button type="button" class="secondary sc-use-official-name" data-name="' + esc(row.title || '') + '" data-url="' + esc(row.url || '') + '">この候補名を検索語に使う</button></div>';
+            }).join('');
           officialResults.querySelectorAll('.sc-use-official-name').forEach(button => button.onclick = () => {
             if (searchNameInput) {
-              searchNameInput.value = button.dataset.name || '';
-              saveDomesticSearchName(p, searchNameInput.value);
+              const candidateName = button.dataset.name || '';
+              const candidateUrl = button.dataset.url || '';
+              const accepted = confirm(
+                'この候補名を国内検索に使用しますか？\\n\\n候補名：' + candidateName +
+                '\\n\\n公式ページを開き、型番・画像・商品仕様がeBayの商品と一致することを確認してから選択してください。'
+              );
+              if (!accepted) return;
+              searchNameInput.value = candidateName;
+              saveDomesticSearchName(p, candidateName);
               drawSearchLinks();
+              officialResults.insertAdjacentHTML('afterbegin',
+                '<div class="notice">検索語に採用した候補：' + esc(candidateName) +
+                (candidateUrl ? '<br><a href="' + esc(candidateUrl) + '" target="_blank" rel="noopener noreferrer">採用した公式ページを再確認</a>' : '') +
+                '<br>採用操作は商品同一性の自動証明ではありません。</div>'
+              );
             }
           });
         } else {
