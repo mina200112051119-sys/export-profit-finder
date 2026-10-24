@@ -54,9 +54,13 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
   const extract = name => {
     const start = source.indexOf('function ' + name + '(');
     assert.notEqual(start, -1, name + ' function exists');
-    const end = source.indexOf('\n}\n', start);
-    assert.notEqual(end, -1, name + ' function closes');
-    return source.slice(start, end + 2);
+    const close = source.indexOf('\n}\n', start);
+    const nextFunction = source.indexOf('\nfunction ', start + 1);
+    if (close !== -1 && (nextFunction === -1 || close < nextFunction)) {
+      return source.slice(start, close + 2);
+    }
+    assert.notEqual(nextFunction, -1, name + ' function closes before the next function');
+    return source.slice(start, nextFunction).trim();
   };
   const context = {
     num: (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback,
