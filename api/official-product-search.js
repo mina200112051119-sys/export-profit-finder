@@ -92,6 +92,55 @@ async function searchPokemonGoods(query) {
   return matches;
 }
 
+async function searchNikonCameras(query) {
+  const urls = [
+    'https://nij.nikon.com/products/mirrorless/',
+    'https://nij.nikon.com/products/discontinue_mirrorless/',
+    'https://nij.nikon.com/products/lineup/mirrorless/'
+  ];
+  const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+  const rows = [];
+  for (const pageUrl of urls) {
+    const response = await fetch(pageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
+    });
+    if (!response.ok) throw new Error('ニコン公式製品情報の取得に失敗しました');
+    const html = await response.text();
+    const linkPattern = /<a\\b([^>]*href=["']([^"']+)["'][^>]*)>([\\s\\S]*?)<\\/a>/gi;
+    let match;
+    while ((match = linkPattern.exec(html)) && rows.length < 1800) {
+      const href = decodeHtml(match[2]);
+      const url = new URL(href, pageUrl).toString();
+      if (!url.startsWith('https://nij.nikon.com/products/')) continue;
+      if (!/camera|mirrorless|discontinue|lineup/i.test(url)) continue;
+      const inner = match[3] || '';
+      const anchorText = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+      const before = html.slice(Math.max(0, match.index - 900), match.index);
+      const headings = [...before.matchAll(/<(?:h2|h3|h4)[^>]*>([\\s\\S]*?)<\\/(?:h2|h3|h4)>/gi)];
+      const heading = headings.length
+        ? decodeHtml(headings[headings.length - 1][1].replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim()
+        : '';
+      const title = [heading, anchorText].find(value =>
+        value && value.length >= 2 && value.length <= 100 &&
+        !/^(製品情報を見る|購入はこちらから|詳細|Image|比較リストに追加)$/u.test(value)
+      ) || '';
+      if (!title) continue;
+      const normalizedTitle = normalizeText(title);
+      const score = q && normalizedTitle.includes(q) ? 100 :
+        terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+      if (score < 45) continue;
+      const imagePath = (before.match(/<img\\b[^>]*\\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+      let image = '';
+      try { if (imagePath) image = new URL(decodeHtml(imagePath), pageUrl).toString(); } catch {}
+      rows.push({ title, url, image, date: '', sourceName: 'ニコン公式製品情報', score });
+    }
+  }
+  return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+}
+
 async function searchCanonCameras(query) {
   const response = await fetch('https://global.canon/ja/c-museum/camera.html', {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
@@ -380,16 +429,24 @@ module.exports = async (req, res) => {
       });
     }
     if (category === 'カメラ') {
-      const candidates = await searchCanonCameras(query);
+      const results = await Promise.allSettled([searchCanonCameras(query), searchNikonCameras(query)]);
+      const candidates = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+      const sourceErrors = results.filter(result => result.status === 'rejected')
+        .map((result, index) => String(result.reason?.message || '公式サイト取得失敗'));
+      const unique = [...new Map(candidates.map(row => [row.url + '|' + row.title, row])).values()]
+        .sort((a, b) => b.score - a.score).slice(0, 10);
+      const successfulSources = results.filter(result => result.status === 'fulfilled').length;
       return res.json({
-        category, query, provider: 'キヤノンカメラミュージアム公式',
+        category, query, provider: 'キヤノン・ニコン公式製品情報',
         fetchedAt: new Date().toISOString(),
-        status: candidates.length ? 'candidate_found' : 'no_match',
-        verification: 'candidate_only',
-        message: candidates.length
-          ? 'キヤノン公式カメラミュージアムから名称候補を取得しました。型番・画像・製品仕様を照合するまで正式一致とは扱いません。ニコン等の他社製品はこの検索対象に含まれません。'
-          : 'キヤノン公式カメラミュージアムから一致候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',
-        candidates, sources
+        status: unique.length ? 'candidate_found' : (successfulSources ? 'no_match' : 'source_unavailable'),
+        verification: unique.length ? 'candidate_only' : 'not_checked',
+        message: unique.length
+          ? 'キヤノン・ニコンの公式情報から名称候補を取得しました。型番・画像・製品仕様を照合するまで正式一致とは扱いません。旧製品や他メーカーの商品は候補に出ない場合があります。'
+          : successfulSources
+            ? '取得できた公式ページから候補を抽出できませんでした。検索語を変えるか公式ページで手動確認してください。'
+            : '公式サイトを取得できませんでした。商品が存在しないという意味ではありません。公式リンクから手動確認してください。',
+        candidates: unique, sources, sourceErrors
       });
     }
     if (category === 'レトロゲーム') {
