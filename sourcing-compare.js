@@ -74,9 +74,28 @@ function currentProduct() {
   return live.find(p => p && (p.name === name || p.displayName === name || (name && name.startsWith(p.name + '｜詳細')))) || null;
 }
 
-function searchUrl(p, source) {
+const SEARCH_NAME_KEY = 'domesticSearchName:v1:';
+
+function getDomesticSearchName(p) {
+  try {
+    const saved = localStorage.getItem(SEARCH_NAME_KEY + String(p.id));
+    if (saved && saved.trim()) return saved.trim();
+  } catch {}
+  return String(p.domesticSearchName || p.displayName || p.name || '').trim();
+}
+
+function saveDomesticSearchName(p, value) {
+  const name = String(value || '').trim();
+  try {
+    if (name) localStorage.setItem(SEARCH_NAME_KEY + String(p.id), name);
+    else localStorage.removeItem(SEARCH_NAME_KEY + String(p.id));
+  } catch {}
+  return name;
+}
+
+function searchUrl(p, source, query = getDomesticSearchName(p)) {
   const found = SOURCES.find(x => x[1] === source);
-  return found ? found[2] + encodeURIComponent(p.name || '') : '#';
+  return found ? found[2] + encodeURIComponent(query || p.name || '') : '#';
 }
 
 function render(p) {
@@ -92,13 +111,11 @@ function render(p) {
     </div>
 
     <div class="card" style="margin-top:10px">
-      <h3>① 現在の出品を探す</h3>
-      <div class="grid">
-        ${SOURCES.map(([label,source]) => `
-          <a class="tab" style="text-decoration:none;text-align:center" href="${esc(searchUrl(p,source))}" target="_blank" rel="noopener">
-            ${esc(label)}で検索
-          </a>`).join('')}
-      </div>
+      <h3>① 国内で流通する商品名で探す</h3>
+      <label for="sc-search-name">国内検索用の商品名・型番</label>
+      <input id="sc-search-name" value="${esc(getDomesticSearchName(p))}" placeholder="日本の商品名や型番を入力">
+      <p class="muted">商品名が直訳のままの場合は、日本で使われている商品名・型番に直してから検索できます。入力した検索名は、この商品についてこの端末に保存されます。正式名称が自動確認済みという意味ではありません。</p>
+      <div id="sc-search-links" class="grid"></div>
     </div>
 
     <div class="card" style="margin-top:10px">
@@ -126,6 +143,24 @@ function render(p) {
       <div id="sc-list"></div>
     </div>
   `;
+
+  const searchNameInput = document.getElementById('sc-search-name');
+  const searchLinks = document.getElementById('sc-search-links');
+  function drawSearchLinks() {
+    const query = String(searchNameInput?.value || '').trim();
+    if (!searchLinks) return;
+    searchLinks.innerHTML = SOURCES.map(([label, source]) => {
+      const href = searchUrl(p, source, query);
+      return '<a class="tab" style="text-decoration:none;text-align:center" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(label) + 'で検索</a>';
+    }).join('');
+  }
+  if (searchNameInput) {
+    searchNameInput.addEventListener('input', () => {
+      saveDomesticSearchName(p, searchNameInput.value);
+      drawSearchLinks();
+    });
+  }
+  drawSearchLinks();
 
   const sourceLabel = s => SOURCES.find(x=>x[1]===s)?.[0] || s;
   const list = document.getElementById('sc-list');
