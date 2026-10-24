@@ -151,3 +151,12 @@ test('selected sourcing candidate remains attached to its stable row ID after in
   assert.match(source, /if \(row\.domesticSearchName\) saveDomesticSearchName\(p, row\.domesticSearchName\)/);
   assert.match(source, /if \(row\.officialCandidate\) \{ selectedOfficialCandidate = \{ \.\.\.row\.officialCandidate \}; writeOfficialCandidate\(p, selectedOfficialCandidate\); drawSelectedOfficialCandidate\(\); \}/);
 });
+
+
+test('detail sourcing links prefer saved Japanese domestic search name', () => {
+  const source = fs.readFileSync('index.html', 'utf8');
+  assert.match(source, /function domesticSearchQuery\(p\)/);
+  assert.match(source, /localStorage\.getItem\('domesticSearchName:v1:'\+String\(p\.id\)\)/);
+  assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\)\)/);
+  assert.match(source, /return String\(p\.displayName\|\|p\.titleJa\|\|p\.name\|\|' '\)\.trim\(\)/);
+});
