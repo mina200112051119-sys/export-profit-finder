@@ -235,3 +235,16 @@ test('removing a saved sourcing selection schedules cloud persistence', () => {
   assert.match(html, /function scheduleSourcingCloudSave\(k\)/);
   assert.match(html, /startsWith\('selectedSourcingCost:v1:'\)/);
 });
+
+
+test('cloud storage preserves official matches and Japanese sourcing search names', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /officialCandidates,domesticSearchNames/);
+  assert.match(html, /selectedOfficialCandidate:v1:/);
+  assert.match(html, /domesticSearchName:v1:/);
+  assert.match(html, /d\.data\.officialCandidates\|\|\{\}/);
+  assert.match(html, /d\.data\.domesticSearchNames\|\|\{\}/);
+  assert.match(html, /selectedOfficialCandidate:v1:'\+id/);
+  assert.match(html, /domesticSearchName:v1:'\+id/);
+  assert.match(html, /selectedOfficialCandidate:v1:'\,'domesticSearchName:v1:'/);
+});
