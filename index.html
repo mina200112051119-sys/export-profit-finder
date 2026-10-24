@@ -3,7 +3,7 @@ const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-f
 const FEES={'ポケモンカード':.1325,'ポケモン関連サプライ用品':.136,'釣具':.136,'カメラ':.0935,'レトロゲーム':.136,'ガンプラ':.136};
 const INT=.0135;
 const SOLD_CATEGORY={'ポケモンカード':'183454','ポケモン関連サプライ用品':'183460','釣具':'261030','カメラ':'31388','レトロゲーム':'139973'};
-let data=[],fxRate=150,fxDate='',updated='',photoDataUrl='';
+let data=[],fxRate=150,fxDate='',updated='',photoDataUrl='',currentRankingCategory=null,currentRankingTitle='仕入れ候補ランキング（現在出品・利益ベース）';
 function findProductForSourcing(id){
   if(window.__detailProduct&&String(window.__detailProduct.id)===String(id))return window.__detailProduct;
   return (window.__LIVE_CATEGORY_DATA||[]).find(x=>String(x.id)===String(id))
@@ -35,13 +35,14 @@ window.__exportApp={getData:()=>data,getFx:()=>fxRate,getSelectedSourcing:(id)=>
     }));
   }catch(e){}
   updateVisibleProfit(p);
+  refreshCurrentRanking();
   if($('modal')?.classList.contains('open')) detail(encodeURIComponent(String(id)));
   return true
 },
 clearSourcingCost:(id)=>{
   const p=findProductForSourcing(id);
   if(p){p.cost=0;p.sourcingShippingJpy=0;p.sourcingSource='';p.sourcingCondition='';p.sourcingCheckedAt='';if(p.costs)p.costs=RankingEngine.calcCosts(p,settings(p));}
-  clearSourcingOverride(id);if(p)updateVisibleProfit(p);return true
+  clearSourcingOverride(id);if(p){updateVisibleProfit(p);refreshCurrentRanking();}return true
 }};
 const $=x=>document.getElementById(x);
 function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');b.classList.add('active')}
@@ -142,8 +143,9 @@ function renderList(list,title,reviewList=[]){const ranked=list.slice(0,20).map(
 function judgmentReason(r,c,p){const a=[];a.push('総合点 '+r.totalScore+'点');if(c.profit!=null)a.push('現在利益 '+(c.profit>=0?'+':'')+yen(c.profit));a.push('出品情報ベースの参考評価 '+Math.round(r.scores?.sellability||0)+'点');a.push('リスク '+r.risk);a.push('基本情報の充実度 '+(r.dataCompleteness?.level||'要確認'));return a.join('／')}
 function riskClass(r){return r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow'}
 function renderCats(){$('cats').innerHTML=RankingEngine.CATEGORIES.map(c=>{const all=data.filter(p=>p.cat===c&&p.sell*fxRate>=1000).length;return '<button class="cat" onclick="category(\''+c.replaceAll("'","\\'")+'\')"><b>'+c+'</b><small>候補 '+all+'件（商品価格のみ1,000円相当以上）</small></button>'}).join('')}
-function render(){renderCats();renderList(rank(),'仕入れ候補ランキング（現在出品・利益ベース）');$('fx').textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')}
-function category(c){renderList(rank(c),c+'｜仕入れ候補ランキング（現在出品・利益ベース）')}
+function refreshCurrentRanking(){if(!$('ranking'))return;renderList(rank(currentRankingCategory),currentRankingTitle)}
+function render(){renderCats();currentRankingCategory=null;currentRankingTitle='仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle);$('fx').textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')}
+function category(c){currentRankingCategory=c;currentRankingTitle=c+'｜仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle)}
 function defaultSearchQueryForCategory(c){const queries={'ポケモンカード':'Pokemon card graded rare Japanese','ポケモン関連サプライ用品':'Pokemon Center Japan limited official merchandise sealed','釣具':'Shimano Daiwa fishing reel Japan','カメラ':'Japanese digital camera Canon Nikon Fujifilm','レトロゲーム':'Japanese retro video game Nintendo Sega PlayStation','ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'};return queries[c]||c}\nasync function refresh(){const b=$('refresh');b.disabled=true;$('status').textContent='eBayの現在出品と為替を更新中…';try{await fx();let live=[];for(const c of RankingEngine.CATEGORIES){try{const d=await ebay(defaultSearchQueryForCategory(c));live.push(...map(d,c))}catch(e){}}data=live;updated=new Date().toLocaleString('ja-JP');render();$('status').innerHTML='<b>更新完了</b><br>更新日時：'+esc(updated)+'<br>使用データ：eBayの現在出品価格・送料・検索結果件数・為替のみ。過去90日販売APIは呼び出していません。<br>候補ランキングは商品本体価格が1,000円相当以上の商品だけをランキング対象にしています。送料が高いだけの安価な商品は除外します。';}catch(e){data=[];render();$('status').textContent='最新データを取得できませんでした。eBay認証情報とAPI接続を確認してください。'}finally{b.disabled=false}}
 async function translateText(text,to='ja'){try{const r=await fetch('/api/translate?text='+encodeURIComponent(text)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
 async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div class="muted">eBay原題：'+esc(p.name)+'</div><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" style="margin-top:8px">詳細分析を見る</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
