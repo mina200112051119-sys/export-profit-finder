@@ -458,8 +458,15 @@ function render(p) {
       const index = Number(btn.dataset.index);
       if (!confirm('この仕入れ候補の保存情報を削除しますか？')) return;
       const next = readCandidates(p);
+      const removed = next[index];
       next.splice(index,1);
       writeCandidates(p,next);
+      const selected = window.__exportApp?.getSelectedSourcing?.(p.id);
+      if (removed && selected?.candidateId != null && String(selected.candidateId) === String(removed.id)) {
+        window.__exportApp?.clearSourcingCost?.(p.id);
+        const message = document.getElementById('sc-message');
+        if (message) { message.style.display='block'; message.textContent='採用中の仕入れ候補を削除したため、分析に反映した仕入れ価格も解除しました。'; }
+      }
       drawList();
     });
   }
