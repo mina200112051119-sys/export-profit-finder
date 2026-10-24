@@ -197,8 +197,18 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
       const normalizedContext = normalizeText(contextText);
       if (q && normalizedContext.includes(q)) {
         const queryIndex = normalizedContext.indexOf(q);
-        const left = Math.max(0, queryIndex - 45);
-        const right = Math.min(contextText.length, queryIndex + query.length + 55);
+        // normalizeText removes spaces and punctuation, so its index cannot be
+        // used directly against the original text. Map the normalized offset
+        // back to the raw string before taking the nearby product-card text.
+        let rawQueryIndex = 0;
+        for (let i = 1; i <= contextText.length; i++) {
+          if (normalizeText(contextText.slice(0, i)).length > queryIndex) {
+            rawQueryIndex = i - 1;
+            break;
+          }
+        }
+        const left = Math.max(0, rawQueryIndex - 45);
+        const right = Math.min(contextText.length, rawQueryIndex + query.length + 55);
         title = contextText.slice(left, right)
           .replace(/(?:VIEW PRODUCT|詳しくはこちら|詳細|検索する|検索)/giu, ' ')
           .replace(/[¥￥]?[0-9０-９,，.．~〜円税別税込]+/gu, ' ')
