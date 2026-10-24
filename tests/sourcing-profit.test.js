@@ -82,3 +82,10 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
   const forecastWithoutShipping = simulateRisk({ ...product, sourcingShippingJpy: 0 }, settings);
   assert.ok(forecast.scenarios.every((x, i) => x.profit === forecastWithoutShipping.scenarios[i].profit - 200));
 });
+
+test('default refresh queries distinguish retro games from Gunpla', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /'レトロゲーム':'Japanese retro video game Nintendo Sega PlayStation'/);
+  assert.match(html, /'ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'/);
+  assert.match(html, /ebay\(defaultSearchQueryForCategory\(c\)\)/);
+});
