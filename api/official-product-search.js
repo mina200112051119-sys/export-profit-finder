@@ -61,7 +61,8 @@ async function searchGunpla(query) {
   const unique = [...new Map(matches.map(row => [row.url + '|' + row.title, row])).values()];
   return unique.sort((a,b) => b.score-a.score).slice(0,10);
 }
-\nasync function searchPokemonGoods(query) {
+
+async function searchPokemonGoods(query) {
   const response = await fetch('https://www.pokemon.co.jp/api/goods/index/');
   if (!response.ok) throw new Error('公式グッズ情報の取得に失敗しました');
   const payload = await response.json();
