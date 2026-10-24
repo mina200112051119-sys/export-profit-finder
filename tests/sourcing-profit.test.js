@@ -89,3 +89,15 @@ test('default refresh queries distinguish retro games from Gunpla', () => {
   assert.match(html, /'ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'/);
   assert.match(html, /ebay\(defaultSearchQueryForCategory\(c\)\)/);
 });
+
+test('daily snapshot category mapping matches all current refresh queries', () => {
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  for (const query of [
+    "'Pokemon card graded rare Japanese':'ポケモンカード'",
+    "'Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品'",
+    "'Shimano Daiwa fishing reel Japan':'釣具'",
+    "'Japanese digital camera Canon Nikon Fujifilm':'カメラ'",
+    "'Japanese retro video game Nintendo Sega PlayStation':'レトロゲーム'",
+    "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'"
+  ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
+});
