@@ -102,15 +102,17 @@ function settings() {
 function candidateProfit(p, row) {
   if (!(Number(p.sell) > 0) || !(Number(row.priceJpy) >= 0)) return null;
   const fx = Number(window.__exportApp?.getFx?.() || 150);
-  const sellJpy = Number(p.sell) * fx;
   const shipUsd = Number(p.ship) || 0;
   const saleGross = Number(p.sell) + shipUsd;
+  // RankingEngine.calcCosts counts both item revenue and buyer-paid shipping as revenue.
+  // Use the same gross amount here so sourcing comparison profit matches product detail.
+  const grossSaleJpy = saleGross * fx;
   const fee = feeOf(p);
   const intl = .0135;
   const conversion = saleGross * fx * (Number(document.getElementById('conv')?.value || 0) / 100);
   const ebayFees = saleGross * (fee + intl) * fx + (saleGross <= 10 ? .30 : .40) * fx + conversion;
   const domestic = Number(row.shippingJpy || 0) + Number(document.getElementById('domestic')?.value || 0) + Number(document.getElementById('pack')?.value || 0) + Number(document.getElementById('other')?.value || 0);
-  return Math.round(sellJpy - ebayFees - domestic - Number(row.priceJpy));
+  return Math.round(grossSaleJpy - ebayFees - domestic - Number(row.priceJpy));
 }
 
 function currentProduct() {
