@@ -191,9 +191,9 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
       // Product listings often put the product name beside a "VIEW PRODUCT" link.
       // Inspect only nearby card text and extract a short phrase around the query.
       const context = html.slice(Math.max(0, match.index - 700), Math.min(html.length, linkPattern.lastIndex + 180));
-      const contextText = decodeHtml(context.replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
-        .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
-        .replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+      const contextText = decodeHtml(context.replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
       const normalizedContext = normalizeText(contextText);
       if (q && normalizedContext.includes(q)) {
         const queryIndex = normalizedContext.indexOf(q);
@@ -202,7 +202,7 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
         title = contextText.slice(left, right)
           .replace(/(?:VIEW PRODUCT|詳しくはこちら|詳細|検索する|検索)/giu, ' ')
           .replace(/[¥￥]?[0-9０-９,，.．~〜円税別税込]+/gu, ' ')
-          .replace(/\\s+/g, ' ').trim();
+          .replace(/\s+/g, ' ').trim();
         title = title.split(/[|｜]/)[0].trim();
         if (title.length > 100) title = title.slice(-100).trim();
       }
