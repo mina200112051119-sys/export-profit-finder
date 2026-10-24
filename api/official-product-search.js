@@ -168,6 +168,76 @@ async function searchNintendoGames(query) {
 }
 
 
+
+function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost) {
+  const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+  const rows = [];
+  const linkPattern = /<a\\b([^>]*href=["']([^"']+)["'][^>]*)>([\\s\\S]*?)<\\/a>/gi;
+  let match;
+  while ((match = linkPattern.exec(html)) && rows.length < 2500) {
+    const attrs = match[1] || '';
+    const href = decodeHtml(match[2]);
+    const inner = match[3] || '';
+    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+    const attrTitle = decodeHtml((attrs.match(/\\btitle=["']([^"']+)["']/i) || [])[1] || '');
+    const imageAlt = decodeHtml((inner.match(/<img\\b[^>]*\\balt=["']([^"']+)["']/i) || [])[1] || '');
+    const title = [textTitle, attrTitle, imageAlt].find(value =>
+      value && value.length >= 2 && value.length <= 120 &&
+      !/^(詳しくはこちら|詳細|製品情報|VIEW PRODUCT|検索|もっと見る)$/iu.test(value)
+    ) || '';
+    if (!title) continue;
+    let url;
+    try { url = new URL(href, baseUrl).toString(); } catch { continue; }
+    if (new URL(url).hostname !== allowedHost) continue;
+    if (!/product|products|item|detail|productlist/i.test(url)) continue;
+    const normalizedTitle = normalizeText(title);
+    const score = q && normalizedTitle.includes(q) ? 100 :
+      terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+    if (score < 45) continue;
+    const imagePath = (inner.match(/<img\\b[^>]*\\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+    let image = '';
+    try { if (imagePath) image = new URL(decodeHtml(imagePath), baseUrl).toString(); } catch {}
+    rows.push({ title, url, image, date: '', sourceName, score });
+  }
+  return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+}
+
+async function searchFishingTackle(query) {
+  const sources = [
+    {
+      url: 'https://fish.shimano.com/ja-JP/product/list.html?page=1',
+      base: 'https://fish.shimano.com/ja-JP/',
+      host: 'fish.shimano.com',
+      name: 'シマノ公式製品一覧'
+    },
+    {
+      url: 'https://www.daiwa.com/jp/product/productlist?number=200',
+      base: 'https://www.daiwa.com/jp/product/',
+      host: 'www.daiwa.com',
+      name: 'ダイワ公式製品一覧'
+    }
+  ];
+  const all = [];
+  const failures = [];
+  for (const source of sources) {
+    try {
+      const response = await fetch(source.url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
+      });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const html = await response.text();
+      all.push(...extractFishingCandidates(html, source.base, source.name, query, source.host));
+    } catch (error) {
+      failures.push(source.name + ': ' + String(error?.message || '取得失敗'));
+    }
+  }
+  return { candidates: [...new Map(all.map(row => [row.url + '|' + row.title, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10), failures };
+}
+
 async function searchPokemonCards(query) {
   const response = await fetch('https://www.pokemon-card.com/card-search/', {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
@@ -222,6 +292,23 @@ module.exports = async (req, res) => {
   if (!sources) return res.status(400).json({ error: 'unsupported category', categories: Object.keys(OFFICIAL_SOURCES) });
 
   try {
+    if (category === '釣具') {
+      const result = await searchFishingTackle(query);
+      const candidates = result.candidates;
+      const anySourceSucceeded = result.failures.length < 2;
+      return res.json({
+        category, query, provider: 'シマノ・ダイワ公式製品一覧',
+        fetchedAt: new Date().toISOString(),
+        status: candidates.length ? 'candidate_found' : (anySourceSucceeded ? 'no_match' : 'source_unavailable'),
+        verification: candidates.length ? 'candidate_only' : 'not_checked',
+        message: candidates.length
+          ? 'シマノ・ダイワ公式製品一覧から名称候補を取得しました。型番・仕様・画像を照合するまで正式一致とは扱いません。公式一覧の取得範囲外の商品は候補に出ない場合があります。'
+          : anySourceSucceeded
+            ? '公式製品一覧から候補を抽出できませんでした。検索語を短くするか、公式サイトで手動確認してください。'
+            : '公式製品一覧を取得できませんでした。商品が存在しないという意味ではありません。公式サイトのリンクから手動確認してください。',
+        candidates, sources, sourceErrors: result.failures
+      });
+    }
     if (category === 'ガンプラ') {
       const candidates = await searchGunpla(query);
       return res.json({
