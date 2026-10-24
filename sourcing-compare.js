@@ -40,6 +40,21 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({
 const yen = v => Number.isFinite(Number(v))
   ? Math.round(Number(v)).toLocaleString('ja-JP') + '円' : '—';
 
+function officialCandidateKey(p) {
+  return 'selectedOfficialCandidate:v1:' + String(p.id || p.name || '').slice(0,300);
+}
+function readOfficialCandidate(p) {
+  try { return JSON.parse(localStorage.getItem(officialCandidateKey(p)) || 'null'); }
+  catch { return null; }
+}
+function writeOfficialCandidate(p, candidate) {
+  try {
+    if (candidate) localStorage.setItem(officialCandidateKey(p), JSON.stringify(candidate));
+    else localStorage.removeItem(officialCandidateKey(p));
+    return true;
+  } catch { return false; }
+}
+
 function keyFor(p) {
   return 'sourcingCandidates:v1:' + String(p.id || p.name || '').slice(0,300);
 }
@@ -167,6 +182,7 @@ function render(p) {
         <div class="muted">翻訳結果は検索語の候補です。メーカー公式の正式名称として確定したものではありません。</div>
         <div id="sc-official-results" style="margin-top:8px"></div>
         <div class="notice" style="margin-top:8px"><b>名称確認状況：未確認</b><br>公式情報から候補が返っても、商品名・型番・画像を照合するまでは正式名称として確定しません。</div>
+        <div id="sc-selected-official" class="notice" style="margin-top:8px"></div>
       </div>
     </div>
 
@@ -213,6 +229,27 @@ function render(p) {
     });
   }
   drawSearchLinks();
+
+  let selectedOfficialCandidate = readOfficialCandidate(p);
+  const selectedOfficialPanel = document.getElementById('sc-selected-official');
+  function drawSelectedOfficialCandidate() {
+    if (!selectedOfficialPanel) return;
+    if (!selectedOfficialCandidate) {
+      selectedOfficialPanel.innerHTML = '<b>公式候補：未選択</b><br>候補を採用すると、検索語と保存した仕入れ候補に紐づきます。';
+      return;
+    }
+    selectedOfficialPanel.innerHTML = '<b>採用中の公式候補（同一商品かは要確認）</b><br>' +
+      (selectedOfficialCandidate.image ? '<img src="' + esc(selectedOfficialCandidate.image) + '" alt="採用した公式候補画像" style="max-width:90px;max-height:90px;object-fit:contain;vertical-align:middle">' : '') +
+      '<b>' + esc(selectedOfficialCandidate.title) + '</b><br><span class="muted">' + esc(selectedOfficialCandidate.sourceName || '公式情報') + '</span><br>' +
+      (selectedOfficialCandidate.url ? '<a href="' + esc(selectedOfficialCandidate.url) + '" target="_blank" rel="noopener noreferrer">採用した公式ページを確認</a><br>' : '') +
+      '<button type="button" class="secondary" id="sc-clear-official">採用候補を解除</button>';
+    document.getElementById('sc-clear-official')?.addEventListener('click', () => {
+      selectedOfficialCandidate = null;
+      writeOfficialCandidate(p, null);
+      drawSelectedOfficialCandidate();
+    });
+  }
+  drawSelectedOfficialCandidate();
 
   const officialLinks = document.getElementById('sc-official-links');
   const catalogs = OFFICIAL_CATALOGS[categoryOf(p)] || [];
@@ -301,17 +338,26 @@ function render(p) {
                 modelCheck +
                 '<div class="muted">候補スコア：' + esc(row.score) + '（名称一致の参考値。商品同一性の保証ではありません）</div>' +
                 '<a href="' + esc(row.url || '#') + '" target="_blank" rel="noopener noreferrer">公式情報を開いて照合</a> ' +
-                '<button type="button" class="secondary sc-use-official-name" data-name="' + esc(row.title || '') + '" data-url="' + esc(row.url || '') + '">この候補名を検索語に使う</button></div>';
+                '<button type="button" class="secondary sc-use-official-name" data-name="' + esc(row.title || '') + '" data-url="' + esc(row.url || '') + '" data-image="' + esc(row.image || '') + '" data-source="' + esc(row.sourceName || '公式情報') + '">この候補を採用して検索</button></div>';
             }).join('');
           officialResults.querySelectorAll('.sc-use-official-name').forEach(button => button.onclick = () => {
             if (searchNameInput) {
               const candidateName = button.dataset.name || '';
               const candidateUrl = button.dataset.url || '';
+              const candidateImage = button.dataset.image || '';
+              const candidateSource = button.dataset.source || '公式情報';
               const accepted = confirm(
                 'この候補名を国内検索に使用しますか？\\n\\n候補名：' + candidateName +
                 '\\n\\n公式ページを開き、型番・画像・商品仕様がeBayの商品と一致することを確認してから選択してください。'
               );
               if (!accepted) return;
+              selectedOfficialCandidate = {
+                title: candidateName, url: candidateUrl, image: candidateImage,
+                sourceName: candidateSource, selectedAt: new Date().toISOString(),
+                verification: 'user_review_required'
+              };
+              writeOfficialCandidate(p, selectedOfficialCandidate);
+              drawSelectedOfficialCandidate();
               searchNameInput.value = candidateName;
               saveDomesticSearchName(p, candidateName);
               drawSearchLinks();
@@ -368,6 +414,8 @@ function render(p) {
           <div class="row"><span>状態</span><b>${esc(r.condition)}</b></div>
           <div class="row"><span>商品価格</span><b>${yen(r.priceJpy)}</b></div>
           <div class="row"><span>国内送料</span><b>${yen(r.shippingJpy)}</b></div>
+          ${r.officialCandidate?'<div class="notice" style="margin:8px 0"><b>関連付けた公式候補</b><br>'+(r.officialCandidate.image?'<img src="'+esc(r.officialCandidate.image)+'" alt="関連する公式候補画像" style="max-width:72px;max-height:72px;object-fit:contain;vertical-align:middle">':'')+esc(r.officialCandidate.title||'')+(r.officialCandidate.url?'<br><a href="'+esc(r.officialCandidate.url)+'" target="_blank" rel="noopener noreferrer">公式ページを照合</a>':'')+'<br><span class="muted">候補との関連付けであり、同一商品と確定したものではありません。</span></div>':''}
+          ${r.domesticSearchName?'<div class="muted">保存時の国内検索語：'+esc(r.domesticSearchName)+'</div>':''}
           <div class="row"><span>実質仕入額</span><b>${yen(total)}</b></div>
           <div class="row"><span>想定利益</span><b class="${profit==null?'yellow':profit>=0?'green':'red'}">${profit==null?'計算不可':(profit>=0?'+':'')+yen(profit)}</b></div>
           ${r.note?`<div class="muted">メモ：${esc(r.note)}</div>`:''}
@@ -413,6 +461,8 @@ function render(p) {
       shippingJpy: Number(document.getElementById('sc-shipping').value || 0),
       url: document.getElementById('sc-url').value.trim(),
       note: document.getElementById('sc-note').value.trim(),
+      officialCandidate: selectedOfficialCandidate ? { ...selectedOfficialCandidate } : null,
+      domesticSearchName: String(searchNameInput?.value || '').trim(),
       checkedAt: new Date().toISOString(),
       checkedAtLabel: new Date().toLocaleString('ja-JP')
     };
