@@ -105,9 +105,21 @@ async function loadCloudStorage(){
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
+const _removeItem=Storage.prototype.removeItem;
+function scheduleSourcingCloudSave(k){
+  if(String(k).startsWith('sourcingCandidates:v1:')||String(k).startsWith('selectedSourcingCost:v1:')){
+    clearTimeout(window.__cloudSaveTimer);
+    window.__cloudSaveTimer=setTimeout(saveCloudStorage,800);
+  }
+}
 Storage.prototype.setItem=function(k,v){
   const out=_setItem.call(this,k,v);
-  if(this===localStorage&&(String(k).startsWith('sourcingCandidates:v1:')||String(k).startsWith('selectedSourcingCost:v1:')))clearTimeout(window.__cloudSaveTimer),window.__cloudSaveTimer=setTimeout(saveCloudStorage,800);
+  if(this===localStorage)scheduleSourcingCloudSave(k);
+  return out;
+};
+Storage.prototype.removeItem=function(k){
+  const out=_removeItem.call(this,k);
+  if(this===localStorage)scheduleSourcingCloudSave(k);
   return out;
 };
 function load(){['domestic','pack','other','conv'].forEach(id=>{const v=localStorage.getItem(id);if(v!==null)$(id).value=v})}
