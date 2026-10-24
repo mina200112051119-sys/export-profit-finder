@@ -174,15 +174,15 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
   const chars = Array.from(q);
   const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
   const rows = [];
-  const linkPattern = /<a\\b([^>]*href=["']([^"']+)["'][^>]*)>([\\s\\S]*?)<\\/a>/gi;
+  const linkPattern = /<a\b([^>]*href=["']([^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = linkPattern.exec(html)) && rows.length < 2500) {
     const attrs = match[1] || '';
     const href = decodeHtml(match[2]);
     const inner = match[3] || '';
-    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
-    const attrTitle = decodeHtml((attrs.match(/\\btitle=["']([^"']+)["']/i) || [])[1] || '');
-    const imageAlt = decodeHtml((inner.match(/<img\\b[^>]*\\balt=["']([^"']+)["']/i) || [])[1] || '');
+    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
+    const attrTitle = decodeHtml((attrs.match(/\btitle=["']([^"']+)["']/i) || [])[1] || '');
+    const imageAlt = decodeHtml((inner.match(/<img\b[^>]*\balt=["']([^"']+)["']/i) || [])[1] || '');
     const title = [textTitle, attrTitle, imageAlt].find(value =>
       value && value.length >= 2 && value.length <= 120 &&
       !/^(詳しくはこちら|詳細|製品情報|VIEW PRODUCT|検索|もっと見る)$/iu.test(value)
@@ -196,7 +196,7 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
     const score = q && normalizedTitle.includes(q) ? 100 :
       terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
     if (score < 45) continue;
-    const imagePath = (inner.match(/<img\\b[^>]*\\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+    const imagePath = (inner.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
     let image = '';
     try { if (imagePath) image = new URL(decodeHtml(imagePath), baseUrl).toString(); } catch {}
     rows.push({ title, url, image, date: '', sourceName, score });
