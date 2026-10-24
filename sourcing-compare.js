@@ -99,6 +99,15 @@ function settings() {
     conversionFeeRate: g('conv')
   };
 }
+function isSelectedCandidate(selectedInfo, row, index) {
+  if (!selectedInfo) return false;
+  if (selectedInfo.candidateId != null && selectedInfo.candidateId !== '') {
+    return String(selectedInfo.candidateId) === String(row?.id ?? '');
+  }
+  // Backward compatibility for selections saved before candidate IDs were added.
+  return selectedInfo.candidateIndex === index;
+}
+
 function candidateProfit(p, row) {
   if (!(Number(p.sell) > 0) || !(Number(row.priceJpy) >= 0)) return null;
   const fx = Number(window.__exportApp?.getFx?.() || 150);
@@ -402,14 +411,14 @@ function render(p) {
       <div class="card" style="overflow:auto;margin-bottom:10px">
         <table class="risk-table">
           <tr><th>仕入先</th><th>状態</th><th>実質仕入額</th><th>想定利益</th><th>採用</th></tr>
-          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${(()=>{const selected=window.__exportApp?.getSelectedSourcing?.(p.id);return selected?.candidateId?String(selected.candidateId)===String(x.r.id)?'✓':'':selected?.candidateIndex===x.i?'✓':''})()}</td></tr>`).join('')}
+          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${isSelectedCandidate(window.__exportApp?.getSelectedSourcing?.(p.id),x.r,x.i)?'✓':''}</td></tr>`).join('')}
         </table>
       </div>
     `;
     list.innerHTML += ranked.map(({r,i,total,profit}) => {
       const conditionScore = {'新品':5,'未使用':5,'美品':4,'中古':3,'傷あり':2,'ジャンク':1,'状態不明':0}[r.condition] ?? 0;
       const selectedInfo = window.__exportApp?.getSelectedSourcing?.(p.id);
-      const selected = selectedInfo?.candidateId ? String(selectedInfo.candidateId)===String(r.id) : selectedInfo?.candidateIndex===i;
+      const selected = isSelectedCandidate(selectedInfo,r,i);
       const comparisonNote = conditionScore >= 4 ? '状態面の確認度が高い候補' : conditionScore >= 2 ? '状態を確認してから採用' : '状態リスクが高いため要確認';
       const appliedOfficial = selected && selectedInfo?.officialCandidate ? selectedInfo.officialCandidate : null;
       return `
