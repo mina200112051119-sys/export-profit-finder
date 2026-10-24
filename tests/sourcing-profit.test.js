@@ -160,3 +160,23 @@ test('detail sourcing links prefer saved Japanese domestic search name', () => {
   assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\)\)/);
   assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
 });
+
+
+test('sourcing selected marker uses stable candidate ID after reorder and deletion', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(source, /isSelectedCandidate\(window\.__exportApp\?\.getSelectedSourcing\?\.\(p\.id\),r,i\)\?'<div class="notice"/);
+  const start = source.indexOf('function isSelectedCandidate(selectedInfo, row, index) {');
+  const end = source.indexOf('\n}\n', start);
+  const isSelectedCandidate = vm.runInNewContext('(' + source.slice(start, end + 2) + ')', { String });
+  const selected = { candidateId: 'stable-b', candidateIndex: 0 };
+  const rows = [{id:'new'}, {id:'stable-a'}, {id:'stable-b'}];
+  assert.equal(rows.map((row,index)=>isSelectedCandidate(selected,row,index)).filter(Boolean).length, 1);
+  assert.equal(isSelectedCandidate(selected, rows[2], 2), true);
+});
+
+test('saving a sourcing candidate rejects negative domestic shipping', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(source, /if \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)/);
+  assert.match(source, /国内送料は0円以上で入力してください/);
+  assert.match(source, /shippingJpy: shipping/);
+});
