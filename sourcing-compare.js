@@ -154,8 +154,8 @@ function render(p) {
         <h3>公式情報で商品名・型番を照合</h3>
         <div class="muted">カテゴリーに対応するメーカー・権利元の公式情報を開けます。公式サイトへのリンクを表示していますが、現時点ではサイト内データを自動取得・照合した状態ではありません。</div>
         <div id="sc-official-links" class="grid" style="margin-top:8px"></div>
-        <button id="sc-official-search" class="primary" type="button" style="margin-top:8px">公式情報から候補を取得</button>
-        <button id="sc-translate-search" class="secondary" type="button" style="margin-top:8px">英語タイトルを日本語にして候補検索</button>
+        <button id="sc-official-search" class="primary" type="button" style="margin-top:8px">公式情報を検索</button>
+        <button id="sc-translate-search" class="secondary" type="button" style="margin-top:8px">英語タイトルを日本語にして公式情報を検索</button>
         <div class="muted">翻訳結果は検索語の候補です。メーカー公式の正式名称として確定したものではありません。</div>
         <div id="sc-official-results" style="margin-top:8px"></div>
         <div class="notice" style="margin-top:8px"><b>名称確認状況：未確認</b><br>公式情報から候補が返っても、商品名・型番・画像を照合するまでは正式名称として確定しません。</div>
@@ -237,13 +237,13 @@ function render(p) {
           saveDomesticSearchName(p, translated);
           drawSearchLinks();
         }
-        officialResults.innerHTML = '<div class="notice">英語タイトルを日本語の検索語に変換しました。これは機械翻訳であり、公式名称の確定ではありません。公式情報を検索します。</div>';
+        officialResults.innerHTML = '<div class="notice">英語タイトルを日本語の検索語に変換しました。これは機械翻訳であり、公式名称の確定ではありません。対応カテゴリーでは公式候補を検索し、それ以外では公式サイトへの確認リンクを表示します。</div>';
         officialSearchButton.click();
       } catch (error) {
         officialResults.innerHTML = '<div class="notice">翻訳できませんでした。元の商品名・型番は変更していません。' + esc(error.message || '') + '</div>';
       } finally {
         translateSearchButton.disabled = false;
-        translateSearchButton.textContent = '英語タイトルを日本語にして候補検索';
+        translateSearchButton.textContent = '英語タイトルを日本語にして公式情報を検索';
       }
     };
   }
@@ -286,7 +286,7 @@ function render(p) {
         officialResults.innerHTML = '<div class="notice">公式情報を取得できませんでした。商品が存在しないという意味ではありません。' + esc(error.message || '') + '</div>';
       } finally {
         officialSearchButton.disabled = false;
-        officialSearchButton.textContent = '公式情報から候補を取得';
+        officialSearchButton.textContent = '公式情報を検索';
       }
     };
   }
