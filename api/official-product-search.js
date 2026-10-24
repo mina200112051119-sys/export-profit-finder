@@ -108,7 +108,7 @@ async function searchNikonCameras(query) {
     });
     if (!response.ok) throw new Error('ニコン公式製品情報の取得に失敗しました');
     const html = await response.text();
-    const linkPattern = /<a\\b([^>]*href=["']([^"']+)["'][^>]*)>([\\s\\S]*?)<\\/a>/gi;
+    const linkPattern = /<a\b([^>]*href=["']([^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi;
     let match;
     while ((match = linkPattern.exec(html)) && rows.length < 1800) {
       const href = decodeHtml(match[2]);
@@ -116,11 +116,11 @@ async function searchNikonCameras(query) {
       if (!url.startsWith('https://nij.nikon.com/products/')) continue;
       if (!/camera|mirrorless|discontinue|lineup/i.test(url)) continue;
       const inner = match[3] || '';
-      const anchorText = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+      const anchorText = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
       const before = html.slice(Math.max(0, match.index - 900), match.index);
-      const headings = [...before.matchAll(/<(?:h2|h3|h4)[^>]*>([\\s\\S]*?)<\\/(?:h2|h3|h4)>/gi)];
+      const headings = [...before.matchAll(/<(?:h2|h3|h4)[^>]*>([\s\S]*?)<\/(?:h2|h3|h4)>/gi)];
       const heading = headings.length
-        ? decodeHtml(headings[headings.length - 1][1].replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim()
+        ? decodeHtml(headings[headings.length - 1][1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim()
         : '';
       const title = [heading, anchorText].find(value =>
         value && value.length >= 2 && value.length <= 100 &&
@@ -131,7 +131,7 @@ async function searchNikonCameras(query) {
       const score = q && normalizedTitle.includes(q) ? 100 :
         terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
       if (score < 45) continue;
-      const imagePath = (before.match(/<img\\b[^>]*\\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+      const imagePath = (before.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
       let image = '';
       try { if (imagePath) image = new URL(decodeHtml(imagePath), pageUrl).toString(); } catch {}
       rows.push({ title, url, image, date: '', sourceName: 'ニコン公式製品情報', score });
