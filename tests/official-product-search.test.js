@@ -64,7 +64,7 @@ test('fishing tackle search returns candidate-only results from official Shimano
     ok: true,
     status: 200,
     text: async () => String(url).includes('shimano.com')
-      ? '<html><a href="/ja-JP/product/detail.html?id=1">ステラ</a></html>'
+      ? '<html><div class="product-card">リール ステラ 91,400円 <a href="/ja-JP/product/detail.html?id=1">VIEW PRODUCT</a></div></html>'
       : '<html><a href="/jp/product/productlist?item=1">ステラ</a></html>'
   });
   try {
@@ -73,7 +73,7 @@ test('fishing tackle search returns candidate-only results from official Shimano
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.status, 'candidate_found');
     assert.equal(res.body.verification, 'candidate_only');
-    assert.ok(res.body.candidates.some(item => item.title === 'ステラ'));
+    assert.ok(res.body.candidates.some(item => item.title.includes('ステラ')));
   } finally {
     global.fetch = previousFetch;
   }
