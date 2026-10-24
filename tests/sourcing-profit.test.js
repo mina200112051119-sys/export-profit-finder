@@ -246,5 +246,5 @@ test('cloud storage preserves official matches and Japanese sourcing search name
   assert.match(html, /d\.data\.domesticSearchNames\|\|\{\}/);
   assert.match(html, /selectedOfficialCandidate:v1:'\+id/);
   assert.match(html, /domesticSearchName:v1:'\+id/);
-  assert.match(html, /selectedOfficialCandidate:v1:'\,'domesticSearchName:v1:'/);
+  assert.match(html, /some\(prefix=>key\.startsWith\(prefix\)\)/);
 });
