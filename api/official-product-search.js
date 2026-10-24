@@ -167,6 +167,47 @@ async function searchNintendoGames(query) {
     .sort((a, b) => b.score - a.score).slice(0, 10);
 }
 
+
+async function searchPokemonCards(query) {
+  const response = await fetch('https://www.pokemon-card.com/card-search/', {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
+  });
+  if (!response.ok) throw new Error('ポケモンカード公式検索の取得に失敗しました');
+  const html = await response.text();
+  const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+  const rows = [];
+  const linkPattern = /<a\b([^>]*href=["']([^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = linkPattern.exec(html)) && rows.length < 1800) {
+    const attrs = match[1] || '';
+    const href = decodeHtml(match[2]);
+    const inner = match[3] || '';
+    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
+    const attrTitle = decodeHtml((attrs.match(/\btitle=["']([^"']+)["']/i) || [])[1] || '');
+    const imageAlt = decodeHtml((inner.match(/<img\b[^>]*\balt=["']([^"']+)["']/i) || [])[1] || '');
+    const title = [imageAlt, attrTitle, textTitle].find(value =>
+      value && value.length >= 2 && value.length <= 100
+    ) || '';
+    if (!title) continue;
+    const url = new URL(href, 'https://www.pokemon-card.com/').toString();
+    if (!url.startsWith('https://www.pokemon-card.com/')) continue;
+    if (!/card|detail/i.test(url)) continue;
+    if (/^(カード検索|検索|詳細|次のページ|前のページ)$/u.test(title)) continue;
+    const normalizedTitle = normalizeText(title);
+    const score = q && normalizedTitle.includes(q) ? 100 :
+      terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+    if (score >= 45) {
+      const imagePath = (inner.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+      const image = imagePath ? new URL(decodeHtml(imagePath), 'https://www.pokemon-card.com/').toString() : '';
+      rows.push({ title, url, image, date: '', sourceName: 'ポケモンカード公式カード検索', score });
+    }
+  }
+  return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -189,6 +230,19 @@ module.exports = async (req, res) => {
         message: candidates.length
           ? '公式検索結果から候補を取得しました。商品名・型番・画像を照合するまで正式一致とは扱いません。'
           : '公式検索結果から候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',
+        candidates, sources
+      });
+    }
+    if (category === 'ポケモンカード') {
+      const candidates = await searchPokemonCards(query);
+      return res.json({
+        category, query, provider: 'ポケモンカード公式カード検索',
+        fetchedAt: new Date().toISOString(),
+        status: candidates.length ? 'candidate_found' : 'no_match',
+        verification: 'candidate_only',
+        message: candidates.length
+          ? '公式カード検索から名称候補を取得しました。カード名・収録商品・カード番号・画像を照合するまで正式一致とは扱いません。公式検索の表示範囲外のカードは候補に出ない場合があります。'
+          : '公式カード検索の表示範囲から候補を抽出できませんでした。英語名を日本語名に直すか、カード番号・収録商品名で再検索してください。',
         candidates, sources
       });
     }
