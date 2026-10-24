@@ -18,7 +18,7 @@ const OFFICIAL_SOURCES = {
     { name: 'セガ公式 ゲーム情報', url: 'https://www.sega.jp/game/soft/' }
   ],
   'ガンプラ': [
-    { name: 'BANDAI SPIRITS公式 商品検索', url: 'https://www.bandaispirits.co.jp/products/search/' }
+    { name: 'BANDAI SPIRITS公式 商品検索', url: 'https://www.bandaispirits.co.jp/products/search/result.php?search=true&category=1&freeword=' }
   ]
 };
 
@@ -26,7 +26,42 @@ function normalizeText(value) {
   return String(value || '').normalize('NFKC').toLocaleLowerCase('ja-JP').replace(/[\s　・･\-‐‑–—_【】「」『』()（）［］]/g, '');
 }
 
-async function searchPokemonGoods(query) {
+
+function decodeHtml(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
+}
+
+async function searchGunpla(query) {
+  const searchUrl = 'https://www.bandaispirits.co.jp/products/search/result.php?search=true&category=1&freeword=' + encodeURIComponent(query);
+  const response = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' } });
+  if (!response.ok) throw new Error('BANDAI SPIRITS公式商品検索の取得に失敗しました');
+  const html = await response.text();
+  const matches = [];
+  // 公式検索結果のHTMLから商品詳細リンクと商品名を抽出。抽出できない場合は候補を作らない。
+  const linkPattern = /<a\\b[^>]*href=["']([^"']*(?:detail\\.php|products\\/[^"']+)[^"']*)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  let match;
+  while ((match = linkPattern.exec(html)) && matches.length < 80) {
+    const href = decodeHtml(match[1]);
+    const title = decodeHtml(match[2].replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+    if (!title || title.length < 4 || /^(商品情報|詳しくはこちら|詳細)$/u.test(title)) continue;
+    if (!/ガンダム|ガンプラ|HG\\b|MG\\b|RG\\b|PG\\b|ENTRY GRADE|SD\\b|\\b1\\//iu.test(title)) continue;
+    const url = new URL(href, 'https://www.bandaispirits.co.jp/').toString();
+    if (!url.startsWith('https://www.bandaispirits.co.jp/')) continue;
+    const normalizedTitle = normalizeText(title);
+    const q = normalizeText(query);
+    const chars = Array.from(q);
+    const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+    const score = q && normalizedTitle.includes(q) ? 100 :
+      terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+    if (score >= 45) matches.push({ title, url, image: '', date: '', sourceName: 'BANDAI SPIRITS公式商品検索', score });
+  }
+  const unique = [...new Map(matches.map(row => [row.url + '|' + row.title, row])).values()];
+  return unique.sort((a,b) => b.score-a.score).slice(0,10);
+}
+\nasync function searchPokemonGoods(query) {
   const response = await fetch('https://www.pokemon.co.jp/api/goods/index/');
   if (!response.ok) throw new Error('公式グッズ情報の取得に失敗しました');
   const payload = await response.json();
@@ -60,7 +95,7 @@ module.exports = async (req, res) => {
   if (!sources) return res.status(400).json({ error: 'unsupported category', categories: Object.keys(OFFICIAL_SOURCES) });
 
   try {
-    if (category === 'ポケモン関連サプライ用品') {
+    if (category === 'ガンプラ') {\n      const candidates = await searchGunpla(query);\n      return res.json({\n        category, query, provider: 'BANDAI SPIRITS公式商品検索', fetchedAt: new Date().toISOString(),\n        status: candidates.length ? 'candidate_found' : 'no_match', verification: 'candidate_only',\n        message: candidates.length\n          ? '公式検索結果から候補を取得しました。商品名・型番・画像を照合するまで正式一致とは扱いません。'\n          : '公式検索結果から候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',\n        candidates, sources\n      });\n    }\n    if (category === 'ポケモン関連サプライ用品') {
       const candidates = await searchPokemonGoods(query);
       return res.json({
         category, query, provider: 'ポケモン公式グッズ情報',
