@@ -402,14 +402,14 @@ function render(p) {
       <div class="card" style="overflow:auto;margin-bottom:10px">
         <table class="risk-table">
           <tr><th>仕入先</th><th>状態</th><th>実質仕入額</th><th>想定利益</th><th>採用</th></tr>
-          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${window.__exportApp?.getSelectedSourcing?.(p.id)?.candidateIndex===x.i?'✓':''}</td></tr>`).join('')}
+          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${(()=>{const selected=window.__exportApp?.getSelectedSourcing?.(p.id);return selected?.candidateId?String(selected.candidateId)===String(x.r.id)?'✓':'':selected?.candidateIndex===x.i?'✓':''})()}</td></tr>`).join('')}
         </table>
       </div>
     `;
     list.innerHTML += ranked.map(({r,i,total,profit}) => {
       const conditionScore = {'新品':5,'未使用':5,'美品':4,'中古':3,'傷あり':2,'ジャンク':1,'状態不明':0}[r.condition] ?? 0;
       const selectedInfo = window.__exportApp?.getSelectedSourcing?.(p.id);
-      const selected = selectedInfo?.candidateIndex===i;
+      const selected = selectedInfo?.candidateId ? String(selectedInfo.candidateId)===String(r.id) : selectedInfo?.candidateIndex===i;
       const comparisonNote = conditionScore >= 4 ? '状態面の確認度が高い候補' : conditionScore >= 2 ? '状態を確認してから採用' : '状態リスクが高いため要確認';
       const appliedOfficial = selected && selectedInfo?.officialCandidate ? selectedInfo.officialCandidate : null;
       return `
@@ -438,7 +438,9 @@ function render(p) {
       if (!row) return;
       const total = Number(row.priceJpy||0) + Number(row.shippingJpy||0);
       if (!Number.isFinite(total) || total < 0) return;
-      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt,candidateIndex:index,itemPrice:Number(row.priceJpy||0),shippingJpy:Number(row.shippingJpy||0),officialCandidate:row.officialCandidate||selectedOfficialCandidate||null,domesticSearchName:row.domesticSearchName||String(searchNameInput?.value||'').trim()});
+      if (row.domesticSearchName) saveDomesticSearchName(p, row.domesticSearchName);
+      if (row.officialCandidate) { selectedOfficialCandidate = { ...row.officialCandidate }; writeOfficialCandidate(p, selectedOfficialCandidate); drawSelectedOfficialCandidate(); }
+      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt,candidateIndex:index,candidateId:String(row.id),itemPrice:Number(row.priceJpy||0),shippingJpy:Number(row.shippingJpy||0),officialCandidate:row.officialCandidate||selectedOfficialCandidate||null,domesticSearchName:row.domesticSearchName||String(searchNameInput?.value||'').trim()});
       const m=document.getElementById('sc-message');
       if(m){m.style.display='block';m.textContent=ok?'この仕入れ候補を現在の仕入価格として分析に反映しました。':'分析への反映に失敗しました。';}
       drawList();
