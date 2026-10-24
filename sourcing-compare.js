@@ -110,18 +110,26 @@ function isSelectedCandidate(selectedInfo, row, index) {
 
 function candidateProfit(p, row) {
   if (!(Number(p.sell) > 0) || !(Number(row.priceJpy) >= 0)) return null;
+  // Use the same calculation engine and settings as the main product detail/ranking.
+  // This keeps fees, buyer-paid shipping, sourcing shipping, packaging and other costs in sync.
+  const engine = window.RankingEngine;
+  if (!engine || typeof engine.calcCosts !== 'function') return null;
+  const g = id => Math.max(0, Number(document.getElementById(id)?.value || 0));
   const fx = Number(window.__exportApp?.getFx?.() || 150);
-  const shipUsd = Number(p.ship) || 0;
-  const saleGross = Number(p.sell) + shipUsd;
-  // RankingEngine.calcCosts counts both item revenue and buyer-paid shipping as revenue.
-  // Use the same gross amount here so sourcing comparison profit matches product detail.
-  const grossSaleJpy = saleGross * fx;
-  const fee = feeOf(p);
-  const intl = .0135;
-  const conversion = saleGross * fx * (Number(document.getElementById('conv')?.value || 0) / 100);
-  const ebayFees = saleGross * (fee + intl) * fx + (saleGross <= 10 ? .30 : .40) * fx + conversion;
-  const domestic = Number(row.shippingJpy || 0) + Number(document.getElementById('domestic')?.value || 0) + Number(document.getElementById('pack')?.value || 0) + Number(document.getElementById('other')?.value || 0);
-  return Math.round(grossSaleJpy - ebayFees - domestic - Number(row.priceJpy));
+  const costs = engine.calcCosts({
+    ...p,
+    cost: Number(row.priceJpy),
+    sourcingShippingJpy: Math.max(0, Number(row.shippingJpy || 0))
+  }, {
+    fxRate: fx,
+    feeRate: feeOf(p),
+    internationalRate: .0135,
+    conversionFeeRate: g('conv'),
+    domesticShipping: g('domestic'),
+    packaging: g('pack'),
+    otherCost: g('other')
+  });
+  return costs?.profit == null ? null : Number(costs.profit);
 }
 
 function currentProduct() {
