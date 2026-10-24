@@ -153,7 +153,9 @@ function render(p) {
         <h3>公式情報で商品名・型番を照合</h3>
         <div class="muted">カテゴリーに対応するメーカー・権利元の公式情報を開けます。公式サイトへのリンクを表示していますが、現時点ではサイト内データを自動取得・照合した状態ではありません。</div>
         <div id="sc-official-links" class="grid" style="margin-top:8px"></div>
-        <div class="notice" style="margin-top:8px"><b>名称確認状況：未確認</b><br>公式情報で商品名・型番・画像が一致することを確認するまでは、正式名称として確定しません。</div>
+        <button id="sc-official-search" class="primary" type="button" style="margin-top:8px">公式情報から候補を取得</button>
+        <div id="sc-official-results" style="margin-top:8px"></div>
+        <div class="notice" style="margin-top:8px"><b>名称確認状況：未確認</b><br>公式情報から候補が返っても、商品名・型番・画像を照合するまでは正式名称として確定しません。</div>
       </div>
     </div>
 
@@ -207,6 +209,52 @@ function render(p) {
     officialLinks.innerHTML = catalogs.length
       ? catalogs.map(([label, href]) => '<a class="tab" style="text-decoration:none;text-align:center" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + '</a>').join('')
       : '<div class="muted">このカテゴリーの公式情報リンクは未登録です。正式名称は未確認のまま扱います。</div>';
+  }
+
+  const officialSearchButton = document.getElementById('sc-official-search');
+  const officialResults = document.getElementById('sc-official-results');
+  if (officialSearchButton && officialResults) {
+    officialSearchButton.onclick = async () => {
+      const query = String(searchNameInput?.value || '').trim();
+      if (!query) {
+        officialResults.innerHTML = '<div class="notice">国内検索用の商品名・型番を入力してください。</div>';
+        return;
+      }
+      officialSearchButton.disabled = true;
+      officialSearchButton.textContent = '公式情報を確認中…';
+      officialResults.innerHTML = '<div class="muted">公式情報を取得しています。</div>';
+      try {
+        const url = '/api/official-product-search?category=' + encodeURIComponent(categoryOf(p)) + '&q=' + encodeURIComponent(query);
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || '取得に失敗しました');
+        if (Array.isArray(data.candidates) && data.candidates.length) {
+          officialResults.innerHTML = '<div class="notice"><b>公式情報の候補（自動一致確定ではありません）</b><br>' + esc(data.message || '') + '</div>' +
+            data.candidates.map(row => '<div class="card" style="margin-top:8px;padding:10px">' +
+              (row.image ? '<img src="' + esc(row.image) + '" alt="" style="max-width:100px;max-height:100px;object-fit:contain">' : '') +
+              '<div><b>' + esc(row.title || '') + '</b></div>' +
+              (row.date ? '<div class="muted">掲載日：' + esc(row.date) + '</div>' : '') +
+              '<div class="muted">候補スコア：' + esc(row.score) + '（名称一致の参考値。本人確認ではありません）</div>' +
+              '<a href="' + esc(row.url || '#') + '" target="_blank" rel="noopener noreferrer">公式情報を開いて照合</a> ' +
+              '<button type="button" class="secondary sc-use-official-name" data-name="' + esc(row.title || '') + '">検索名に使用</button></div>').join('');
+          officialResults.querySelectorAll('.sc-use-official-name').forEach(button => button.onclick = () => {
+            if (searchNameInput) {
+              searchNameInput.value = button.dataset.name || '';
+              saveDomesticSearchName(p, searchNameInput.value);
+              drawSearchLinks();
+            }
+          });
+        } else {
+          officialResults.innerHTML = '<div class="notice">' + esc(data.message || '候補がありませんでした。') + '</div>' +
+            (Array.isArray(data.sources) ? data.sources.map(source => '<div><a href="' + esc(source.url) + '" target="_blank" rel="noopener noreferrer">' + esc(source.name) + 'で手動確認</a></div>').join('') : '');
+        }
+      } catch (error) {
+        officialResults.innerHTML = '<div class="notice">公式情報を取得できませんでした。商品が存在しないという意味ではありません。' + esc(error.message || '') + '</div>';
+      } finally {
+        officialSearchButton.disabled = false;
+        officialSearchButton.textContent = '公式情報から候補を取得';
+      }
+    };
   }
 
   const sourceLabel = s => SOURCES.find(x=>x[1]===s)?.[0] || s;
