@@ -183,10 +183,30 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
     const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
     const attrTitle = decodeHtml((attrs.match(/\btitle=["']([^"']+)["']/i) || [])[1] || '');
     const imageAlt = decodeHtml((inner.match(/<img\b[^>]*\balt=["']([^"']+)["']/i) || [])[1] || '');
-    const title = [textTitle, attrTitle, imageAlt].find(value =>
+    let title = [textTitle, attrTitle, imageAlt].find(value =>
       value && value.length >= 2 && value.length <= 120 &&
       !/^(詳しくはこちら|詳細|製品情報|VIEW PRODUCT|検索|もっと見る)$/iu.test(value)
     ) || '';
+    if (!title) {
+      // Product listings often put the product name beside a "VIEW PRODUCT" link.
+      // Inspect only nearby card text and extract a short phrase around the query.
+      const context = html.slice(Math.max(0, match.index - 700), Math.min(html.length, linkPattern.lastIndex + 180));
+      const contextText = decodeHtml(context.replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
+        .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+      const normalizedContext = normalizeText(contextText);
+      if (q && normalizedContext.includes(q)) {
+        const queryIndex = normalizedContext.indexOf(q);
+        const left = Math.max(0, queryIndex - 45);
+        const right = Math.min(contextText.length, queryIndex + query.length + 55);
+        title = contextText.slice(left, right)
+          .replace(/(?:VIEW PRODUCT|詳しくはこちら|詳細|検索する|検索)/giu, ' ')
+          .replace(/[¥￥]?[0-9０-９,，.．~〜円税別税込]+/gu, ' ')
+          .replace(/\\s+/g, ' ').trim();
+        title = title.split(/[|｜]/)[0].trim();
+        if (title.length > 100) title = title.slice(-100).trim();
+      }
+    }
     if (!title) continue;
     let url;
     try { url = new URL(href, baseUrl).toString(); } catch { continue; }
@@ -208,13 +228,13 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
 async function searchFishingTackle(query) {
   const sources = [
     {
-      url: 'https://fish.shimano.com/ja-JP/product/list.html?page=1',
+      url: 'https://fish.shimano.com/ja-JP/product/list.html?fs=&page=1&pcat1=&pcat2=&pcat3=&pcat4=&price_max=&price_min=&series=',
       base: 'https://fish.shimano.com/ja-JP/',
       host: 'fish.shimano.com',
       name: 'シマノ公式製品一覧'
     },
     {
-      url: 'https://www.daiwa.com/jp/product/productlist?number=200',
+      url: 'https://www.daiwa.com/jp/product/productlist?number=100&page=1',
       base: 'https://www.daiwa.com/jp/product/',
       host: 'www.daiwa.com',
       name: 'ダイワ公式製品一覧'
