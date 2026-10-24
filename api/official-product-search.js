@@ -23,7 +23,7 @@ const OFFICIAL_SOURCES = {
 };
 
 function normalizeText(value) {
-  return String(value || '').normalize('NFKC').toLocaleLowerCase('ja-JP').replace(/[\\s　・･\-‐‑–—_【】「」『』()（）［］]/g, '');
+  return String(value || '').normalize('NFKC').toLocaleLowerCase('ja-JP').replace(/[\s　・･\-‐‑–—_【】「」『』()（）［］]/g, '');
 }
 
 async function searchPokemonGoods(query) {
