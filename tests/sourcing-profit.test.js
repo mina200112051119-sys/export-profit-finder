@@ -123,11 +123,31 @@ test('applying or clearing a sourcing price refreshes the current ranking view',
 });
 
 
-test('selected sourcing candidate remains attached to its stable row ID after list insertions or reordering', () => {
+test('selected sourcing candidate remains attached to its stable row ID after insertions or reordering', () => {
   const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  const start = source.indexOf('function isSelectedCandidate(selectedInfo, row, index) {');
+  const end = source.indexOf('\n}\n', start);
+  assert.notEqual(start, -1, 'selection helper exists');
+  assert.notEqual(end, -1, 'selection helper closes');
+  const isSelectedCandidate = vm.runInNewContext('(' + source.slice(start, end + 2) + ')', {
+    String
+  });
+
+  const savedSelection = { candidateId: 'row-b', candidateIndex: 0 };
+  const afterInsertion = [
+    { id: 'row-new' },
+    { id: 'row-a' },
+    { id: 'row-b' }
+  ];
+  assert.equal(afterInsertion.some((row, index) => isSelectedCandidate(savedSelection, row, index)), true);
+  assert.equal(isSelectedCandidate(savedSelection, afterInsertion[0], 0), false);
+  assert.equal(isSelectedCandidate(savedSelection, afterInsertion[2], 2), true);
+
+  // Older saved selections without candidateId remain readable.
+  assert.equal(isSelectedCandidate({ candidateIndex: 1 }, { id: 'legacy' }, 1), true);
+  assert.equal(isSelectedCandidate({ candidateIndex: 1 }, { id: 'legacy' }, 0), false);
+
   assert.match(source, /candidateId:String\(row\.id\)/);
-  assert.match(source, /selected\?\.candidateId\s*\?\s*String\(selected\.candidateId\)===String\(x\.r\.id\)/);
-  assert.match(source, /selectedInfo\?\.candidateId\s*\?\s*String\(selectedInfo\.candidateId\)===String\(r\.id\)/);
   assert.match(source, /if \(row\.domesticSearchName\) saveDomesticSearchName\(p, row\.domesticSearchName\)/);
   assert.match(source, /if \(row\.officialCandidate\) \{ selectedOfficialCandidate = \{ \.\.\.row\.officialCandidate \}; writeOfficialCandidate\(p, selectedOfficialCandidate\); drawSelectedOfficialCandidate\(\); \}/);
 });
