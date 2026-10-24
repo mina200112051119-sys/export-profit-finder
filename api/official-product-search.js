@@ -127,6 +127,46 @@ async function searchCanonCameras(query) {
     .sort((a, b) => b.score - a.score).slice(0, 10);
 }
 
+
+async function searchNintendoGames(query) {
+  const searchUrl = 'https://www.nintendo.com/jp/search/index.html?q=' + encodeURIComponent(query);
+  const response = await fetch(searchUrl, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
+  });
+  if (!response.ok) throw new Error('任天堂公式検索の取得に失敗しました');
+  const html = await response.text();
+  const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+  const rows = [];
+  const linkPattern = /<a\\b([^>]*href=["']([^"']+)["'][^>]*)>([\\s\\S]*?)<\\/a>/gi;
+  let match;
+  while ((match = linkPattern.exec(html)) && rows.length < 1500) {
+    const attrs = match[1] || '';
+    const href = decodeHtml(match[2]);
+    const inner = match[3] || '';
+    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+    const attrTitle = decodeHtml((attrs.match(/\\btitle=["']([^"']+)["']/i) || [])[1] || '');
+    const imageAlt = decodeHtml((inner.match(/<img\\b[^>]*\\balt=["']([^"']+)["']/i) || [])[1] || '');
+    const title = [textTitle, attrTitle, imageAlt].find(value => value && value.length >= 3 && value.length <= 140) || '';
+    if (!title) continue;
+    const url = new URL(href, 'https://www.nintendo.com/jp/').toString();
+    if (!url.startsWith('https://www.nintendo.com/jp/')) continue;
+    if (!/soft|game|search|title|product|software|switch|3ds|wii|ds|fc|sfc/i.test(url)) continue;
+    if (/^(検索|詳しくはこちら|詳細|すべて見る|任天堂ホームページ)$/u.test(title)) continue;
+    const normalizedTitle = normalizeText(title);
+    const score = q && normalizedTitle.includes(q) ? 100 :
+      terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+    if (score >= 45) {
+      const imagePath = (inner.match(/<img\\b[^>]*\\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+      const image = imagePath ? new URL(decodeHtml(imagePath), 'https://www.nintendo.com/jp/').toString() : '';
+      rows.push({ title, url, image, date: '', sourceName: '任天堂公式ゲーム検索', score });
+    }
+  }
+  return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -175,6 +215,19 @@ module.exports = async (req, res) => {
         message: candidates.length
           ? 'キヤノン公式カメラミュージアムから名称候補を取得しました。型番・画像・製品仕様を照合するまで正式一致とは扱いません。ニコン等の他社製品はこの検索対象に含まれません。'
           : 'キヤノン公式カメラミュージアムから一致候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',
+        candidates, sources
+      });
+    }
+    if (category === 'レトロゲーム') {
+      const candidates = await searchNintendoGames(query);
+      return res.json({
+        category, query, provider: '任天堂公式ゲーム検索',
+        fetchedAt: new Date().toISOString(),
+        status: candidates.length ? 'candidate_found' : 'no_match',
+        verification: 'candidate_only',
+        message: candidates.length
+          ? '任天堂公式検索からゲーム名候補を取得しました。機種・発売地域・型番や商品画像を照合するまで正式一致とは扱いません。任天堂公式検索に掲載されているタイトルが中心で、他社機種や全ての旧作を網羅するものではありません。'
+          : '任天堂公式検索から候補を抽出できませんでした。セガなど他社公式サイトや検索語を変えて確認してください。',
         candidates, sources
       });
     }
