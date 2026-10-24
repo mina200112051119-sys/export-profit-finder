@@ -31,7 +31,7 @@ function decodeHtml(value) {
   return String(value || '')
     .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'")
     .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
-    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
 }
 
 async function searchGunpla(query) {
@@ -41,13 +41,13 @@ async function searchGunpla(query) {
   const html = await response.text();
   const matches = [];
   // 公式検索結果のHTMLから商品詳細リンクと商品名を抽出。抽出できない場合は候補を作らない。
-  const linkPattern = /<a\\b[^>]*href=["']([^"']*(?:detail\\.php|products\\/[^"']+)[^"']*)["'][^>]*>([\\s\\S]*?)<\\/a>/gi;
+  const linkPattern = /<a\b[^>]*href=["']([^"']*(?:detail\.php|products\/[^"']+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = linkPattern.exec(html)) && matches.length < 80) {
     const href = decodeHtml(match[1]);
-    const title = decodeHtml(match[2].replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+    const title = decodeHtml(match[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
     if (!title || title.length < 4 || /^(商品情報|詳しくはこちら|詳細)$/u.test(title)) continue;
-    if (!/ガンダム|ガンプラ|HG\\b|MG\\b|RG\\b|PG\\b|ENTRY GRADE|SD\\b|\\b1\\//iu.test(title)) continue;
+    if (!/ガンダム|ガンプラ|HG\b|MG\b|RG\b|PG\b|ENTRY GRADE|SD\b|\b1\//iu.test(title)) continue;
     const url = new URL(href, 'https://www.bandaispirits.co.jp/').toString();
     if (!url.startsWith('https://www.bandaispirits.co.jp/')) continue;
     const normalizedTitle = normalizeText(title);
