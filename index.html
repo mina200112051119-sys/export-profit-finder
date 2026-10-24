@@ -61,17 +61,23 @@ function getExportUserId(){
   return id;
 }
 function cloudStorageData(){
-  const sourcingCandidates={},selectedSourcing={};
+  const sourcingCandidates={},selectedSourcing={},officialCandidates={},domesticSearchNames={};
+  const prefixes={
+    candidates:'sourcingCandidates:v1:',
+    selected:'selectedSourcingCost:v1:',
+    official:'selectedOfficialCandidate:v1:',
+    searchName:'domesticSearchName:v1:'
+  };
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i)||'';
-    if(k.startsWith('sourcingCandidates:v1:')){
-      try{sourcingCandidates[k.slice(23)]=JSON.parse(localStorage.getItem(k)||'[]')}catch(e){}
-    }
-    if(k.startsWith('selectedSourcingCost:v1:')){
-      try{const v=JSON.parse(localStorage.getItem(k)||'null');if(v)selectedSourcing[k.slice(24)]=v}catch(e){}
-    }
+    try{
+      if(k.startsWith(prefixes.candidates))sourcingCandidates[k.slice(prefixes.candidates.length)]=JSON.parse(localStorage.getItem(k)||'[]');
+      else if(k.startsWith(prefixes.selected)){const v=JSON.parse(localStorage.getItem(k)||'null');if(v)selectedSourcing[k.slice(prefixes.selected.length)]=v;}
+      else if(k.startsWith(prefixes.official)){const v=JSON.parse(localStorage.getItem(k)||'null');if(v)officialCandidates[k.slice(prefixes.official.length)]=v;}
+      else if(k.startsWith(prefixes.searchName)){const v=localStorage.getItem(k);if(v)domesticSearchNames[k.slice(prefixes.searchName.length)]=v;}
+    }catch(e){}
   }
-  return {sourcingCandidates,selectedSourcing};
+  return {sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames};
 }
 async function checkCloudStorage(){
   const el=$('cloud-status');
@@ -102,12 +108,15 @@ async function loadCloudStorage(){
     if(!d.data)return;
     Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row)));
+    Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
+    Object.entries(d.data.domesticSearchNames||{}).forEach(([id,name])=>localStorage.setItem('domesticSearchName:v1:'+id,String(name)));
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
 const _removeItem=Storage.prototype.removeItem;
 function scheduleSourcingCloudSave(k){
-  if(String(k).startsWith('sourcingCandidates:v1:')||String(k).startsWith('selectedSourcingCost:v1:')){
+  const key=String(k);
+  if(['sourcingCandidates:v1:','selectedSourcingCost:v1:','selectedOfficialCandidate:v1:','domesticSearchName:v1:'].some(prefix=>key.startsWith(prefix))){
     clearTimeout(window.__cloudSaveTimer);
     window.__cloudSaveTimer=setTimeout(saveCloudStorage,800);
   }
