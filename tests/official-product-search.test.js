@@ -99,3 +99,33 @@ test('fishing product name extraction maps normalized offsets back to spaced sou
     global.fetch = previousFetch;
   }
 });
+
+
+test('camera official search includes Nikon product candidates', async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('nij.nikon.com')) {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => '<html><h3>Z8</h3><a href="/products/camera/mirrorless/z8/">製品情報を見る</a></html>'
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      text: async () => '<html><a href="/ja/c-museum/camera.html"><img alt="EOS R5" src="/camera.jpg"></a></html>'
+    };
+  };
+  try {
+    const res = responseRecorder();
+    await handler({ method: 'GET', query: { category: 'カメラ', q: 'Z8' } }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.status, 'candidate_found');
+    assert.equal(res.body.verification, 'candidate_only');
+    assert.ok(res.body.candidates.some(item => item.title === 'Z8' && item.sourceName === 'ニコン公式製品情報'));
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
