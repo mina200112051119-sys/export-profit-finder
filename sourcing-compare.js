@@ -155,6 +155,8 @@ function render(p) {
         <div class="muted">カテゴリーに対応するメーカー・権利元の公式情報を開けます。公式サイトへのリンクを表示していますが、現時点ではサイト内データを自動取得・照合した状態ではありません。</div>
         <div id="sc-official-links" class="grid" style="margin-top:8px"></div>
         <button id="sc-official-search" class="primary" type="button" style="margin-top:8px">公式情報から候補を取得</button>
+        <button id="sc-translate-search" class="secondary" type="button" style="margin-top:8px">英語タイトルを日本語にして候補検索</button>
+        <div class="muted">翻訳結果は検索語の候補です。メーカー公式の正式名称として確定したものではありません。</div>
         <div id="sc-official-results" style="margin-top:8px"></div>
         <div class="notice" style="margin-top:8px"><b>名称確認状況：未確認</b><br>公式情報から候補が返っても、商品名・型番・画像を照合するまでは正式名称として確定しません。</div>
       </div>
@@ -213,7 +215,38 @@ function render(p) {
   }
 
   const officialSearchButton = document.getElementById('sc-official-search');
+  const translateSearchButton = document.getElementById('sc-translate-search');
   const officialResults = document.getElementById('sc-official-results');
+  if (translateSearchButton && officialSearchButton && officialResults) {
+    translateSearchButton.onclick = async () => {
+      const original = String(searchNameInput?.value || '').trim();
+      if (!original) {
+        officialResults.innerHTML = '<div class="notice">英語の商品名・型番を入力してください。</div>';
+        return;
+      }
+      translateSearchButton.disabled = true;
+      translateSearchButton.textContent = '日本語に変換中…';
+      try {
+        const response = await fetch('/api/translate?text=' + encodeURIComponent(original) + '&to=ja');
+        const data = await response.json();
+        if (!response.ok || !data.translated) throw new Error(data.error || '翻訳に失敗しました');
+        const translated = String(data.translated).trim();
+        if (!translated) throw new Error('日本語の検索語を作成できませんでした');
+        if (searchNameInput) {
+          searchNameInput.value = translated;
+          saveDomesticSearchName(p, translated);
+          drawSearchLinks();
+        }
+        officialResults.innerHTML = '<div class="notice">英語タイトルを日本語の検索語に変換しました。これは機械翻訳であり、公式名称の確定ではありません。公式情報を検索します。</div>';
+        officialSearchButton.click();
+      } catch (error) {
+        officialResults.innerHTML = '<div class="notice">翻訳できませんでした。元の商品名・型番は変更していません。' + esc(error.message || '') + '</div>';
+      } finally {
+        translateSearchButton.disabled = false;
+        translateSearchButton.textContent = '英語タイトルを日本語にして候補検索';
+      }
+    };
+  }
   if (officialSearchButton && officialResults) {
     officialSearchButton.onclick = async () => {
       const query = String(searchNameInput?.value || '').trim();
