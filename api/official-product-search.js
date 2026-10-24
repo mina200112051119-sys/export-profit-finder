@@ -1,3 +1,4 @@
+const { URL } = require('url');
 const OFFICIAL_SOURCES = {
   'ポケモンカード': [
     { name: 'ポケモンカード公式 カード検索', url: 'https://www.pokemon-card.com/card-search/' }
