@@ -201,11 +201,14 @@ function extractFishingCandidates(html, baseUrl, sourceName, query, allowedHost)
         // used directly against the original text. Map the normalized offset
         // back to the raw string before taking the nearby product-card text.
         let rawQueryIndex = 0;
-        for (let i = 1; i <= contextText.length; i++) {
-          if (normalizeText(contextText.slice(0, i)).length > queryIndex) {
-            rawQueryIndex = i - 1;
+        let normalizedOffset = 0;
+        for (let i = 0; i < contextText.length; i++) {
+          const normalizedChar = normalizeText(contextText[i]);
+          if (normalizedOffset <= queryIndex && normalizedOffset + normalizedChar.length > queryIndex) {
+            rawQueryIndex = i;
             break;
           }
+          normalizedOffset += normalizedChar.length;
         }
         const left = Math.max(0, rawQueryIndex - 45);
         const right = Math.min(contextText.length, rawQueryIndex + query.length + 55);
