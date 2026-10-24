@@ -1,9 +1,10 @@
 const QUERIES = [
-  { cat: 'ポケモンカード', q: 'Pokemon card Japan' },
-  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon TCG supplies Japan' },
-  { cat: '釣具', q: 'Japanese fishing tackle' },
-  { cat: 'カメラ', q: 'Japanese camera' },
-  { cat: 'レトロゲーム', q: 'Japanese retro game' }
+  { cat: 'ポケモンカード', q: 'Pokemon card graded rare Japanese' },
+  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
+  { cat: '釣具', q: 'Shimano Daiwa fishing reel Japan' },
+  { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
+  { cat: 'レトロゲーム', q: 'Japanese retro video game Nintendo Sega PlayStation' },
+  { cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan' }
 ];
 
 const { saveSnapshot, storageConfigured } = require('./data-store');

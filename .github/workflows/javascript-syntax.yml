@@ -1,0 +1,28 @@
+name: JavaScript syntax check
+
+on:
+  push:
+    branches:
+      - feature/japanese-product-name-matching
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**/*.js'
+      - '.github/workflows/**'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        run: |
+          find . -type f -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check
+      - name: Test official product search API
+        run: node --test tests/*.test.js

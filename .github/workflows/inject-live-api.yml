@@ -11,12 +11,18 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: inject-live-api-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   inject:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Sync latest branch before modifying index.html
+        run: git pull --ff-only origin "$GITHUB_REF_NAME"
       - name: Fix GitHub Pages paths and inject frontend scripts
         run: |
           python - <<'PY'
