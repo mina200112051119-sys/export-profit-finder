@@ -128,11 +128,11 @@ function saveDomesticSearchName(p, value) {
 }
 
 function originalModelTokens(value) {
-  const matches = String(value || '').match(/[A-Za-z]{1,10}[- ]?\\d{1,5}[A-Za-z0-9-]*/g) || [];
+  const matches = String(value || '').match(/[A-Za-z]{1,10}[- ]?\d{1,5}[A-Za-z0-9-]*/g) || [];
   return matches.map(raw => ({
     raw,
-    compact: raw.normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '')
-  })).filter(token => token.compact && /\\d/.test(token.compact));
+    compact: raw.normalize('NFKC').toLowerCase().replace(/[\s　・･\-‐‑–—_【】「」『』()（）［］]/g, '')
+  })).filter(token => token.compact && /\d/.test(token.compact));
 }
 
 function searchUrl(p, source, query = getDomesticSearchName(p)) {
@@ -286,7 +286,7 @@ function render(p) {
           officialResults.innerHTML = '<div class="notice"><b>公式情報の候補（自動一致確定ではありません）</b><br>' + esc(data.message || '') + '</div>' +
             data.candidates.map(row => {
               const originalTokens = originalModelTokens(query);
-              const candidateText = String(row.title || '').normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+              const candidateText = String(row.title || '').normalize('NFKC').toLowerCase().replace(/[\s　・･\-‐‑–—_【】「」『』()（）［］]/g, '');
               const missingTokens = originalTokens.filter(token => !candidateText.includes(token.compact));
               const modelCheck = originalTokens.length
                 ? (missingTokens.length
