@@ -7,6 +7,31 @@ const SOURCES = [
   ['ヤフオク','yahooAuctions','https://auctions.yahoo.co.jp/search/search?p=']
 ];
 
+const OFFICIAL_CATALOGS = {
+  'ポケモンカード': [
+    ['ポケモンカード公式 カード検索','https://www.pokemon-card.com/card-search/']
+  ],
+  'ポケモン関連サプライ用品': [
+    ['ポケモン公式 グッズ一覧','https://www.pokemon.co.jp/goods/'],
+    ['ポケモンカード公式','https://www.pokemon-card.com/']
+  ],
+  '釣具': [
+    ['シマノ公式 製品情報','https://fish.shimano.com/ja-JP'],
+    ['ダイワ公式 製品情報','https://www.daiwa.com/jp/product']
+  ],
+  'カメラ': [
+    ['キヤノン公式 カメラミュージアム','https://global.canon/ja/c-museum/camera.html'],
+    ['ニコン公式 製品情報','https://nij.nikon.com/']
+  ],
+  'レトロゲーム': [
+    ['任天堂公式 ソフト・商品情報','https://www.nintendo.com/jp/'],
+    ['セガ公式 家庭用ゲーム検索','https://www.sega.jp/game/soft/']
+  ],
+  'ガンプラ': [
+    ['BANDAI SPIRITS公式 商品検索','https://www.bandaispirits.co.jp/products/search/']
+  ]
+};
+
 const CONDITIONS = ['新品','未使用','美品','中古','傷あり','ジャンク','状態不明'];
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({
@@ -26,7 +51,15 @@ function writeCandidates(p, rows) {
   localStorage.setItem(keyFor(p), JSON.stringify(rows));
 }
 function categoryOf(p) {
-  return p.cat || '釣具';
+  const cat = String(p.cat || p.category || '');
+  if (OFFICIAL_CATALOGS[cat]) return cat;
+  if (/gunpla|ガンプラ|gundam/i.test(cat)) return 'ガンプラ';
+  if (/pokemon.*accessor|サプライ/i.test(cat)) return 'ポケモン関連サプライ用品';
+  if (/pokemon|ポケモン|tcg|trading card/i.test(cat)) return 'ポケモンカード';
+  if (/fish|釣具|釣り/i.test(cat)) return '釣具';
+  if (/camera|カメラ|lens/i.test(cat)) return 'カメラ';
+  if (/retro|game|ゲーム|任天堂|セガ/i.test(cat)) return 'レトロゲーム';
+  return cat || 'その他';
 }
 function feeOf(p) {
   const fees = {
@@ -116,6 +149,12 @@ function render(p) {
       <input id="sc-search-name" value="${esc(getDomesticSearchName(p))}" placeholder="日本の商品名や型番を入力">
       <p class="muted">商品名が直訳のままの場合は、日本で使われている商品名・型番に直してから検索できます。入力した検索名は、この商品についてこの端末に保存されます。正式名称が自動確認済みという意味ではありません。</p>
       <div id="sc-search-links" class="grid"></div>
+      <div class="card" style="margin-top:10px">
+        <h3>公式情報で商品名・型番を照合</h3>
+        <div class="muted">カテゴリーに対応するメーカー・権利元の公式情報を開けます。公式サイトへのリンクを表示していますが、現時点ではサイト内データを自動取得・照合した状態ではありません。</div>
+        <div id="sc-official-links" class="grid" style="margin-top:8px"></div>
+        <div class="notice" style="margin-top:8px"><b>名称確認状況：未確認</b><br>公式情報で商品名・型番・画像が一致することを確認するまでは、正式名称として確定しません。</div>
+      </div>
     </div>
 
     <div class="card" style="margin-top:10px">
@@ -161,6 +200,14 @@ function render(p) {
     });
   }
   drawSearchLinks();
+
+  const officialLinks = document.getElementById('sc-official-links');
+  const catalogs = OFFICIAL_CATALOGS[categoryOf(p)] || [];
+  if (officialLinks) {
+    officialLinks.innerHTML = catalogs.length
+      ? catalogs.map(([label, href]) => '<a class="tab" style="text-decoration:none;text-align:center" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + '</a>').join('')
+      : '<div class="muted">このカテゴリーの公式情報リンクは未登録です。正式名称は未確認のまま扱います。</div>';
+  }
 
   const sourceLabel = s => SOURCES.find(x=>x[1]===s)?.[0] || s;
   const list = document.getElementById('sc-list');
