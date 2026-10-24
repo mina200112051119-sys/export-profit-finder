@@ -121,3 +121,13 @@ test('applying or clearing a sourcing price refreshes the current ranking view',
   assert.match(html, /clearSourcingOverride\(id\);if\(p\)\{updateVisibleProfit\(p\);refreshCurrentRanking\(\);\}/);
   assert.match(html, /function category\(c\)\{currentRankingCategory=c;currentRankingTitle=/);
 });
+
+
+test('selected sourcing candidate remains attached to its stable row ID after list insertions or reordering', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(source, /candidateId:String\(row\.id\)/);
+  assert.match(source, /selected\?\.candidateId\s*\?\s*String\(selected\.candidateId\)===String\(x\.r\.id\)/);
+  assert.match(source, /selectedInfo\?\.candidateId\s*\?\s*String\(selectedInfo\.candidateId\)===String\(r\.id\)/);
+  assert.match(source, /if \(row\.domesticSearchName\) saveDomesticSearchName\(p, row\.domesticSearchName\)/);
+  assert.match(source, /if \(row\.officialCandidate\) \{ selectedOfficialCandidate = \{ \.\.\.row\.officialCandidate \}; writeOfficialCandidate\(p, selectedOfficialCandidate\); drawSelectedOfficialCandidate\(\); \}/);
+});
