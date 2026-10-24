@@ -56,3 +56,25 @@ test('unknown category returns a clear unsupported-category error', async () => 
   assert.equal(res.statusCode, 400);
   assert.equal(res.body.error, 'unsupported category');
 });
+
+
+test('fishing tackle search returns candidate-only results from official Shimano/Daiwa pages', async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => ({
+    ok: true,
+    status: 200,
+    text: async () => String(url).includes('shimano.com')
+      ? '<html><a href="/ja-JP/product/detail.html?id=1">ステラ</a></html>'
+      : '<html><a href="/jp/product/productlist?item=1">ステラ</a></html>'
+  });
+  try {
+    const res = responseRecorder();
+    await handler({ method: 'GET', query: { category: '釣具', q: 'ステラ' } }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.status, 'candidate_found');
+    assert.equal(res.body.verification, 'candidate_only');
+    assert.ok(res.body.candidates.some(item => item.title === 'ステラ'));
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
