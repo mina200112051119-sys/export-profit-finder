@@ -92,6 +92,41 @@ async function searchPokemonGoods(query) {
   return matches;
 }
 
+async function searchCanonCameras(query) {
+  const response = await fetch('https://global.canon/ja/c-museum/camera.html', {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
+  });
+  if (!response.ok) throw new Error('キヤノン公式カメラミュージアムの取得に失敗しました');
+  const html = await response.text();
+  const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+  const rows = [];
+  const linkPattern = /<a\\b([^>]*href=["']([^"']+)["'][^>]*)>([\\s\\S]*?)<\\/a>/gi;
+  let match;
+  while ((match = linkPattern.exec(html)) && rows.length < 1200) {
+    const attrs = match[1] || '';
+    const href = decodeHtml(match[2]);
+    const inner = match[3] || '';
+    const textTitle = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ')).trim();
+    const attrTitle = decodeHtml((attrs.match(/\\btitle=["']([^"']+)["']/i) || [])[1] || '');
+    const imageAlt = decodeHtml((inner.match(/<img\\b[^>]*\\balt=["']([^"']+)["']/i) || [])[1] || '');
+    const title = [textTitle, attrTitle, imageAlt].find(value => value && value.length >= 3) || '';
+    if (!title || title.length > 120) continue;
+    const url = new URL(href, 'https://global.canon/ja/c-museum/').toString();
+    if (!url.startsWith('https://global.canon/ja/c-museum/')) continue;
+    if (!/camera|camera\\.html|detail|product|\\.html/i.test(url)) continue;
+    const normalizedTitle = normalizeText(title);
+    const score = q && normalizedTitle.includes(q) ? 100 :
+      terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+    if (score >= 45 && !/^(カメラ館|全て|Image|詳しくはこちら|詳細)$/u.test(title)) {
+      rows.push({ title, url, image: '', date: '', sourceName: 'キヤノンカメラミュージアム公式', score });
+    }
+  }
+  return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -127,6 +162,19 @@ module.exports = async (req, res) => {
         message: candidates.length
           ? '公式情報から候補を取得しました。商品名・画像・型番を照合するまで正式一致とは扱いません。'
           : '公式情報から一致候補を見つけられませんでした。検索語を変えるか、公式ページで手動確認してください。',
+        candidates, sources
+      });
+    }
+    if (category === 'カメラ') {
+      const candidates = await searchCanonCameras(query);
+      return res.json({
+        category, query, provider: 'キヤノンカメラミュージアム公式',
+        fetchedAt: new Date().toISOString(),
+        status: candidates.length ? 'candidate_found' : 'no_match',
+        verification: 'candidate_only',
+        message: candidates.length
+          ? 'キヤノン公式カメラミュージアムから名称候補を取得しました。型番・画像・製品仕様を照合するまで正式一致とは扱いません。ニコン等の他社製品はこの検索対象に含まれません。'
+          : 'キヤノン公式カメラミュージアムから一致候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',
         candidates, sources
       });
     }
