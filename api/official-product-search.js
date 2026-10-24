@@ -31,8 +31,9 @@ async function searchPokemonGoods(query) {
   if (!response.ok) throw new Error('公式グッズ情報の取得に失敗しました');
   const payload = await response.json();
   const rows = Array.isArray(payload.results) ? payload.results : [];
-  const terms = normalizeText(query).split(/(?=.{2})/).filter(Boolean);
   const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
   const matches = rows.map(row => {
     const title = String(row.title || '');
     const normalizedTitle = normalizeText(title);
