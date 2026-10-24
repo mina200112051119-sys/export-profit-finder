@@ -96,7 +96,18 @@ module.exports = async (req, res) => {
   if (!sources) return res.status(400).json({ error: 'unsupported category', categories: Object.keys(OFFICIAL_SOURCES) });
 
   try {
-    if (category === 'ガンプラ') {\n      const candidates = await searchGunpla(query);\n      return res.json({\n        category, query, provider: 'BANDAI SPIRITS公式商品検索', fetchedAt: new Date().toISOString(),\n        status: candidates.length ? 'candidate_found' : 'no_match', verification: 'candidate_only',\n        message: candidates.length\n          ? '公式検索結果から候補を取得しました。商品名・型番・画像を照合するまで正式一致とは扱いません。'\n          : '公式検索結果から候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',\n        candidates, sources\n      });\n    }\n    if (category === 'ポケモン関連サプライ用品') {
+    if (category === 'ガンプラ') {
+      const candidates = await searchGunpla(query);
+      return res.json({
+        category, query, provider: 'BANDAI SPIRITS公式商品検索', fetchedAt: new Date().toISOString(),
+        status: candidates.length ? 'candidate_found' : 'no_match', verification: 'candidate_only',
+        message: candidates.length
+          ? '公式検索結果から候補を取得しました。商品名・型番・画像を照合するまで正式一致とは扱いません。'
+          : '公式検索結果から候補を抽出できませんでした。検索語を変えるか、公式ページで手動確認してください。',
+        candidates, sources
+      });
+    }
+    if (category === 'ポケモン関連サプライ用品') {
       const candidates = await searchPokemonGoods(query);
       return res.json({
         category, query, provider: 'ポケモン公式グッズ情報',
