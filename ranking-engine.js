@@ -17,7 +17,24 @@ function feeScore(p,c){if(p.sell<=0)return 0;return clamp(100-(c.totalFees/Math.
 function marginScore(c){return c.margin===null||c.margin<=0?0:clamp(c.margin*250)}
 function profitScore(c,profits=[]){if(c.profit===null)return 0;const pos=profits.filter(v=>Number.isFinite(v)&&v>0),max=pos.length?Math.max(...pos):0;return max&&c.profit>0?clamp(c.profit/max*100):0}
 function projectedPrice(p,days){if(p.soldMedian>0){const base=p.soldMedian,trend=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.98:days===60?.96:.94);return round(base*trend)}let f=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='横ばい'?(days===30?.98:days===60?.96:.94):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.97:days===60?.94:.9);return round(Math.max(p.sell,0)*f)}
-function breakEvenPrice(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),variable=num(s.feeRate,.136)+num(s.internationalRate,.0135),fixed=(p.sell+p.ship)<=10?.30:.40,local=num(s.domesticShipping)+num(s.packaging)+num(s.otherCost),d=1-variable;return p.cost>0&&d>0?round((p.cost+local+fixed*fx)/d):null}
+function breakEvenPrice(p,s={}){
+  const fx=Math.max(num(s.fxRate,150),.0001);
+  const variable=Math.max(0,num(s.feeRate,.136))
+    +Math.max(0,num(s.internationalRate,.0135))
+    +Math.max(0,num(s.conversionFeeRate))/100;
+  const local=Math.max(0,num(s.domesticShipping))
+    +Math.max(0,num(p.sourcingShippingJpy))
+    +Math.max(0,num(s.packaging))
+    +Math.max(0,num(s.otherCost));
+  const cost=Math.max(0,num(p.cost));
+  const buyerShipping=Math.max(0,num(p.ship));
+  const denominator=fx*(1-variable);
+  if(cost<=0||denominator<=0)return null;
+  const solve=fixedUsd=>round((cost+local+fixedUsd*fx)/denominator-buyerShipping);
+  const candidates=[.30,.40].map(fixedUsd=>({fixedUsd,sale:solve(fixedUsd)}))
+    .filter(x=>x.sale>=0&&((x.sale+buyerShipping)<=10)===(x.fixedUsd===.30));
+  return candidates.length?candidates[0].sale:solve(.40);
+}
 function simulateRisk(p,s={}){const scenarios=[30,60,90].map(days=>{const sale=projectedPrice(p,days),c=calcCosts({...p,sell:sale},s),risk=c.profit===null?'要仕入価格':c.profit<0?'高':c.margin!==null&&c.margin<.1?'高':c.margin!==null&&c.margin<.2?'中':'低';return{days,sale,profit:c.profit,margin:c.margin,risk}});return{scenarios,breakEven:breakEvenPrice(p,s)}}
 function inventoryRiskScore(r,p){let x=100,s=r.scenarios;if(p.cost<=0)return 45;if(s[0].profit<0)x-=60;else if(s[0].profit<p.cost*.1)x-=30;if(s[1].profit<0)x-=25;else if(s[1].profit<p.cost*.1)x-=12;if(s[2].profit<0)x-=25;else if(s[2].profit<p.cost*.1)x-=12;if(p.cost>50000)x-=10;return clamp(x)}
 function riskFlags(p,c,r){const a=[];if(p.cost<=0)a.push('仕入価格未入力');if(p.trend==='下落')a.push('相場下落傾向');if(c.profit!==null&&c.profit<0)a.push('現在価格でも赤字');if(r.scenarios[2].profit!==null&&r.scenarios[2].profit<0)a.push('90日後想定で赤字');if(p.cost>=50000)a.push('高額仕入れ');if(p.soldHistoryAvailable)a.push(`過去90日販売データ：${p.soldHistoryCount}件`);return a}
