@@ -101,3 +101,15 @@ test('daily snapshot category mapping matches all current refresh queries', () =
     "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'"
   ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
 });
+
+test('scheduled daily refresh includes all six current product categories', () => {
+  const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
+  for (const entry of [
+    "cat: 'ポケモンカード', q: 'Pokemon card graded rare Japanese'",
+    "cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed'",
+    "cat: '釣具', q: 'Shimano Daiwa fishing reel Japan'",
+    "cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm'",
+    "cat: 'レトロゲーム', q: 'Japanese retro video game Nintendo Sega PlayStation'",
+    "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'"
+  ]) assert.ok(cron.includes(entry), 'scheduled refresh contains ' + entry);
+});
