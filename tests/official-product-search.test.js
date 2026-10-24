@@ -78,3 +78,24 @@ test('fishing tackle search returns candidate-only results from official Shimano
     global.fetch = previousFetch;
   }
 });
+
+
+test('fishing product name extraction maps normalized offsets back to spaced source text', async () => {
+  const previousFetch = global.fetch;
+  const longSpacing = ' '.repeat(120);
+  global.fetch = async (url) => ({
+    ok: true,
+    status: 200,
+    text: async () => String(url).includes('shimano.com')
+      ? '<html><div class="product-card">リール' + longSpacing + 'ステラ 91,400円 <a href="/ja-JP/product/detail.html?id=2">VIEW PRODUCT</a></div></html>'
+      : '<html><div>別の商品</div></html>'
+  });
+  try {
+    const res = responseRecorder();
+    await handler({ method: 'GET', query: { category: '釣具', q: 'ステラ' } }, res);
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.body.candidates.some(item => item.title.includes('ステラ')));
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
