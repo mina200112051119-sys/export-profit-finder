@@ -129,3 +129,31 @@ test('camera official search includes Nikon product candidates', async () => {
     global.fetch = previousFetch;
   }
 });
+
+
+test('camera search keeps Nikon candidates when one official Nikon page is unavailable', async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('nij.nikon.com')) {
+      if (value.includes('discontinue_mirrorless')) {
+        return { ok: false, status: 503, text: async () => '' };
+      }
+      return {
+        ok: true,
+        status: 200,
+        text: async () => '<html><div class="product-card"><h3>Z8</h3><img src="/products/z8.jpg"><a href="/products/camera/mirrorless/z8/">製品情報を見る</a></div></html>'
+      };
+    }
+    return { ok: true, status: 200, text: async () => '<html></html>' };
+  };
+  try {
+    const res = responseRecorder();
+    await handler({ method: 'GET', query: { category: 'カメラ', q: 'Z8' } }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.status, 'candidate_found');
+    assert.ok(res.body.candidates.some(item => item.title === 'Z8'));
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
