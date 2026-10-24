@@ -113,3 +113,11 @@ test('scheduled daily refresh includes all six current product categories', () =
     "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'"
   ]) assert.ok(cron.includes(entry), 'scheduled refresh contains ' + entry);
 });
+
+test('applying or clearing a sourcing price refreshes the current ranking view', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /function refreshCurrentRanking\(\)\{if\(!\$\('ranking'\)\)return;renderList\(rank\(currentRankingCategory\),currentRankingTitle\)\}/);
+  assert.match(html, /updateVisibleProfit\(p\);\s*refreshCurrentRanking\(\);/);
+  assert.match(html, /clearSourcingOverride\(id\);if\(p\)\{updateVisibleProfit\(p\);refreshCurrentRanking\(\);\}/);
+  assert.match(html, /function category\(c\)\{currentRankingCategory=c;currentRankingTitle=/);
+});
