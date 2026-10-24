@@ -189,3 +189,23 @@ test('deleting the active stable-ID sourcing candidate clears its applied cost',
   assert.match(source, /window\.__exportApp\?\.clearSourcingCost\?\.\(p\.id\)/);
   assert.match(source, /採用中の仕入れ候補を削除したため、分析に反映した仕入れ価格も解除しました/);
 });
+
+
+test('sourcing comparison profit delegates to the shared RankingEngine cost calculation', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  const start = source.indexOf('function candidateProfit(p, row) {');
+  const end = source.indexOf('\n}', start) + 2;
+  assert.notEqual(start, -1, 'candidate profit helper exists');
+  assert.notEqual(end, 1, 'candidate profit helper closes');
+  const helper = source.slice(start, end);
+  assert.match(helper, /window\.RankingEngine/);
+  assert.match(helper, /engine\.calcCosts\(/);
+  assert.match(helper, /cost: Number\(row\.priceJpy\)/);
+  assert.match(helper, /sourcingShippingJpy: Math\.max\(0, Number\(row\.shippingJpy \|\| 0\)\)/);
+  assert.match(helper, /feeRate: feeOf\(p\)/);
+  assert.match(helper, /conversionFeeRate: g\('conv'\)/);
+  assert.match(helper, /domesticShipping: g\('domestic'\)/);
+  assert.match(helper, /packaging: g\('pack'\)/);
+  assert.match(helper, /otherCost: g\('other'\)/);
+  assert.match(helper, /costs\?\.profit == null \? null : Number\(costs\.profit\)/);
+});
