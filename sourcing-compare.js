@@ -406,8 +406,10 @@ function render(p) {
     `;
     list.innerHTML += ranked.map(({r,i,total,profit}) => {
       const conditionScore = {'新品':5,'未使用':5,'美品':4,'中古':3,'傷あり':2,'ジャンク':1,'状態不明':0}[r.condition] ?? 0;
-      const selected = window.__exportApp?.getSelectedSourcing?.(p.id)?.candidateIndex===i;
+      const selectedInfo = window.__exportApp?.getSelectedSourcing?.(p.id);
+      const selected = selectedInfo?.candidateIndex===i;
       const comparisonNote = conditionScore >= 4 ? '状態面の確認度が高い候補' : conditionScore >= 2 ? '状態を確認してから採用' : '状態リスクが高いため要確認';
+      const appliedOfficial = selected && selectedInfo?.officialCandidate ? selectedInfo.officialCandidate : null;
       return `
         <div class="card" style="margin:8px 0;padding:12px">
           <div class="row"><b>${esc(sourceLabel(r.source))}</b><span>${esc(r.checkedAtLabel)}</span></div>
@@ -421,6 +423,7 @@ function render(p) {
           ${r.note?`<div class="muted">メモ：${esc(r.note)}</div>`:''}
           ${r.url?`<div style="margin-top:7px"><a href="${esc(r.url)}" target="_blank" rel="noopener">保存した出品を開く →</a></div>`:''}
           ${window.__exportApp?.getSelectedSourcing?.(p.id)?.index===i?'<div class="notice" style="margin-top:8px"><b>✓ 現在の分析に採用中</b></div>':''}
+          ${appliedOfficial?'<div class="notice" style="margin-top:8px"><b>分析に反映した公式候補</b><br>'+(appliedOfficial.image?'<img src="'+esc(appliedOfficial.image)+'" alt="分析に反映した公式候補画像" style="max-width:64px;max-height:64px;object-fit:contain;vertical-align:middle">':'')+esc(appliedOfficial.title||'')+(appliedOfficial.url?'<br><a href="'+esc(appliedOfficial.url)+'" target="_blank" rel="noopener noreferrer">公式ページを確認</a>':'')+'<br><span class="muted">公式候補との関連付けです。商品が同一であることは別途確認してください。</span></div>':''}
           <button class="primary sc-apply" type="button" data-index="${i}">この仕入れ価格を分析に反映</button>
           <div class="muted" style="margin:8px 0">比較メモ：${comparisonNote}</div>
           <button class="secondary sc-delete" type="button" data-index="${i}">この保存情報を削除</button>
@@ -433,7 +436,7 @@ function render(p) {
       if (!row) return;
       const total = Number(row.priceJpy||0) + Number(row.shippingJpy||0);
       if (!Number.isFinite(total) || total < 0) return;
-      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt,candidateIndex:index,itemPrice:Number(row.priceJpy||0),shippingJpy:Number(row.shippingJpy||0)});
+      const ok = window.__exportApp?.applySourcingCost?.(p.id,total,{source:sourceLabel(row.source),condition:row.condition,checkedAt:row.checkedAt,candidateIndex:index,itemPrice:Number(row.priceJpy||0),shippingJpy:Number(row.shippingJpy||0),officialCandidate:row.officialCandidate||selectedOfficialCandidate||null,domesticSearchName:row.domesticSearchName||String(searchNameInput?.value||'').trim()});
       const m=document.getElementById('sc-message');
       if(m){m.style.display='block';m.textContent=ok?'この仕入れ候補を現在の仕入価格として分析に反映しました。':'分析への反映に失敗しました。';}
       drawList();
