@@ -180,3 +180,12 @@ test('saving a sourcing candidate rejects negative domestic shipping', () => {
   assert.match(source, /国内送料は0円以上で入力してください/);
   assert.match(source, /shippingJpy: shipping/);
 });
+
+
+test('deleting the active stable-ID sourcing candidate clears its applied cost', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(source, /const removed = next\[index\]/);
+  assert.match(source, /String\(selected\.candidateId\) === String\(removed\.id\)/);
+  assert.match(source, /window\.__exportApp\?\.clearSourcingCost\?\.\(p\.id\)/);
+  assert.match(source, /採用中の仕入れ候補を削除したため、分析に反映した仕入れ価格も解除しました/);
+});
