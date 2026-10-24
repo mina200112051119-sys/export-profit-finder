@@ -422,7 +422,7 @@ function render(p) {
           <div class="row"><span>想定利益</span><b class="${profit==null?'yellow':profit>=0?'green':'red'}">${profit==null?'計算不可':(profit>=0?'+':'')+yen(profit)}</b></div>
           ${r.note?`<div class="muted">メモ：${esc(r.note)}</div>`:''}
           ${r.url?`<div style="margin-top:7px"><a href="${esc(r.url)}" target="_blank" rel="noopener">保存した出品を開く →</a></div>`:''}
-          ${window.__exportApp?.getSelectedSourcing?.(p.id)?.index===i?'<div class="notice" style="margin-top:8px"><b>✓ 現在の分析に採用中</b></div>':''}
+          ${window.__exportApp?.getSelectedSourcing?.(p.id)?.candidateIndex===i?'<div class="notice" style="margin-top:8px"><b>✓ 現在の分析に採用中</b></div>':''}
           ${appliedOfficial?'<div class="notice" style="margin-top:8px"><b>分析に反映した公式候補</b><br>'+(appliedOfficial.image?'<img src="'+esc(appliedOfficial.image)+'" alt="分析に反映した公式候補画像" style="max-width:64px;max-height:64px;object-fit:contain;vertical-align:middle">':'')+esc(appliedOfficial.title||'')+(appliedOfficial.url?'<br><a href="'+esc(appliedOfficial.url)+'" target="_blank" rel="noopener noreferrer">公式ページを確認</a>':'')+'<br><span class="muted">公式候補との関連付けです。商品が同一であることは別途確認してください。</span></div>':''}
           <button class="primary sc-apply" type="button" data-index="${i}">この仕入れ価格を分析に反映</button>
           <div class="muted" style="margin:8px 0">比較メモ：${comparisonNote}</div>
