@@ -233,7 +233,8 @@ test('removing a saved sourcing selection schedules cloud persistence', () => {
   assert.match(html, /Storage\.prototype\.removeItem=function\(k\)/);
   assert.match(html, /if\(this===localStorage\)scheduleSourcingCloudSave\(k\)/);
   assert.match(html, /function scheduleSourcingCloudSave\(k\)/);
-  assert.match(html, /startsWith\('selectedSourcingCost:v1:'\)/);
+  assert.match(html, /'selectedSourcingCost:v1:'/);
+  assert.match(html, /some\(prefix=>key\.startsWith\(prefix\)\)/);
 });
 
 
