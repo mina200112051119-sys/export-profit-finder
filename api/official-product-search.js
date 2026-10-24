@@ -102,40 +102,51 @@ async function searchNikonCameras(query) {
   const chars = Array.from(q);
   const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
   const rows = [];
+  const pageErrors = [];
   for (const pageUrl of urls) {
-    const response = await fetch(pageUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
-    });
-    if (!response.ok) throw new Error('ニコン公式製品情報の取得に失敗しました');
-    const html = await response.text();
-    const linkPattern = /<a\b([^>]*href=["']([^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi;
-    let match;
-    while ((match = linkPattern.exec(html)) && rows.length < 1800) {
-      const href = decodeHtml(match[2]);
-      const url = new URL(href, pageUrl).toString();
-      if (!url.startsWith('https://nij.nikon.com/products/')) continue;
-      if (!/camera|mirrorless|discontinue|lineup/i.test(url)) continue;
-      const inner = match[3] || '';
-      const anchorText = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
-      const before = html.slice(Math.max(0, match.index - 900), match.index);
-      const headings = [...before.matchAll(/<(?:h2|h3|h4)[^>]*>([\s\S]*?)<\/(?:h2|h3|h4)>/gi)];
-      const heading = headings.length
-        ? decodeHtml(headings[headings.length - 1][1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim()
-        : '';
-      const title = [heading, anchorText].find(value =>
-        value && value.length >= 2 && value.length <= 100 &&
-        !/^(製品情報を見る|購入はこちらから|詳細|Image|比較リストに追加)$/u.test(value)
-      ) || '';
-      if (!title) continue;
-      const normalizedTitle = normalizeText(title);
-      const score = q && normalizedTitle.includes(q) ? 100 :
-        terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
-      if (score < 45) continue;
-      const imagePath = (before.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
-      let image = '';
-      try { if (imagePath) image = new URL(decodeHtml(imagePath), pageUrl).toString(); } catch {}
-      rows.push({ title, url, image, date: '', sourceName: 'ニコン公式製品情報', score });
+    try {
+      const response = await fetch(pageUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
+      });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const html = await response.text();
+      const linkPattern = /<a\b([^>]*href=["']([^"']+)["'][^>]*)>([\s\S]*?)<\/a>/gi;
+      let match;
+      while ((match = linkPattern.exec(html)) && rows.length < 1800) {
+        const href = decodeHtml(match[2]);
+        let url;
+        try { url = new URL(href, pageUrl).toString(); } catch { continue; }
+        if (!url.startsWith('https://nij.nikon.com/products/')) continue;
+        if (!/camera|mirrorless|discontinue|lineup/i.test(url)) continue;
+        const inner = match[3] || '';
+        const anchorText = decodeHtml(inner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim();
+        // Keep context local to a product card to avoid borrowing a neighbouring model's name.
+        const before = html.slice(Math.max(0, match.index - 360), match.index);
+        const headings = [...before.matchAll(/<(?:h2|h3|h4)[^>]*>([\s\S]*?)<\/(?:h2|h3|h4)>/gi)];
+        const heading = headings.length
+          ? decodeHtml(headings[headings.length - 1][1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).trim()
+          : '';
+        const title = [heading, anchorText].find(value =>
+          value && value.length >= 2 && value.length <= 100 &&
+          !/^(製品情報を見る|購入はこちらから|詳細|Image|比較リストに追加)$/u.test(value)
+        ) || '';
+        if (!title) continue;
+        const normalizedTitle = normalizeText(title);
+        const score = q && normalizedTitle.includes(q) ? 100 :
+          terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+        if (score < 45) continue;
+        const imagePath = (before.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
+        let image = '';
+        try { if (imagePath) image = new URL(decodeHtml(imagePath), pageUrl).toString(); } catch {}
+        rows.push({ title, url, image, date: '', sourceName: 'ニコン公式製品情報', score });
+      }
+    } catch (error) {
+      pageErrors.push(pageUrl + ': ' + String(error?.message || '取得失敗'));
     }
+  }
+  // One unavailable official page must not discard results from the other Nikon pages.
+  if (pageErrors.length === urls.length) {
+    throw new Error('ニコン公式製品情報の取得に失敗しました（' + pageErrors.join(' / ') + '）');
   }
   return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
     .sort((a, b) => b.score - a.score).slice(0, 10);
