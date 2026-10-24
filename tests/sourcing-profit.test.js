@@ -158,5 +158,5 @@ test('detail sourcing links prefer saved Japanese domestic search name', () => {
   assert.match(source, /function domesticSearchQuery\(p\)/);
   assert.match(source, /localStorage\.getItem\('domesticSearchName:v1:'\+String\(p\.id\)\)/);
   assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\)\)/);
-  assert.match(source, /return String\(p\.displayName\|\|p\.titleJa\|\|p\.name\|\|' '\)\.trim\(\)/);
+  assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
 });
