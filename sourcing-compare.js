@@ -232,12 +232,24 @@ function render(p) {
         if (!response.ok || !data.translated) throw new Error(data.error || '翻訳に失敗しました');
         const translated = String(data.translated).trim();
         if (!translated) throw new Error('日本語の検索語を作成できませんでした');
+        // Translation can omit or alter model identifiers (e.g. Z8, EOS R5,
+        // HG 1/144, Pokémon 151). Keep digit-bearing tokens from the original
+        // eBay title so domestic searches remain specific.
+        const identifiers = original.match(/[A-Za-z]{1,8}[- ]?\\d{1,5}[A-Za-z0-9-]*/g) || [];
+        const translatedCompact = translated.normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+        const preserved = identifiers.filter(token => {
+          const compact = token.normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+          return compact && !translatedCompact.includes(compact);
+        });
+        const domesticQuery = [translated, ...preserved].join(' ').trim();
         if (searchNameInput) {
-          searchNameInput.value = translated;
-          saveDomesticSearchName(p, translated);
+          searchNameInput.value = domesticQuery;
+          saveDomesticSearchName(p, domesticQuery);
           drawSearchLinks();
         }
-        officialResults.innerHTML = '<div class="notice">英語タイトルを日本語の検索語に変換しました。これは機械翻訳であり、公式名称の確定ではありません。対応カテゴリーでは公式候補を検索し、それ以外では公式サイトへの確認リンクを表示します。</div>';
+        officialResults.innerHTML = '<div class="notice"><b>日本語の検索語を作成しました</b><br>元の商品名：' + esc(original) + '<br>翻訳結果：' + esc(translated) +
+          (preserved.length ? '<br>型番・数字を含む表記を保持：' + esc(preserved.join('、')) : '') +
+          '<br>機械翻訳は正式名称の確定ではありません。商品名・型番・画像を公式情報で照合してください。</div>';
         officialSearchButton.click();
       } catch (error) {
         officialResults.innerHTML = '<div class="notice">翻訳できませんでした。元の商品名・型番は変更していません。' + esc(error.message || '') + '</div>';
