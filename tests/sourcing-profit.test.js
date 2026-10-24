@@ -51,16 +51,12 @@ test('break-even includes sourcing shipping, conversion fee, and buyer-paid ship
 
 test('product profit and 30/60/90-day forecasts all include sourcing shipping', () => {
   const source = fs.readFileSync('ranking-engine.js', 'utf8');
-  const extract = name => {
+  const functionSource = (name, nextName) => {
     const start = source.indexOf('function ' + name + '(');
+    const end = source.indexOf('\nfunction ' + nextName + '(', start);
     assert.notEqual(start, -1, name + ' function exists');
-    const close = source.indexOf('\n}\n', start);
-    const nextFunction = source.indexOf('\nfunction ', start + 1);
-    if (close !== -1 && (nextFunction === -1 || close < nextFunction)) {
-      return source.slice(start, close + 2);
-    }
-    assert.notEqual(nextFunction, -1, name + ' function closes before the next function');
-    return source.slice(start, nextFunction).trim();
+    assert.notEqual(end, -1, name + ' function boundary exists');
+    return source.slice(start, end).trim();
   };
   const context = {
     num: (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback,
@@ -69,9 +65,9 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
     Math,
     Number
   };
-  const calcCosts = vm.runInNewContext('(' + extract('calcCosts') + ')', context);
+  const calcCosts = vm.runInNewContext('(' + functionSource('calcCosts', 'sellThrough') + ')', context);
   const projectedPrice = (p, days) => days === 30 ? 18 : days === 60 ? 17 : 16;
-  const simulateRisk = vm.runInNewContext('(' + extract('simulateRisk') + ')', {
+  const simulateRisk = vm.runInNewContext('(' + functionSource('simulateRisk', 'inventoryRiskScore') + ')', {
     ...context, calcCosts, projectedPrice, breakEvenPrice: () => 0
   });
   const product = { sell: 20, ship: 5, cost: 1000, sourcingShippingJpy: 200 };
