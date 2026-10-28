@@ -210,7 +210,16 @@ function render(p) {
       <label>仕入先</label>
       <select id="sc-source">
         ${SOURCES.map(([label,source]) => `<option value="${source}">${label}</option>`).join('')}
+        <option value="physicalStore">その他（実店舗）</option>
       </select>
+      <div id="sc-physical-fields" style="display:none;margin-top:8px">
+        <label for="sc-store-name">店舗名（必須）</label>
+        <input id="sc-store-name" placeholder="例：〇〇模型店、〇〇釣具店">
+        <label for="sc-store-address">店舗住所（任意）</label>
+        <input id="sc-store-address" placeholder="住所・地域など">
+        <label for="sc-store-contact">連絡先・店舗URL（任意）</label>
+        <input id="sc-store-contact" placeholder="電話番号や店舗サイト">
+      </div>
       <label>状態</label>
       <select id="sc-condition">${CONDITIONS.map(x=>`<option>${x}</option>`).join('')}</select>
       <label>商品価格（円）</label>
@@ -400,7 +409,15 @@ function render(p) {
     };
   }
 
-  const sourceLabel = s => SOURCES.find(x=>x[1]===s)?.[0] || s;
+  const sourceLabel = s => s === 'physicalStore' ? 'その他（実店舗）' : (SOURCES.find(x=>x[1]===s)?.[0] || s);
+  const sourceLabelForRow = r => r.source === 'physicalStore' && r.storeName ? '実店舗：' + r.storeName : sourceLabel(r.source);
+  const physicalFields = document.getElementById('sc-physical-fields');
+  const sourceSelect = document.getElementById('sc-source');
+  function togglePhysicalFields() {
+    if (physicalFields) physicalFields.style.display = sourceSelect?.value === 'physicalStore' ? 'block' : 'none';
+  }
+  sourceSelect?.addEventListener('change', togglePhysicalFields);
+  togglePhysicalFields();
   const list = document.getElementById('sc-list');
 
   function drawList() {
@@ -419,7 +436,7 @@ function render(p) {
       <div class="card" style="overflow:auto;margin-bottom:10px">
         <table class="risk-table">
           <tr><th>仕入先</th><th>状態</th><th>実質仕入額</th><th>想定利益</th><th>採用</th></tr>
-          ${ranked.map(x=>`<tr><td>${esc(sourceLabel(x.r.source))}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${isSelectedCandidate(window.__exportApp?.getSelectedSourcing?.(p.id),x.r,x.i)?'✓':''}</td></tr>`).join('')}
+          ${ranked.map(x=>`<tr><td>${esc(sourceLabelForRow(x.r))}${x.r.storeAddress?'<br><small>'+esc(x.r.storeAddress)+'</small>':''}</td><td>${esc(x.r.condition)}</td><td>${yen(x.total)}</td><td class="${x.profit==null?'yellow':x.profit>=0?'green':'red'}">${x.profit==null?'計算不可':(x.profit>=0?'+':'')+yen(x.profit)}</td><td>${isSelectedCandidate(window.__exportApp?.getSelectedSourcing?.(p.id),x.r,x.i)?'✓':''}</td></tr>`).join('')}
         </table>
       </div>
     `;
@@ -431,7 +448,9 @@ function render(p) {
       const appliedOfficial = selected && selectedInfo?.officialCandidate ? selectedInfo.officialCandidate : null;
       return `
         <div class="card" style="margin:8px 0;padding:12px">
-          <div class="row"><b>${esc(sourceLabel(r.source))}</b><span>${esc(r.checkedAtLabel)}</span></div>
+          <div class="row"><b>${esc(sourceLabelForRow(r))}</b><span>${esc(r.checkedAtLabel)}</span></div>
+          ${r.storeAddress?'<div class="muted">住所：'+esc(r.storeAddress)+'</div>':''}
+          ${r.storeContact?'<div class="muted">連絡先・URL：'+esc(r.storeContact)+'</div>':''}
           <div class="row"><span>状態</span><b>${esc(r.condition)}</b></div>
           <div class="row"><span>商品価格</span><b>${yen(r.priceJpy)}</b></div>
           <div class="row"><span>国内送料</span><b>${yen(r.shippingJpy)}</b></div>
@@ -488,9 +507,17 @@ function render(p) {
     if (!Number.isFinite(shipping) || shipping < 0) {
       const m=document.getElementById('sc-message');m.style.display='block';m.textContent='国内送料は0円以上で入力してください。';return;
     }
+    const selectedSource = document.getElementById('sc-source').value;
+    const storeName = String(document.getElementById('sc-store-name')?.value || '').trim();
+    if (selectedSource === 'physicalStore' && !storeName) {
+      const m=document.getElementById('sc-message');m.style.display='block';m.textContent='実店舗から仕入れる場合は、店舗名を入力してください。';return;
+    }
     const row = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      source: document.getElementById('sc-source').value,
+      source: selectedSource,
+      storeName,
+      storeAddress: String(document.getElementById('sc-store-address')?.value || '').trim(),
+      storeContact: String(document.getElementById('sc-store-contact')?.value || '').trim(),
       condition: document.getElementById('sc-condition').value,
       priceJpy: price,
       shippingJpy: shipping,
@@ -508,6 +535,9 @@ function render(p) {
     document.getElementById('sc-shipping').value='0';
     document.getElementById('sc-url').value='';
     document.getElementById('sc-note').value='';
+    if (document.getElementById('sc-store-name')) document.getElementById('sc-store-name').value='';
+    if (document.getElementById('sc-store-address')) document.getElementById('sc-store-address').value='';
+    if (document.getElementById('sc-store-contact')) document.getElementById('sc-store-contact').value='';
     const m=document.getElementById('sc-message');m.style.display='block';m.textContent='保存しました。下の比較表に反映しています。';
     drawList();
   };
