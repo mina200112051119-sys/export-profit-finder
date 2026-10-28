@@ -360,14 +360,44 @@ async function searchPokemonCatalog(query, language) {
     .sort((a, b) => b.score - a.score).slice(0, 10);
 }
 
+function pokemonCardQueryVariants(value) {
+  const raw = String(value || '').normalize('NFKC').trim();
+  if (!raw) return [];
+  const cleaned = raw
+    .replace(/\b(?:PSA|CGC|BGS|SGC)\s*\d{1,2}\b/giu, ' ')
+    .replace(/\b(?:GEM\s*MINT|MINT|NM|NEAR\s*MINT|HOLO|HOLOGRAPHIC|RARE|PROMO|POKEMON|POKÉMON|TCG|CARD|CARDS|JAPANESE|JAPAN|ENGLISH|POP\s*\d+)\b/giu, ' ')
+    .replace(/\b(?:19|20)\d{2}\b/g, ' ')
+    .replace(/[|｜,，()[\]{}「」『』]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  const variants = [raw, cleaned];
+  const leading = cleaned.split(/\s+(?=(?:\d{1,3}(?:\/\d{1,3})?|[A-Z]{2,}[- ]?\d{1,4}|PSA|CGC|BGS|HOLO|RARE|JAPANESE|ENGLISH)\b)/iu)[0];
+  if (leading && leading.length >= 3) variants.push(leading);
+  const cardNumbers = [...raw.matchAll(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g)].map(m => m[0].replace(/\s/g, ''));
+  const standaloneNumbers = [...raw.matchAll(/(?:^|\s)(\d{1,3})(?=\s|$)/g)].map(m => m[1]);
+  variants.push(...cardNumbers, ...standaloneNumbers.slice(0, 2));
+  return [...new Set(variants.map(x => x.trim()).filter(x => x.length >= 2))].slice(0, 5);
+}
+
 async function searchPokemonCards(query, originalQuery = '') {
-  const catalogQueries = [...new Set([query, originalQuery].map(x => String(x || '').trim()).filter(Boolean))].slice(0, 2);
+  const catalogQueries = [...new Set([query, originalQuery].flatMap(pokemonCardQueryVariants))].slice(0, 5);
   const catalogResults = await Promise.allSettled(catalogQueries.flatMap(q => [
     searchPokemonCatalog(q, 'jp'), searchPokemonCatalog(q, 'en')
   ]));
   const catalogCandidates = catalogResults.flatMap(r => r.status === 'fulfilled' ? r.value : []);
-  const catalogUnique = [...new Map(catalogCandidates.map(row => [row.cardName + '|' + row.setName + '|' + row.number + '|' + row.language, row])).values()]
-    .sort((a, b) => b.score - a.score).slice(0, 10);
+  const rawTitle = String(originalQuery || query || '').normalize('NFKC');
+  const numberHints = [...rawTitle.matchAll(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g)].map(m => m[0].replace(/\s/g, ''));
+  const setHints = ['Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
+    .filter(s => normalizeText(rawTitle).includes(normalizeText(s)));
+  const catalogUnique = [...new Map(catalogCandidates.map(row => {
+    const haystack = normalizeText([row.cardName, row.setName, row.number, row.title].join(' '));
+    const numberBonus = numberHints.some(n => normalizeText([row.number, row.title].join(' ')).includes(normalizeText(n))) ? 35 : 0;
+    const setBonus = setHints.some(s => haystack.includes(normalizeText(s))) ? 15 : 0;
+    const japaneseBonus = row.language === 'jp' && /[ぁ-んァ-ヶ一-龯]/u.test(row.cardName) ? 20 : 0;
+    return [row.cardName + '|' + row.setName + '|' + row.number + '|' + row.language,
+      { ...row, score: Math.min(100, Number(row.score || 0) + numberBonus + setBonus + japaneseBonus) }];
+  })).values()]
+    .filter(row => /[ぁ-んァ-ヶ一-龯]/u.test(String(row.cardName || '')))
+    .sort((a, b) => b.score - a.score).slice(0, 20);
   let officialCandidates = [];
   let officialError = '';
   try { officialCandidates = await searchPokemonCardsOfficial(query); }
@@ -375,7 +405,6 @@ async function searchPokemonCards(query, originalQuery = '') {
   const combined = [...catalogUnique, ...officialCandidates].sort((a, b) => b.score - a.score);
   return { candidates: [...new Map(combined.map(row => [row.url + '|' + row.title, row])).values()].slice(0, 10), officialError, catalogErrors: catalogResults.filter(r => r.status === 'rejected').map(r => String(r.reason?.message || 'カタログ取得失敗')) };
 }
-
 async function searchPokemonCardsOfficial(query) {
   const response = await fetch('https://www.pokemon-card.com/card-search/', {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
