@@ -331,7 +331,52 @@ async function searchFishingTackle(query) {
     .sort((a, b) => b.score - a.score).slice(0, 10), failures };
 }
 
-async function searchPokemonCards(query) {
+async function searchPokemonCatalog(query, language) {
+  const endpoint = 'https://pokemontcg.jacobcorbett.com/api/v1/cards?language='
+    + encodeURIComponent(language) + '&q=' + encodeURIComponent(query) + '&limit=30';
+  const response = await fetch(endpoint, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)', 'Accept': 'application/json' }
+  });
+  if (!response.ok) throw new Error('カードカタログ HTTP ' + response.status);
+  const payload = await response.json();
+  const rows = Array.isArray(payload.data) ? payload.data
+    : Array.isArray(payload.cards) ? payload.cards
+    : Array.isArray(payload.results) ? payload.results : [];
+  const q = normalizeText(query);
+  const chars = Array.from(q);
+  const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
+  return rows.map(row => {
+    const title = String(row.name || row.title || row.cardName || '');
+    const setName = String(row.setName || row.set_name || row.set?.name || row.set || '');
+    const number = String(row.number || row.cardNumber || row.card_number || '');
+    const id = String(row.id || row.cardId || '');
+    const normalizedTitle = normalizeText([title, setName, number, id].join(' '));
+    const score = q && normalizedTitle.includes(q) ? 100 :
+      terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
+    const image = String(row.imageUrl || row.image_url || row.image || row.images?.large || row.images?.small || '');
+    const url = String(row.url || (id ? 'https://pokemontcg.jacobcorbett.com/card/' + encodeURIComponent(id) : 'https://pokemontcg.jacobcorbett.com/'));
+    return { title: [title, setName, number].filter(Boolean).join('｜'), url, image, date: '', sourceName: '独立カードカタログ（非公式）', score, cardName: title, setName, number, language };
+  }).filter(row => row.cardName && row.score >= 18)
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+}
+
+async function searchPokemonCards(query, originalQuery = '') {
+  const catalogQueries = [...new Set([query, originalQuery].map(x => String(x || '').trim()).filter(Boolean))].slice(0, 2);
+  const catalogResults = await Promise.allSettled(catalogQueries.flatMap(q => [
+    searchPokemonCatalog(q, 'jp'), searchPokemonCatalog(q, 'en')
+  ]));
+  const catalogCandidates = catalogResults.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+  const catalogUnique = [...new Map(catalogCandidates.map(row => [row.cardName + '|' + row.setName + '|' + row.number + '|' + row.language, row])).values()]
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+  let officialCandidates = [];
+  let officialError = '';
+  try { officialCandidates = await searchPokemonCardsOfficial(query); }
+  catch (error) { officialError = String(error?.message || '公式検索取得失敗'); }
+  const combined = [...catalogUnique, ...officialCandidates].sort((a, b) => b.score - a.score);
+  return { candidates: [...new Map(combined.map(row => [row.url + '|' + row.title, row])).values()].slice(0, 10), officialError, catalogErrors: catalogResults.filter(r => r.status === 'rejected').map(r => String(r.reason?.message || 'カタログ取得失敗')) };
+}
+
+async function searchPokemonCardsOfficial(query) {
   const response = await fetch('https://www.pokemon-card.com/card-search/', {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
   });
@@ -414,16 +459,19 @@ module.exports = async (req, res) => {
       });
     }
     if (category === 'ポケモンカード') {
-      const candidates = await searchPokemonCards(query);
+      const originalQuery = String(req.query?.original || '').trim().slice(0, 180);
+      const result = await searchPokemonCards(query, originalQuery);
+      const candidates = result.candidates;
+      const sourceErrors = [...result.catalogErrors, ...(result.officialError ? [result.officialError] : [])];
       return res.json({
-        category, query, provider: 'ポケモンカード公式カード検索',
+        category, query, provider: '独立カードカタログ＋ポケモンカード公式検索',
         fetchedAt: new Date().toISOString(),
-        status: candidates.length ? 'candidate_found' : 'no_match',
-        verification: 'candidate_only',
+        status: candidates.length ? 'candidate_found' : (sourceErrors.length ? 'source_unavailable' : 'no_match'),
+        verification: candidates.length ? 'candidate_only' : 'not_checked',
         message: candidates.length
-          ? '公式カード検索から名称候補を取得しました。カード名・収録商品・カード番号・画像を照合するまで正式一致とは扱いません。公式検索の表示範囲外のカードは候補に出ない場合があります。'
-          : '公式カード検索の表示範囲から候補を抽出できませんでした。英語名を日本語名に直すか、カード番号・収録商品名で再検索してください。',
-        candidates, sources
+          ? 'カード名・収録セット・番号の候補を広いカタログから取得しました。非公式カタログを含み、画像・カード番号・言語・鑑定グレードを照合するまでは同一商品と確定しません。'
+          : '候補を取得できませんでした。商品が存在しないという意味ではありません。カード名、番号、セット名を別々に確認してください。',
+        candidates, sources, sourceErrors
       });
     }
     if (category === 'ポケモン関連サプライ用品') {
