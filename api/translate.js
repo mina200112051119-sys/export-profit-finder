@@ -30,16 +30,37 @@ async function storage(req,res){
 const translate = async (text, from, to) => {
   const value = String(text || '').trim();
   if (!value || from === to) return value;
-  const url = new URL('https://translate.googleapis.com/translate_a/single');
-  url.searchParams.set('client','gtx');
-  url.searchParams.set('sl',from);
-  url.searchParams.set('tl',to);
-  url.searchParams.set('dt','t');
-  url.searchParams.set('q',value);
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('translation service unavailable');
-  const data = await r.json();
-  return Array.isArray(data?.[0]) ? data[0].map(x => x?.[0] || '').join('') : value;
+  const japanese = to === 'ja';
+  let firstError = null;
+  try {
+    const url = new URL('https://translate.googleapis.com/translate_a/single');
+    url.searchParams.set('client','gtx');
+    url.searchParams.set('sl',from);
+    url.searchParams.set('tl',to);
+    url.searchParams.set('dt','t');
+    url.searchParams.set('q',value);
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error('Google translation service returned ' + r.status);
+    const data = await r.json();
+    const translated = Array.isArray(data?.[0]) ? data[0].map(x => x?.[0] || '').join('').trim() : '';
+    if (translated && (!japanese || /[ぁ-んァ-ヶ一-龯]/u.test(translated))) return translated;
+    firstError = new Error('Google translation returned no Japanese text');
+  } catch (e) { firstError = e; }
+  // Backup provider for temporary Google translation failures. This is only a
+  // machine-translation fallback, not verification of an official product name.
+  try {
+    const url = new URL('https://api.mymemory.translated.net/get');
+    url.searchParams.set('q', value);
+    url.searchParams.set('langpair', from + '|' + to);
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error('backup translation service returned ' + r.status);
+    const data = await r.json();
+    const translated = String(data?.responseData?.translatedText || '').trim();
+    if (translated && (!japanese || /[ぁ-んァ-ヶ一-龯]/u.test(translated))) return translated;
+    throw new Error('backup translation returned no Japanese text');
+  } catch (backupError) {
+    throw new Error('translation failed: ' + String(firstError?.message || firstError || 'primary provider failed') + '; backup: ' + String(backupError?.message || backupError));
+  }
 };
 
 module.exports = async (req,res) => {
