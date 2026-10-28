@@ -180,18 +180,26 @@ async function officialNameCandidate(p, categoryOverride){
   if(cache[key]&&cache[key].category===cat)return cache[key];
   const raw=String(p.name||p.title||'').trim();
   if(!raw)return null;
-  try{
-    const translated=hasJapaneseText(raw)?raw:await translateText(raw,'ja');
-    if(!translated||!hasJapaneseText(translated))return null;
-    const response=await fetch('/api/official-product-search?category='+encodeURIComponent(cat)+'&q='+encodeURIComponent(translated),{cache:'no-store'});
-    if(!response.ok)return null;
-    const result=await response.json(), candidates=Array.isArray(result.candidates)?result.candidates:[];
-    const candidate=candidates.filter(x=>x&&hasJapaneseText(x.title)&&Number(x.score)>=80)
-      .sort((a,b)=>Number(b.score)-Number(a.score))[0];
-    if(!candidate)return null;
-    const entry={category:cat,titleJa:String(candidate.title).trim(),url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:'公式情報の名称候補（商品・型番の一致確認が必要）',checkedAt:new Date().toISOString()};
-    cache[key]=entry;writeOfficialNameCache(cache);return entry;
-  }catch(e){return null}
+  let translated=raw;
+  if(!hasJapaneseText(raw)){
+    try{translated=await translateText(raw,'ja')}catch(e){}
+  }
+  // Translation is a fallback only. Never label it as an official product-name match.
+  let entry=null;
+  if(translated&&hasJapaneseText(translated)){
+    try{
+      const response=await fetch('/api/official-product-search?category='+encodeURIComponent(cat)+'&q='+encodeURIComponent(translated),{cache:'no-store'});
+      if(response.ok){
+        const result=await response.json(), candidates=Array.isArray(result.candidates)?result.candidates:[];
+        const candidate=candidates.filter(x=>x&&hasJapaneseText(x.title)&&Number(x.score)>=80)
+          .sort((a,b)=>Number(b.score)-Number(a.score))[0];
+        if(candidate)entry={category:cat,titleJa:String(candidate.title).trim(),url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:'公式情報の名称候補（商品・型番の一致確認が必要）',checkedAt:new Date().toISOString()};
+      }
+    }catch(e){}
+    if(!entry)entry={category:cat,titleJa:String(translated).trim(),url:'',image:'',score:0,status:'自動翻訳（公式名称・型番の一致未確認）',checkedAt:new Date().toISOString()};
+  }
+  if(entry){cache[key]=entry;writeOfficialNameCache(cache)}
+  return entry;
 }
 async function enrichOfficialNames(items, categoryOverride){
   const list=(items||[]).slice(0,8);
