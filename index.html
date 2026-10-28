@@ -169,7 +169,7 @@ function render(){renderCats();currentRankingCategory=null;currentRankingTitle='
 function category(c){currentRankingCategory=c;currentRankingTitle=c+'｜仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle);enrichOfficialNames(rank(currentRankingCategory),c).then(()=>{document.querySelectorAll('.product[data-product-id]').forEach(el=>{const p=data.find(x=>String(x.id)===el.getAttribute('data-product-id'));const h=el.querySelector('h3');if(h&&p)h.textContent=p.displayName||p.name})})}
 function defaultSearchQueryForCategory(c){const queries={'ポケモンカード':'Pokemon card graded rare Japanese','ポケモン関連サプライ用品':'Pokemon Center Japan limited official merchandise sealed','釣具':'Shimano Daiwa fishing reel Japan','カメラ':'Japanese digital camera Canon Nikon Fujifilm','レトロゲーム':'Japanese retro video game Nintendo Sega PlayStation','ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'};return queries[c]||c}
 async function refresh(){const b=$('refresh');b.disabled=true;$('status').textContent='eBayの現在出品と為替を更新中…';try{await fx();let live=[];for(const c of RankingEngine.CATEGORIES){try{const d=await ebay(defaultSearchQueryForCategory(c));live.push(...map(d,c))}catch(e){}}data=live;updated=new Date().toLocaleString('ja-JP');render();$('status').innerHTML='<b>更新完了</b><br>更新日時：'+esc(updated)+'<br>使用データ：eBayの現在出品価格・送料・検索結果件数・為替のみ。過去90日販売APIは呼び出していません。<br>候補ランキングは商品本体価格が1,000円相当以上の商品だけをランキング対象にしています。送料が高いだけの安価な商品は除外します。';}catch(e){data=[];render();$('status').textContent='最新データを取得できませんでした。eBay認証情報とAPI接続を確認してください。'}finally{b.disabled=false}}
-const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v4';
+const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v5';
 function readOfficialNameCache(){try{return JSON.parse(localStorage.getItem(OFFICIAL_NAME_CACHE_KEY)||'{}')}catch(e){return {}}}
 function writeOfficialNameCache(cache){try{localStorage.setItem(OFFICIAL_NAME_CACHE_KEY,JSON.stringify(cache))}catch(e){}}
 function hasJapaneseText(value){return /[ぁ-んァ-ヶ一-龯]/u.test(String(value||''))}
@@ -210,7 +210,7 @@ async function officialNameCandidate(p, categoryOverride){
   return entry;
 }
 async function enrichOfficialNames(items, categoryOverride){
-  const list=(items||[]).slice(0,8);
+  const list=(items||[]).slice(0,12);
   await Promise.all(list.map(async p=>{
     const candidate=await officialNameCandidate(p,categoryOverride);
     if(candidate){
