@@ -202,11 +202,28 @@ async function officialNameCandidate(p, categoryOverride){
           if(cat==='ポケモンカード'){
             const rawTitle=String(p.name||p.title||'').normalize('NFKC');
             const cardNo=(rawTitle.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0];
-            const setHint=(rawTitle.match(/\b(?:Jungle|Base Set|Fossil|Gym Heroes|Gym Challenge|Team Rocket|Neo Genesis|Neo Discovery|Neo Revelation|Neo Destiny|151|SV\d{1,2}[a-z]?|S\d{1,2}[a-z]?)\b/i)||[])[0];
+            const setHint=(rawTitle.match(/\b(?:Jungle|Base Set|Fossil|Gym Heroes|Gym Challenge|Team Rocket|Neo Genesis|Neo Discovery|Neo Revelation|Neo Destiny|Terastal Festival|Mega Dream|151|SV\d{1,2}[a-z]?|S\d{1,2}[a-z]?)\b/i)||[])[0];
             const candidateText=String([x.cardName,x.title,x.setName,x.number].filter(Boolean).join(' ')).normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase();
+            const numberText=String([x.number,x.title].filter(Boolean).join(' ')).normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase();
             if(!cardNo||!setHint)return false;
-            if(!candidateText.includes(cardNo.replace(/\s/g,'').toLocaleLowerCase()))return false;
-            if(!candidateText.includes(setHint.replace(/\s/g,'').toLocaleLowerCase()))return false;
+            if(!numberText.includes(cardNo.replace(/\s/g,'').toLocaleLowerCase()))return false;
+            const setAliases={
+              'terastal festival':['terastalfestival','テラスタルフェスex','sv8a'],
+              'mega dream':['megadream','megaドリームex','m2a'],
+              'base set':['baseset','拡張パック'],
+              'team rocket':['teamrocket','ロケット団'],
+              '151':['151','ポケモンカード151'],
+              'jungle':['jungle','ジャングル'],
+              'fossil':['fossil','化石の秘密'],
+              'gym heroes':['gymheroes'],
+              'gym challenge':['gymchallenge'],
+              'neo genesis':['neogenesis'],
+              'neo discovery':['neodiscovery'],
+              'neo revelation':['neorevelation'],
+              'neo destiny':['neodestiny']
+            };
+            const aliases=setAliases[setHint.toLocaleLowerCase()]||[setHint.toLocaleLowerCase()];
+            if(!aliases.some(alias=>candidateText.includes(alias.replace(/\s/g,'').toLocaleLowerCase())))return false;
           }
           return true;
         }).sort((a,b)=>Number(b.score)-Number(a.score))[0];
