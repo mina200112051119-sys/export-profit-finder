@@ -354,7 +354,7 @@ async function searchPokemonCatalog(query, language) {
     const score = q && normalizedTitle.includes(q) ? 100 :
       terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
     const image = String(row.imageUrl || row.image_url || row.image || row.images?.large || row.images?.small || '');
-    const url = String(row.url || (id ? 'https://pokemontcg.jacobcorbett.com/card/' + encodeURIComponent(id) : 'https://pokemontcg.jacobcorbett.com/'));
+    const url = String(row.url || (id ? 'https://pokemontcg.jacobcorbett.com/api/v1/cards/' + encodeURIComponent(id) : 'https://pokemontcg.jacobcorbett.com/api/v1/cards'));
     return { title: [title, setName, number].filter(Boolean).join('｜'), url, image, date: '', sourceName: '独立カードカタログ（非公式）', score, cardName: title, setName, number, language };
   }).filter(row => row.cardName && row.score >= 18)
     .sort((a, b) => b.score - a.score).slice(0, 10);
