@@ -258,9 +258,9 @@ async function selectPhotoCandidate(i){const x=window.photoCandidates?.[i];if(!x
 function domesticSearchQuery(p){
   try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim()}catch(e){}
   const raw=String(p.name||p.title||'').normalize('NFKC');
-  const ja=String(p.displayName||p.titleJa||'').trim();
+  const ja=String(p.displayName||p.titleJa||'').normalize('NFKC').trim();
   if((p.cat||p.category)==='ポケモンカード'){
-    const number=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||'';
+    const number=(raw.match(/\\b\\d{1,3}\\s*\\/\\s*\\d{1,3}\\b/)||ja.match(/\\b\\d{1,3}\\s*\\/\\s*\\d{1,3}\\b/)||[])[0]||'';
     const cache=readOfficialNameCache();
     const cached=cache[String(p.id||p.itemId||p.name||p.title||'')];
     const verified=cached&&/公式情報の名称候補|カードカタログ候補/.test(cached.status||'')&&cached.titleJa&&number;
@@ -274,13 +274,14 @@ function domesticSearchQuery(p){
       [/Base Set/i,'旧裏 拡張パック'],
       [/Double Blaze|SM10/i,'ダブルブレイズ'],
       [/Paradise Dragona|SV7a/i,'楽園ドラゴーナ'],
-      [/Ruler of the Black Flame|SV3/i,'黒炎の支配者']
+      [/Ruler of the Black Flame|SV3/i,'黒炎の支配者'],
+      [/30th\\s*Celebration|30th\\s*セレブレーション|30周年/i,'30th Celebration']
     ];
-    const set=(setRules.find(([re])=>re.test(raw))||[])[1]||'';
+    const set=(setRules.find(([re])=>re.test(raw+' '+ja))||[])[1]||'';
     if(verified)return ['ポケモンカード',cached.titleJa,number,set].filter(Boolean).join(' ');
-    // 未照合時は誤ったカード名で誘導せず、シリーズ名とカード番号を軸に探す
-    const safe=['ポケモンカード',set,number].filter(Boolean).join(' ');
-    return safe||['ポケモンカード',ja.replace(/[A-Za-z]{2,}/g,' ').replace(/\s+/g,' ').trim(),number].filter(Boolean).join(' ');
+    const cardName=(ja.match(/^([\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}ー・]+)(?=\\s|$)/u)||[])[1]||'';
+    const rarity=(raw.match(/\\b(SAR|AR|SR|UR|HR|CHR|CSR|RRR|RR|MA|PROMO)\\b/i)||[])[1]||'';
+    return [...new Set(['ポケモンカード',cardName,set,number,rarity].filter(Boolean))].join(' ')||'ポケモンカード '+number;
   }
   return ja||raw;
 }
