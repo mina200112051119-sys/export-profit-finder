@@ -324,7 +324,7 @@ function detail(id){const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)re
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
-load();data=[];render();loadCloudStorage();$('status').textContent='実データを読み込み中…';refresh();</script><script src="./cost-fix.js"></script>
+data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}$('status').textContent='実データを読み込み中…';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}refresh();</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
 </body></html>
