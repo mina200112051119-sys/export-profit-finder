@@ -230,7 +230,7 @@ async function officialNameCandidate(p, categoryOverride){
           }
           return true;
         }).sort((a,b)=>Number(b.score)-Number(a.score))[0];
-        if(candidate)entry={category:cat,titleJa:String(candidate.cardName||candidate.title).trim(),url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）'),checkedAt:new Date().toISOString()};
+        if(candidate)entry={category:cat,titleJa:cat==='ポケモンカード'?[String(candidate.cardName||candidate.title||'').trim(),String(candidate.rarity||'').trim(),String(candidate.number||'').trim(),String(candidate.setName||'').trim()].filter(Boolean).join('｜'):String(candidate.cardName||candidate.title).trim(),url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）'),checkedAt:new Date().toISOString()};
       }
     }catch(e){}
     if(!entry)entry={category:cat,titleJa:String(translated||raw).trim(),url:'',image:'',score:0,status:cat==='ポケモンカード'?'自動翻訳（正式名称・カード番号の一致未確認）':'自動翻訳（正式名称・型番の一致未確認）',checkedAt:new Date().toISOString()};
