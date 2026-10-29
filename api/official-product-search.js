@@ -355,7 +355,7 @@ async function searchPokemonCatalog(query, language) {
       terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
     const image = String(row.imageUrl || row.image_url || row.image || row.images?.large || row.images?.small || '');
     const url = String(row.url || (id ? 'https://pokemontcg.jacobcorbett.com/api/v1/cards/' + encodeURIComponent(id) : 'https://pokemontcg.jacobcorbett.com/api/v1/cards'));
-    return { title: [title, setName, number].filter(Boolean).join('｜'), url, image, date: '', sourceName: '独立カードカタログ（非公式）', score, cardName: title, setName, number, language };
+    return { title: [title, setName, number].filter(Boolean).join('｜'), url, image, date: '', sourceName: '独立カードカタログ（非公式）', score, cardName: title, setName, number, rarity: String(row.rarity || row.rarityName || ''), language };
   }).filter(row => row.cardName && row.score >= 18)
     .sort((a, b) => b.score - a.score).slice(0, 10);
 }
@@ -386,7 +386,7 @@ async function searchPokemonCards(query, originalQuery = '') {
   const catalogCandidates = catalogResults.flatMap(r => r.status === 'fulfilled' ? r.value : []);
   const rawTitle = String(originalQuery || query || '').normalize('NFKC');
   const numberHints = [...rawTitle.matchAll(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g)].map(m => m[0].replace(/\s/g, ''));
-  const setHints = ['Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
+  const setHints = ['30th Celebration', 'Pokemon GO', 'Pokémon GO', 'Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
     .filter(s => normalizeText(rawTitle).includes(normalizeText(s)));
   const catalogUnique = [...new Map(catalogCandidates.map(row => {
     const haystack = normalizeText([row.cardName, row.setName, row.number, row.title].join(' '));
