@@ -408,8 +408,26 @@ async function searchPokemonCards(query, originalQuery = '') {
     attemptedQueries.push(catalogQuery);
     try {
       const found = await searchPokemonCatalog(catalogQuery, 'jp');
-      catalogCandidates = found;
-      if (found.some(row => /[ぁ-んァ-ヶ一-龯]/u.test(String(row.cardName || '')))) break;
+      catalogCandidates = [...catalogCandidates, ...found];
+      // A number-only lookup can return unrelated Japanese cards. Keep collecting
+      // results until the card number AND the hinted expansion are represented.
+      const wantedNumber = hashNumber || (numberHints[0] || '').split('/')[0];
+      const numberMatches = row => {
+        const values = [row.number, row.title].map(value => normalizeText(value || '')).join(' ');
+        if (!wantedNumber) return false;
+        return new RegExp('(^|[^0-9])' + wantedNumber + '([^0-9]|$)').test(
+          values.replace(/\\d{1,3}\\s*\\/\\s*\\d{1,3}/g, ' ')
+        ) || (values.match(/\\d{1,3}\\s*\\/\\s*\\d{1,3}/g) || [])
+          .some(value => value.split('/')[0] === wantedNumber);
+      };
+      const wantedSet = /20th\\s*Anniversary|20\\s*周年|CP6/i.test(rawTitle);
+      const strongMatch = found.some(row => {
+        const japanese = /[ぁ-んァ-ヶ一-龯]/u.test(String(row.cardName || ''));
+        const setText = normalizeText([row.setName, row.title].join(' '));
+        return japanese && numberMatches(row) &&
+          (!wantedSet || /20thanniversary|20周年|cp6|拡張パック20thanniversary/.test(setText));
+      });
+      if (strongMatch) break;
     } catch (error) {
       catalogErrors.push(String(error?.message || 'カタログ取得失敗'));
     }
