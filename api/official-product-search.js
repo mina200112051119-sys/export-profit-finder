@@ -415,7 +415,7 @@ async function searchPokemonCards(query, originalQuery = '') {
     }
   }
 
-  const setHints = ['30th Celebration', 'Pokemon GO', 'Pokémon GO', 'Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
+  const setHints = ['20th Anniversary', '20周年', 'CP6', '30th Celebration', 'Pokemon GO', 'Pokémon GO', 'Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
     .filter(s => normalizeText(rawTitle).includes(normalizeText(s)));
   const catalogUnique = [...new Map(catalogCandidates.map(row => {
     const haystack = normalizeText([row.cardName, row.setName, row.number, row.title].join(' '));
