@@ -2,8 +2,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
-const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)]
-  .filter((match) => !/\\bsrc\\s*=/.test(match[1]))
+const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+  .filter((match) => !/\bsrc\s*=/.test(match[1]))
   .map((match) => match[2])
   .filter((source) => source.trim());
 
