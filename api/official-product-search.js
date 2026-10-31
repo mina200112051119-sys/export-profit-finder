@@ -379,21 +379,28 @@ function pokemonCardQueryVariants(value) {
 }
 
 async function searchPokemonCards(query, originalQuery = '') {
-  const catalogQueries = [...new Set([query, originalQuery].flatMap(pokemonCardQueryVariants))].slice(0, 5);
-  const catalogResults = await Promise.allSettled(catalogQueries.flatMap(q => [
-    searchPokemonCatalog(q, 'jp'), searchPokemonCatalog(q, 'en')
-  ]));
-  const catalogCandidates = catalogResults.flatMap(r => r.status === 'fulfilled' ? r.value : []);
   const rawTitle = String(originalQuery || query || '').normalize('NFKC');
-  const numberHints = [...rawTitle.matchAll(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g)].map(m => m[0].replace(/\s/g, ''));
+  // Card number is the strongest identifier. Prefer it to broad English listing titles.
+  const numberHints = [...rawTitle.matchAll(/\\b(\\d{1,3})\\s*\\/\\s*(\\d{1,3})\\b/g)]
+    .map(m => m[1] + '/' + m[2]);
+  const variants = pokemonCardQueryVariants(originalQuery || query);
+  const catalogQuery = numberHints[0] || variants.find(value => value.length >= 3) || String(query || '').trim();
+
+  // The former implementation sent up to ten requests in parallel for one card.
+  // Ranking pages can contain many cards, which caused provider HTTP 429 rate limits.
+  // Make one Japanese-catalog request per card and do not retry on rate limiting.
+  const catalogResult = await Promise.allSettled([
+    searchPokemonCatalog(catalogQuery, 'jp')
+  ]);
+  const catalogCandidates = catalogResult.flatMap(r => r.status === 'fulfilled' ? r.value : []);
   const setHints = ['30th Celebration', 'Pokemon GO', 'Pokémon GO', 'Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
     .filter(s => normalizeText(rawTitle).includes(normalizeText(s)));
   const catalogUnique = [...new Map(catalogCandidates.map(row => {
     const haystack = normalizeText([row.cardName, row.setName, row.number, row.title].join(' '));
     const numberBonus = numberHints.some(n => normalizeText([row.number, row.title].join(' ')).includes(normalizeText(n))) ? 35 : 0;
     const setBonus = setHints.some(s => haystack.includes(normalizeText(s))) ? 15 : 0;
-    const japaneseBonus = row.language === 'jp' && /[ぁ-んァ-ヶ一-龯]/u.test(row.cardName) ? 20 : 0;
-    return [row.cardName + '|' + row.setName + '|' + row.number + '|' + row.language,
+    const japaneseBonus = /[ぁ-んァ-ヶ一-龯]/u.test(row.cardName) ? 20 : 0;
+    return [row.cardName + '|' + row.setName + '|' + row.number,
       { ...row, score: Math.min(100, Number(row.score || 0) + numberBonus + setBonus + japaneseBonus) }];
   })).values()]
     .filter(row => /[ぁ-んァ-ヶ一-龯]/u.test(String(row.cardName || '')))
@@ -403,7 +410,13 @@ async function searchPokemonCards(query, originalQuery = '') {
   try { officialCandidates = await searchPokemonCardsOfficial(query); }
   catch (error) { officialError = String(error?.message || '公式検索取得失敗'); }
   const combined = [...catalogUnique, ...officialCandidates].sort((a, b) => b.score - a.score);
-  return { candidates: [...new Map(combined.map(row => [row.url + '|' + row.title, row])).values()].slice(0, 10), officialError, catalogErrors: catalogResults.filter(r => r.status === 'rejected').map(r => String(r.reason?.message || 'カタログ取得失敗')) };
+  return {
+    candidates: [...new Map(combined.map(row => [row.url + '|' + row.title, row])).values()].slice(0, 10),
+    officialError,
+    catalogErrors: catalogResult.filter(r => r.status === 'rejected')
+      .map(r => String(r.reason?.message || 'カタログ取得失敗')),
+    catalogQuery
+  };
 }
 async function searchPokemonCardsOfficial(query) {
   const response = await fetch('https://www.pokemon-card.com/card-search/', {
