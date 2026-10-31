@@ -219,8 +219,11 @@ async function officialNameCandidate(p, categoryOverride){
           const actualName=String(x.cardName||x.title||'').trim();
           if(!hasJapaneseText(actualName))return false;
           if(cat==='ポケモンカード'){
-            const candidateNumbers=[String(x.number||''),String(x.title||'')].join(' ').match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[];
-            if(cardNo&&!candidateNumbers.some(value=>{const normalized=compact(value),wanted=compact(cardNo);return normalized===wanted||(/^\d{1,3}\//.test(normalized)&&normalized.split('/')[0]===wanted)}))return false;
+            const candidateNumberText=[String(x.number||''),String(x.title||'')].join(' ').normalize('NFKC');
+            const candidateNumbers=candidateNumberText.match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[];
+            const wantedNumber=String(cardNo).match(/\d{1,3}/)?.[0]||'';
+            const plainNumberMatches=wantedNumber&&new RegExp('(?:^|[^0-9])'+wantedNumber+'(?:$|[^0-9])').test(candidateNumberText.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '));
+            if(cardNo&&!plainNumberMatches&&!candidateNumbers.some(value=>{const normalized=compact(value),wanted=compact(cardNo);return normalized===wanted||(/^\d{1,3}\//.test(normalized)&&normalized.split('/')[0]===wanted)}))return false;
             const candidateText=compact([x.cardName,x.title,x.setName,x.number].filter(Boolean).join(' '));
             if(setHint){
               const aliases=setAliases[setHint.toLocaleLowerCase()]||[setHint];
@@ -237,8 +240,9 @@ async function officialNameCandidate(p, categoryOverride){
           }else if(Number(x.score)<30)return false;
           return true;
         }).sort((a,b)=>{
-          const an=cardNo&&(String([a.number,a.title].join(' ').match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[]).some(v=>compact(v)===compact(cardNo)))?1:0;
-          const bn=cardNo&&(String([b.number,b.title].join(' ').match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[]).some(v=>compact(v)===compact(cardNo)))?1:0;
+          const hasNumber=x=>{const t=String([x.number,x.title].join(' ')).normalize('NFKC');const n=String(cardNo).match(/\d{1,3}/)?.[0]||'';return !!n&&(new RegExp('(?:^|[^0-9])'+n+'(?:$|[^0-9])').test(t.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '))||(t.match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[]).some(v=>v.split('/')[0].trim()===n))};
+          const an=cardNo&&hasNumber(a)?1:0;
+          const bn=cardNo&&hasNumber(b)?1:0;
           return bn-an||Number(b.score)-Number(a.score);
         })[0];
         if(candidate)entry={category:cat,titleJa:cat==='ポケモンカード'?[String(candidate.cardName||candidate.title||'').trim(),String(candidate.setName||'').trim(),String(candidate.number||'').trim(),String(candidate.rarity||'').trim()].filter(Boolean).join('｜'):String(candidate.cardName||candidate.title).trim(),cardName:candidate.cardName||candidate.title||'',setName:candidate.setName||'',number:candidate.number||'',rarity:candidate.rarity||'',url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(cat==='ポケモンカード'&&cardNo?'カード番号一致候補（セット・カード名・画像は要確認）':(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）')),diagnostic:{provider:result.provider||'',sourceStatus:result.status||'',candidateCount:candidates.length,sourceErrors:result.sourceErrors||[]},checkedAt:new Date().toISOString()};
@@ -252,12 +256,13 @@ async function officialNameCandidate(p, categoryOverride){
 function cleanPokemonDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
   const ja=String(translated||p.displayName||p.titleJa||'').normalize('NFKC');
-  const number=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||'';
+  const number=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
   const setRules=[
     [/VSTAR Universe|S12a/i,'VSTARユニバース'],
     [/Terastal Festival|SV8a/i,'テラスタルフェスex'],
     [/Mega Dream|M2a/i,'MEGAドリームex'],
     [/Pokemon GO|Pok[eé]mon GO|S10b/i,'Pokémon GO'],
+    [/20th\s*Anniversary|20\s*周年|CP6/i,'20th Anniversary（CP6）'],
     [/30th\s*Celebration/i,'30th Celebration'],
     [/151|SV2a/i,'ポケモンカード151']
   ];
@@ -306,7 +311,7 @@ function domesticSearchQuery(p){
     const number=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||ja.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
     const cache=readOfficialNameCache();
     const cached=cache[String(p.id||p.itemId||p.name||p.title||'')];
-    const verified=cached&&/公式情報の名称候補|カードカタログ候補/.test(cached.status||'')&&cached.titleJa&&number;
+    const verified=cached&&/公式情報の名称候補|カードカタログ候補|カード番号一致候補/.test(cached.status||'')&&cached.titleJa&&number;
     const setRules=[
       [/Terastal Festival|SV8a|SV 8a/i,'テラスタルフェスex'],
       [/Mega Dream|M2a/i,'MEGAドリームex'],
