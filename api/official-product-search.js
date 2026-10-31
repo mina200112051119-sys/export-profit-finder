@@ -380,11 +380,16 @@ function pokemonCardQueryVariants(value) {
 
 async function searchPokemonCards(query, originalQuery = '') {
   const rawTitle = String(originalQuery || query || '').normalize('NFKC');
-  // Card number is the strongest identifier. Prefer it to broad English listing titles.
-  const numberHints = [...rawTitle.matchAll(/\\b(\\d{1,3})\\s*\\/\\s*(\\d{1,3})\\b/g)]
+  // Card number is the strongest identifier. Handle both "114/081" and "#043" listing formats.
+  const numberHints = [...rawTitle.matchAll(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g)]
     .map(m => m[1] + '/' + m[2]);
+  const hashNumber = (rawTitle.match(/#\s*(\d{1,3})\b/) || [])[1] || '';
   const variants = pokemonCardQueryVariants(originalQuery || query);
-  const catalogQuery = numberHints[0] || variants.find(value => value.length >= 3) || String(query || '').trim();
+  const cleanedQuery = variants.find(value => value !== rawTitle && /[A-Z]{3,}/i.test(value)) || '';
+  const namedNumberQuery = hashNumber
+    ? ((rawTitle.match(/#\s*\d{1,3}\s+([A-Z][A-Z'-]{2,})/i) || [])[1] || '') + ' ' + hashNumber
+    : '';
+  const catalogQuery = numberHints[0] || namedNumberQuery.trim() || cleanedQuery || String(query || '').trim();
 
   // The former implementation sent up to ten requests in parallel for one card.
   // Ranking pages can contain many cards, which caused provider HTTP 429 rate limits.
