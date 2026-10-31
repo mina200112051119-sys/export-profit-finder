@@ -205,32 +205,38 @@ async function officialNameCandidate(p, categoryOverride){
             const setHint=(rawTitle.match(/\b(?:30th\s+Celebration|Pokemon\s+GO|Pok[eé]mon\s+GO|Jungle|Base Set|Fossil|Gym Heroes|Gym Challenge|Team Rocket|Neo Genesis|Neo Discovery|Neo Revelation|Neo Destiny|Terastal Festival|Mega Dream|151|SV\d{1,2}[a-z]?|S\d{1,2}[a-z]?)\b/i)||[])[0];
             const candidateText=String([x.cardName,x.title,x.setName,x.number].filter(Boolean).join(' ')).normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase();
             const numberText=String([x.number,x.title].filter(Boolean).join(' ')).normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase();
-            if(!cardNo||!setHint)return false;
-            if(!numberText.includes(cardNo.replace(/\s/g,'').toLocaleLowerCase()))return false;
-            const setAliases={
-              '30th celebration':['30thcelebration','30thcelebration','m6a','30thセレブレーション'],
-              'pokemon go':['pokemongo','ポケモンgo','s10b','pokemon go'],
-              'pokémon go':['pokemongo','ポケモンgo','s10b','pokemon go'],
-              'terastal festival':['terastalfestival','テラスタルフェスex','sv8a'],
-              'mega dream':['megadream','megaドリームex','m2a'],
-              'base set':['baseset','拡張パック'],
-              'team rocket':['teamrocket','ロケット団'],
-              '151':['151','ポケモンカード151'],
-              'jungle':['jungle','ジャングル'],
-              'fossil':['fossil','化石の秘密'],
-              'gym heroes':['gymheroes'],
-              'gym challenge':['gymchallenge'],
-              'neo genesis':['neogenesis'],
-              'neo discovery':['neodiscovery'],
-              'neo revelation':['neorevelation'],
-              'neo destiny':['neodestiny']
-            };
-            const aliases=setAliases[setHint.toLocaleLowerCase()]||[setHint.toLocaleLowerCase()];
-            if(!aliases.some(alias=>candidateText.includes(alias.replace(/\s/g,'').toLocaleLowerCase())))return false;
+            // Match every identifier that is actually present in the eBay title.
+            // Do not require both number and set: many legitimate listings omit one.
+            // If an identifier is present, however, it must agree with the candidate.
+            if(cardNo&&!numberText.includes(cardNo.replace(/\s/g,'').toLocaleLowerCase()))return false;
+            if(setHint){
+              const setAliases={
+                '30th celebration':['30thcelebration','m6a','30thセレブレーション'],
+                'pokemon go':['pokemongo','ポケモンgo','s10b'],
+                'pokémon go':['pokemongo','ポケモンgo','s10b'],
+                'terastal festival':['terastalfestival','テラスタルフェスex','sv8a'],
+                'mega dream':['megadream','megaドリームex','m2a'],
+                'base set':['baseset','拡張パック'],
+                'team rocket':['teamrocket','ロケット団'],
+                '151':['151','ポケモンカード151'],
+                'jungle':['jungle','ジャングル'],
+                'fossil':['fossil','化石の秘密'],
+                'gym heroes':['gymheroes'],
+                'gym challenge':['gymchallenge'],
+                'neo genesis':['neogenesis'],
+                'neo discovery':['neodiscovery'],
+                'neo revelation':['neorevelation'],
+                'neo destiny':['neodestiny']
+              };
+              const aliases=setAliases[setHint.toLocaleLowerCase()]||[setHint.toLocaleLowerCase()];
+              if(!aliases.some(alias=>candidateText.includes(alias.replace(/\s/g,'').toLocaleLowerCase())))return false;
+            }
+            // Without a printed number or identifiable set, require a stronger name match.
+            if(!cardNo&&!setHint&&Number(x.score)<60)return false;
           }
           return true;
         }).sort((a,b)=>Number(b.score)-Number(a.score))[0];
-        if(candidate)entry={category:cat,titleJa:cat==='ポケモンカード'?[String(candidate.cardName||candidate.title||'').trim(),String(candidate.rarity||'').trim(),String(candidate.number||'').trim(),String(candidate.setName||'').trim()].filter(Boolean).join('｜'):String(candidate.cardName||candidate.title).trim(),url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）'),checkedAt:new Date().toISOString()};
+        if(candidate)entry={category:cat,titleJa:cat==='ポケモンカード'?[String(candidate.cardName||candidate.title||'').trim(),String(candidate.setName||'').trim(),String(candidate.number||'').trim(),String(candidate.rarity||'').trim()].filter(Boolean).join('｜'):String(candidate.cardName||candidate.title).trim(),cardName:candidate.cardName||candidate.title||'',setName:candidate.setName||'',number:candidate.number||'',rarity:candidate.rarity||'',url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）'),checkedAt:new Date().toISOString()};
       }
     }catch(e){}
     if(!entry)entry={category:cat,titleJa:String(translated||raw).trim(),url:'',image:'',score:0,status:cat==='ポケモンカード'?'自動翻訳（正式名称・カード番号の一致未確認）':'自動翻訳（正式名称・型番の一致未確認）',checkedAt:new Date().toISOString()};
@@ -269,8 +275,8 @@ async function enrichOfficialNames(items, categoryOverride){
     if(candidate){
       const id=String(p.id||p.itemId||'');
       const target=(data||[]).find(x=>String(x.id)===id);
-      if(target){target.displayName=categoryOverride==='ポケモンカード'?cleanPokemonDisplayName(target,candidate.titleJa):candidate.titleJa;target.titleJa=candidate.titleJa;target.officialNameSource=candidate.url;target.officialNameStatus=candidate.status}
-      p.displayName=categoryOverride==='ポケモンカード'?cleanPokemonDisplayName(p,candidate.titleJa):candidate.titleJa;p.titleJa=candidate.titleJa;p.officialNameSource=candidate.url;p.officialNameStatus=candidate.status;
+      if(target){target.displayName=candidate.titleJa;target.titleJa=candidate.titleJa;target.officialNameSource=candidate.url;target.officialNameStatus=candidate.status}
+      p.displayName=categoryOverride==='ポケモンカード'?candidate.titleJa: candidate.titleJa;p.titleJa=candidate.titleJa;p.officialNameSource=candidate.url;p.officialNameStatus=candidate.status;
     }else if(categoryOverride==='ポケモンカード'){
       const id=String(p.id||p.itemId||'');
       const target=(data||[]).find(x=>String(x.id)===id);
