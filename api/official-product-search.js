@@ -380,29 +380,47 @@ function pokemonCardQueryVariants(value) {
 
 async function searchPokemonCards(query, originalQuery = '') {
   const rawTitle = String(originalQuery || query || '').normalize('NFKC');
-  // Card number is the strongest identifier. Handle both "114/081" and "#043" listing formats.
+  // eBay titles commonly put the card number after a hash (for example #043).
+  // Search by the number first: the catalog supports number queries and the
+  // number is less ambiguous than the translated English card name.
   const numberHints = [...rawTitle.matchAll(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g)]
     .map(m => m[1] + '/' + m[2]);
   const hashNumber = (rawTitle.match(/#\s*(\d{1,3})\b/) || [])[1] || '';
   const variants = pokemonCardQueryVariants(originalQuery || query);
   const cleanedQuery = variants.find(value => value !== rawTitle && /[A-Z]{3,}/i.test(value)) || '';
-  const namedNumberQuery = hashNumber
-    ? ((rawTitle.match(/#\s*\d{1,3}\s+([A-Z][A-Z'-]{2,})/i) || [])[1] || '') + ' ' + hashNumber
+  const englishName = hashNumber
+    ? ((rawTitle.match(/#\s*\d{1,3}\s+([A-Z][A-Z'-]{2,})/i) || [])[1] || '')
     : '';
-  const catalogQuery = numberHints[0] || namedNumberQuery.trim() || cleanedQuery || String(query || '').trim();
+  const catalogQueries = [...new Set([
+    numberHints[0] || '',
+    hashNumber || '',
+    englishName,
+    cleanedQuery,
+    String(query || '').trim()
+  ].filter(Boolean))];
 
-  // The former implementation sent up to ten requests in parallel for one card.
-  // Ranking pages can contain many cards, which caused provider HTTP 429 rate limits.
-  // Make one Japanese-catalog request per card and do not retry on rate limiting.
-  const catalogResult = await Promise.allSettled([
-    searchPokemonCatalog(catalogQuery, 'jp')
-  ]);
-  const catalogCandidates = catalogResult.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+  // Try the strongest identifier first. Only make a second request when the
+  // first query returns no Japanese candidates; this avoids the old request burst.
+  let catalogCandidates = [];
+  const catalogErrors = [];
+  const attemptedQueries = [];
+  for (const catalogQuery of catalogQueries.slice(0, 3)) {
+    attemptedQueries.push(catalogQuery);
+    try {
+      const found = await searchPokemonCatalog(catalogQuery, 'jp');
+      catalogCandidates = found;
+      if (found.some(row => /[ぁ-んァ-ヶ一-龯]/u.test(String(row.cardName || '')))) break;
+    } catch (error) {
+      catalogErrors.push(String(error?.message || 'カタログ取得失敗'));
+    }
+  }
+
   const setHints = ['30th Celebration', 'Pokemon GO', 'Pokémon GO', 'Jungle', 'Base Set', 'Fossil', 'Team Rocket', 'Neo Genesis', 'Neo Discovery', 'Evolving Skies', '151', 'SV9a', 'MEG']
     .filter(s => normalizeText(rawTitle).includes(normalizeText(s)));
   const catalogUnique = [...new Map(catalogCandidates.map(row => {
     const haystack = normalizeText([row.cardName, row.setName, row.number, row.title].join(' '));
-    const numberBonus = numberHints.some(n => normalizeText([row.number, row.title].join(' ')).includes(normalizeText(n))) ? 35 : 0;
+    const numberBonus = [...numberHints, hashNumber].filter(Boolean)
+      .some(n => normalizeText([row.number, row.title].join(' ')).includes(normalizeText(n))) ? 35 : 0;
     const setBonus = setHints.some(s => haystack.includes(normalizeText(s))) ? 15 : 0;
     const japaneseBonus = /[ぁ-んァ-ヶ一-龯]/u.test(row.cardName) ? 20 : 0;
     return [row.cardName + '|' + row.setName + '|' + row.number,
@@ -418,9 +436,8 @@ async function searchPokemonCards(query, originalQuery = '') {
   return {
     candidates: [...new Map(combined.map(row => [row.url + '|' + row.title, row])).values()].slice(0, 10),
     officialError,
-    catalogErrors: catalogResult.filter(r => r.status === 'rejected')
-      .map(r => String(r.reason?.message || 'カタログ取得失敗')),
-    catalogQuery
+    catalogErrors,
+    catalogQuery: attemptedQueries.join(' → ')
   };
 }
 async function searchPokemonCardsOfficial(query) {
