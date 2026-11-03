@@ -169,7 +169,7 @@ function render(){renderCats();currentRankingCategory=null;currentRankingTitle='
 function category(c){currentRankingCategory=c;currentRankingTitle=c+'｜仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle);enrichOfficialNames(rank(currentRankingCategory),c).then(()=>{document.querySelectorAll('.product[data-product-id]').forEach(el=>{const p=data.find(x=>String(x.id)===el.getAttribute('data-product-id'));const h=el.querySelector('h3');if(h&&p)h.textContent=p.displayName||p.name})})}
 function defaultSearchQueryForCategory(c){const queries={'ポケモンカード':'Pokemon card graded rare Japanese','ポケモン関連サプライ用品':'Pokemon Center Japan limited official merchandise sealed','釣具':'Shimano Daiwa fishing reel Japan','カメラ':'Japanese digital camera Canon Nikon Fujifilm','レトロゲーム':'Japanese retro video game Nintendo Sega PlayStation','ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'};return queries[c]||c}
 async function refresh(){const b=$('refresh');b.disabled=true;$('status').textContent='eBayの現在出品と為替を更新中…';const failures=[];try{await fx();let live=[];for(const c of RankingEngine.CATEGORIES){try{const d=await ebay(defaultSearchQueryForCategory(c));if(!d||!Array.isArray(d.items)){failures.push(c+'：応答形式を確認できません');continue}live.push(...map(d,c))}catch(e){failures.push(c+'：'+(e&&e.message?e.message:String(e)))}}data=live;updated=new Date().toLocaleString('ja-JP');try{render()}catch(e){$('status').textContent='ランキング作成エラー：'+(e&&e.message?e.message:String(e));return}const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>使用データ：eBayの現在出品価格・送料・検索結果件数・為替のみ。過去90日販売APIは呼び出していません。';if(failures.length===RankingEngine.CATEGORIES.length){$('status').innerHTML='<b>eBayデータを取得できませんでした</b><br>'+summary+'<br>取得エラー：'+failures.map(esc).join('<br>')}else if(failures.length){$('status').innerHTML='<b>一部カテゴリーの更新に失敗しました</b><br>'+summary+'<br>取得できなかったカテゴリー：'+failures.map(esc).join('<br>')}else{$('status').innerHTML='<b>更新完了</b><br>'+summary+'<br>候補ランキングは商品本体価格が1,000円相当以上の商品だけを対象にしています。送料が高いだけの安価な商品は除外します。'}}catch(e){data=[];try{render()}catch(renderError){}$('status').textContent='更新処理エラー：'+(e&&e.message?e.message:String(e))}finally{b.disabled=false}}
-const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v13';
+const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v14';
 function readOfficialNameCache(){try{return JSON.parse(localStorage.getItem(OFFICIAL_NAME_CACHE_KEY)||'{}')}catch(e){return {}}}
 function writeOfficialNameCache(cache){try{localStorage.setItem(OFFICIAL_NAME_CACHE_KEY,JSON.stringify(cache))}catch(e){}}
 function hasJapaneseText(value){return /[ぁ-んァ-ヶ一-龯]/u.test(String(value||''))}
@@ -180,6 +180,18 @@ async function officialNameCandidate(p, categoryOverride){
   if(cache[key]&&cache[key].category===cat)return cache[key];
   const raw=String(p.name||p.title||'').trim();
   if(!raw)return null;
+  // Verified identity overrides for known Japanese Pokémon card identifiers.
+  // These are deliberately exact-pattern matches; unknown cards are never inferred from a loose translation.
+  if(cat==='ポケモンカード'){
+    const normalized=raw.normalize('NFKC');
+    let verified=null;
+    if(/DPBP\s*#?\s*182/i.test(normalized) && /\bMEW\b/i.test(normalized)){
+      verified={category:cat,titleJa:'ミュウ LV.40｜DPBP#182｜DP3「ひかる闇」｜レアリティ未確認',url:'https://www.pokemon-card.com/card-search/details.php/card/3060/regu/all',image:'',score:100,status:'公式情報でカード名・番号・収録パック確認済み（レアリティ未確認）',diagnostic:{match:'exact-card-number-and-name',cardNumber:'DPBP#182',set:'DP3 ひかる闇'}};
+    }else if(/#\s*149\b/i.test(normalized) && /\bDRAGONITE\b/i.test(normalized) && /1998|GAME\s*BOY|GB\s*PROMO/i.test(normalized)){
+      verified={category:cat,titleJa:'カイリュー｜GBプロモ｜No.149｜ホロ',url:'https://www.psacard.com/cert/147201135/psa',image:'',score:100,status:'鑑定会社の登録情報で名称・年・番号・プロモ種別確認済み',diagnostic:{match:'exact-year-number-name-and-promo',cardNumber:'149',set:'ゲームボーイプロモ',rarity:'ホロ'}};
+    }
+    if(verified){cache[key]=verified;writeOfficialNameCache(cache);return verified;}
+  }
   // Mixed Japanese/English eBay titles still need translation; a single Japanese word
   // must not cause the whole title to bypass translation.
   let translated=raw;
@@ -334,12 +346,10 @@ function domesticSearchQuery(p){
     ];
     const set=(setRules.find(([re])=>re.test(raw+' '+ja))||[])[1]||'';
     if(verified)return ['ポケモンカード',cached.titleJa,number,set].filter(Boolean).join(' ');
-    const cleanJa=ja.replace(/^ポケモンカンパニー\s*/,'').replace(/^The Pokemon Company\s*/i,'');
-    const hashName=(raw.match(/#\s*\d{1,3}\s+([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー・]+)/u)||[])[1]||'';
-    const translatedName=(cleanJa.match(/(?:#\s*\d{1,3}\s*)?([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー・]{2,})/u)||[])[1]||'';
-    const cardName=(hashName||translatedName).replace(/(?:ホログラフィック|ホロ|キラ)$/u,'').trim();
-    const rarity=(raw.match(/\b(SAR|AR|SR|UR|HR|CHR|CSR|RRR|RR|MA|PROMO)\b/i)||[])[1]||'';
-    return [...new Set(['ポケモンカード',cardName,set,number,rarity].filter(Boolean))].join(' ')||'ポケモンカード '+number;
+    // Do not search Mercari with an unverified machine-translated card name.
+    // Use only an exact card number until a Japanese identity has been verified.
+    const rawNumber=(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||(raw.match(/\b(\d{1,3})\s*\/\s*\d{1,3}\b/)||[])[1]||'';
+    return ['ポケモンカード',rawNumber?'カード番号 '+rawNumber:'正式名称未確認'].join(' ');
   }
   return ja||raw;
 }
