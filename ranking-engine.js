@@ -5,7 +5,7 @@ const WEIGHTS={sellability:30,margin:25,profit:15,stability:10,inventoryRisk:10,
 const num=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,v));
 const round=v=>Math.round(num(v));
-function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',displayName:r.displayName||r.titleJa||r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:num(r.ship??r.shipping),image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:r.sold==null?null:num(r.sold),list:r.list==null?null:num(r.list),trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices.map(num).filter(v=>v>0):[],soldMedian:num(r.soldMedian),soldHistoryCount:num(r.soldHistoryCount),soldHistoryAvailable:Boolean(r.soldHistoryAvailable),activeListingsTotal:num(r.activeListingsTotal),searchResultTotal:num(r.searchResultTotal),sourcingShippingJpy:num(r.sourcingShippingJpy),sourcingSource:r.sourcingSource||'',sourcingCondition:r.sourcingCondition||'',sourcingCheckedAt:r.sourcingCheckedAt||'',evidenceType:r.evidenceType||'',evidenceDate:r.evidenceDate||''}}
+function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',displayName:r.displayName||r.titleJa||r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:num(r.ship??r.shipping),image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:r.sold==null?null:num(r.sold),list:r.list==null?null:num(r.list),trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices.map(num).filter(v=>v>0):[],soldMedian:num(r.soldMedian),soldHistoryCount:num(r.soldHistoryCount),soldHistoryAvailable:Boolean(r.soldHistoryAvailable),activeListingsTotal:num(r.activeListingsTotal),searchResultTotal:num(r.searchResultTotal),sourcingShippingJpy:num(r.sourcingShippingJpy),sourcingSource:r.sourcingSource||'',sourcingCondition:r.sourcingCondition||'',sourcingCheckedAt:r.sourcingCheckedAt||'',officialNameVerified:Boolean(r.officialNameVerified),evidenceType:r.evidenceType||'',evidenceDate:r.evidenceDate||''}}
 function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.feeRate,.136),international=num(s.internationalRate,.0135),conv=num(s.conversionFeeRate),dom=Math.max(0,num(s.domesticShipping)),pack=Math.max(0,num(s.packaging)),other=Math.max(0,num(s.otherCost));const sale=Math.max(0,num(p.sell)),ship=Math.max(0,num(p.ship)),gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,grossSaleJpy=gross*fx,finalValueFeeJpy=gross*fee*fx,internationalFeeJpy=gross*international*fx,fixedUsd=gross<=10?.30:.40,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=grossSaleJpy*(conv/100),sourcingShippingJpy=Math.max(0,num(p.sourcingShippingJpy)),localCosts=dom+sourcingShippingJpy+pack+other,totalFees=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,totalCosts=totalFees+localCosts+Math.max(0,num(p.cost)),profit=p.cost>0?round(grossSaleJpy-totalCosts):null,margin=p.cost>0?profit/Math.max(1,num(p.cost)):null;return{saleJpy:round(saleJpy),shipJpy:round(shipJpy),grossSaleJpy:round(grossSaleJpy),finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),fixedFeeUsd:fixedUsd,conversionFeeJpy:round(conversionFeeJpy),domesticShippingJpy:round(dom),sourcingShippingJpy:round(sourcingShippingJpy),packagingJpy:round(pack),otherCostJpy:round(other),localCosts:round(localCosts),totalFees:round(totalFees),totalCosts:round(totalCosts),profit,margin}}
 function sellThrough(p){if(p.sold!==null&&p.list!==null&&p.sold>=0&&p.list>=0){const t=p.sold+p.list;return t>0?p.sold/t:null}return null}
 function salesActivityScore(p){if(!p.soldHistoryAvailable)return 0;const s=Math.max(0,num(p.soldHistoryCount));return clamp(20+Math.log1p(s)*17)}
@@ -45,9 +45,10 @@ function dataCompleteness(p){
   // 実売データAPIにアクセスできないこと自体は減点しない。
   // 現在のBrowse APIから実際に取得できる商品情報だけで充実度を測る。
   const fields=[
-    ['現在の出品価格',p.sell>0,25],['送料情報',Number.isFinite(Number(p.ship))&&p.ship>=0,15],
-    ['商品状態',Boolean(p.condition),10],['商品画像',Boolean(p.image),10],['eBay商品ページ',Boolean(p.url),10],
-    ['カテゴリー',Boolean(p.cat&&p.cat!=='その他'),10],['検索語の検索結果件数',Number(p.searchResultTotal)>0,10],['商品ID',Boolean(p.id),10]
+    ['現在の出品価格',p.sell>0,20],['送料情報',Number.isFinite(Number(p.ship))&&p.ship>=0,10],
+    ['商品状態',Boolean(p.condition),5],['商品画像',Boolean(p.image),10],['eBay商品ページ',Boolean(p.url),10],
+    ['カテゴリー',Boolean(p.cat&&p.cat!=='その他'),5],['検索語の検索結果件数',Number(p.searchResultTotal)>0,5],['商品ID',Boolean(p.id),5],
+    ['商品名・型番の確認',Boolean(p.officialNameVerified),30]
   ];
   const available=fields.filter(x=>x[1]);
   const score=available.reduce((n,x)=>n+x[2],0);
@@ -130,13 +131,15 @@ function scoreV2(raw,s={},universe=[]){
     conditionScore*.05+
     (p.sell>0?priceScore:0)*.05
   );
-  const total=round(clamp(
+  let total=round(clamp(
     marketDataScore*.60+
     profitComponent*.18+
     downsideScore*.08+
     completenessScore*.08+
     base.scores.fees*.06
   ));
+  // 仕入価格も実売根拠もない段階では高評価を付けない。
+  if(p.cost<=0&&!p.soldHistoryAvailable)total=Math.min(total,44);
   const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
   if(m.currentProfit!=null) recommendationReasons.push('予想利益 '+(m.currentProfit>=0?'+':'')+Math.round(m.currentProfit).toLocaleString()+'円');
