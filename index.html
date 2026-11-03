@@ -173,7 +173,7 @@ function dedupeCategoryProducts(rows,cat){
     const raw=String(p.name||'');
     if(wrong[cat]?.test(raw))continue;
     const title=raw.normalize('NFKC').toLowerCase().replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
-    const key=String(p.id||'')+'|'+title+'|'+Number(p.sell||0);
+    const key=title+'|'+Number(p.sell||0);
     if(seen.has(key))continue;
     seen.add(key);out.push(p);
   }
