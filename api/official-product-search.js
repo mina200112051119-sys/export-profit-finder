@@ -416,11 +416,11 @@ async function searchPokemonCards(query, originalQuery = '') {
         const values = [row.number, row.title].map(value => normalizeText(value || '')).join(' ');
         if (!wantedNumber) return false;
         return new RegExp('(^|[^0-9])' + wantedNumber + '([^0-9]|$)').test(
-          values.replace(/\\d{1,3}\\s*\\/\\s*\\d{1,3}/g, ' ')
-        ) || (values.match(/\\d{1,3}\\s*\\/\\s*\\d{1,3}/g) || [])
+          values.replace(/\d{1,3}\s*\\/\s*\d{1,3}/g, ' ')
+        ) || (values.match(/\d{1,3}\s*\\/\s*\d{1,3}/g) || [])
           .some(value => value.split('/')[0] === wantedNumber);
       };
-      const wantedSet = /20th\\s*Anniversary|20\\s*周年|CP6/i.test(rawTitle);
+      const wantedSet = /20th\s*Anniversary|20\s*周年|CP6/i.test(rawTitle);
       const strongMatch = found.some(row => {
         const japanese = /[ぁ-んァ-ヶ一-龯]/u.test(String(row.cardName || ''));
         const setText = normalizeText([row.setName, row.title].join(' '));
