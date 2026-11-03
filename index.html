@@ -197,7 +197,7 @@ async function officialNameCandidate(p, categoryOverride){
         // For Pokémon cards, only accept a candidate whose actual cardName is Japanese.
         const rawTitle=String(p.name||p.title||'').normalize('NFKC');
         const cardNo=(rawTitle.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||(rawTitle.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
-        const setHint=(rawTitle.match(/\b(?:20th\s+Anniversary|20\s*周年(?:記念)?|30th\s+Celebration|Pokemon\s+GO|Pok[eé]mon\s+GO|Jungle|Base Set|Fossil|Gym Heroes|Gym Challenge|Team Rocket|Neo Genesis|Neo Discovery|Neo Revelation|Neo Destiny|Terastal Festival|Mega Dream|151|SV\d{1,2}[a-z]?|S\d{1,2}[a-z]?)\b/i)||[])[0];
+        const setHint=(rawTitle.match(/\b(?:20th\s+Anniversary|20\s*周年(?:記念)?|30th\s+Celebration|Pokemon\s+GO|Pok[eé]mon\s+GO|Jungle|Base Set|Fossil|Gym Heroes|Gym Challenge|Team Rocket|Neo Genesis|Neo Discovery|Neo Revelation|Neo Destiny|Neo Premium File(?:\s*2)?|Shining Darkness|Awakening Legends|Terastal Festival|Mega Dream|151|SV\d{1,2}[a-z]?|S\d{1,2}[a-z]?)\b/i)||[])[0];
         const compact=value=>String(value||'').normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase();
         const setAliases={
           '20th anniversary':['20thanniversary','20周年','cp6','拡張パック20thanniversary'],'20周年記念':['20thanniversary','20周年','cp6','拡張パック20thanniversary'],'30th celebration':['30thcelebration','m6a','30thセレブレーション'],
@@ -222,8 +222,10 @@ async function officialNameCandidate(p, categoryOverride){
             const candidateNumberText=[String(x.number||''),String(x.title||'')].join(' ').normalize('NFKC');
             const candidateNumbers=candidateNumberText.match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[];
             const wantedNumber=String(cardNo).match(/\d{1,3}/)?.[0]||'';
-            const plainNumberMatches=wantedNumber&&new RegExp('(?:^|[^0-9])'+wantedNumber+'(?:$|[^0-9])').test(candidateNumberText.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '));
-            if(cardNo&&!plainNumberMatches&&!candidateNumbers.some(value=>{const normalized=compact(value),wanted=compact(cardNo);return normalized===wanted||(/^\d{1,3}\//.test(normalized)&&normalized.split('/')[0]===wanted)}))return false;
+            const isFraction=/\//.test(String(cardNo));
+            const plainNumberMatches=!isFraction&&wantedNumber&&new RegExp('(?:^|[^0-9])'+wantedNumber+'(?:$|[^0-9])').test(candidateNumberText.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '));
+            const exactFractionMatches=isFraction&&candidateNumbers.some(value=>compact(value)===compact(cardNo));
+            if(cardNo&&!(isFraction?exactFractionMatches:plainNumberMatches))return false;
             const candidateText=compact([x.cardName,x.title,x.setName,x.number].filter(Boolean).join(' '));
             if(setHint){
               const aliases=setAliases[setHint.toLocaleLowerCase()]||[setHint];
@@ -240,7 +242,7 @@ async function officialNameCandidate(p, categoryOverride){
           }else if(Number(x.score)<30)return false;
           return true;
         }).sort((a,b)=>{
-          const hasNumber=x=>{const t=String([x.number,x.title].join(' ')).normalize('NFKC');const n=String(cardNo).match(/\d{1,3}/)?.[0]||'';return !!n&&(new RegExp('(?:^|[^0-9])'+n+'(?:$|[^0-9])').test(t.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '))||(t.match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[]).some(v=>v.split('/')[0].trim()===n))};
+          const hasNumber=x=>{const t=String([x.number,x.title].join(' ')).normalize('NFKC');if(/\//.test(String(cardNo)))return (t.match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[]).some(v=>compact(v)===compact(cardNo));const n=String(cardNo).match(/\d{1,3}/)?.[0]||'';return !!n&&new RegExp('(?:^|[^0-9])'+n+'(?:$|[^0-9])').test(t.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '))};
           const an=cardNo&&hasNumber(a)?1:0;
           const bn=cardNo&&hasNumber(b)?1:0;
           return bn-an||Number(b.score)-Number(a.score);
