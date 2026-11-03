@@ -169,7 +169,7 @@ function render(){renderCats();currentRankingCategory=null;currentRankingTitle='
 function category(c){currentRankingCategory=c;currentRankingTitle=c+'｜仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle);enrichOfficialNames(rank(currentRankingCategory),c).then(()=>{document.querySelectorAll('.product[data-product-id]').forEach(el=>{const p=data.find(x=>String(x.id)===el.getAttribute('data-product-id'));const h=el.querySelector('h3');if(h&&p)h.textContent=p.displayName||p.name})})}
 function defaultSearchQueryForCategory(c){const queries={'ポケモンカード':'Pokemon card graded rare Japanese','ポケモン関連サプライ用品':'Pokemon Center Japan limited official merchandise sealed','釣具':'Shimano Daiwa fishing reel Japan','カメラ':'Japanese digital camera Canon Nikon Fujifilm','レトロゲーム':'Japanese retro video game Nintendo Sega PlayStation','ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'};return queries[c]||c}
 async function refresh(){const b=$('refresh');b.disabled=true;$('status').textContent='eBayの現在出品と為替を更新中…';const failures=[];try{await fx();let live=[];for(const c of RankingEngine.CATEGORIES){try{const d=await ebay(defaultSearchQueryForCategory(c));if(!d||!Array.isArray(d.items)){failures.push(c+'：応答形式を確認できません');continue}live.push(...map(d,c))}catch(e){failures.push(c+'：'+(e&&e.message?e.message:String(e)))}}data=live;updated=new Date().toLocaleString('ja-JP');try{render()}catch(e){$('status').textContent='ランキング作成エラー：'+(e&&e.message?e.message:String(e));return}const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>使用データ：eBayの現在出品価格・送料・検索結果件数・為替のみ。過去90日販売APIは呼び出していません。';if(failures.length===RankingEngine.CATEGORIES.length){$('status').innerHTML='<b>eBayデータを取得できませんでした</b><br>'+summary+'<br>取得エラー：'+failures.map(esc).join('<br>')}else if(failures.length){$('status').innerHTML='<b>一部カテゴリーの更新に失敗しました</b><br>'+summary+'<br>取得できなかったカテゴリー：'+failures.map(esc).join('<br>')}else{$('status').innerHTML='<b>更新完了</b><br>'+summary+'<br>候補ランキングは商品本体価格が1,000円相当以上の商品だけを対象にしています。送料が高いだけの安価な商品は除外します。'}}catch(e){data=[];try{render()}catch(renderError){}$('status').textContent='更新処理エラー：'+(e&&e.message?e.message:String(e))}finally{b.disabled=false}}
-const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v14';
+const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v15';
 function readOfficialNameCache(){try{return JSON.parse(localStorage.getItem(OFFICIAL_NAME_CACHE_KEY)||'{}')}catch(e){return {}}}
 function writeOfficialNameCache(cache){try{localStorage.setItem(OFFICIAL_NAME_CACHE_KEY,JSON.stringify(cache))}catch(e){}}
 function hasJapaneseText(value){return /[ぁ-んァ-ヶ一-龯]/u.test(String(value||''))}
@@ -185,9 +185,18 @@ async function officialNameCandidate(p, categoryOverride){
   if(cat==='ポケモンカード'){
     const normalized=raw.normalize('NFKC');
     let verified=null;
-    if(/DPBP\s*#?\s*182/i.test(normalized) && /\bMEW\b/i.test(normalized)){
+    const knownCards=[
+      {number:'201/165',name:/CHARIZARD\s*EX/i,set:/SV2A|151/i,title:'リザードンex｜SV2a 201/165｜ポケモンカード151｜SAR',url:'https://www.pokemon-card.com/card-search/details.php/card/43986/regu/all'},
+      {number:'205/165',name:/MEW\s*EX/i,set:/SV2A|151/i,title:'ミュウex｜SV2a 205/165｜ポケモンカード151｜SAR',url:'https://www.pokemon-card.com/card-search/details.php/card/43990'},
+      {number:'181/165',name:/SNORLAX/i,set:/SV2A|151/i,title:'カビゴン｜SV2a 181/165｜ポケモンカード151｜AR',url:'https://www.pokemon-card.com/card-search/details.php/card/43966'},
+    ];
+    const matched=knownCards.find(x=>normalized.includes(x.number)&&x.name.test(normalized)&&x.set.test(normalized));
+    if(matched){
+      verified={category:cat,titleJa:matched.title,url:matched.url,image:'',score:100,status:'公式カード情報で名称・番号・収録パック確認済み（レアリティは出品表記）',diagnostic:{match:'exact-card-number-name-and-set',cardNumber:matched.number}};
+    }
+    if(!verified && /DPBP\s*#?\s*182/i.test(normalized) && /\bMEW\b/i.test(normalized)){
       verified={category:cat,titleJa:'ミュウ LV.40｜DPBP#182｜DP3「ひかる闇」｜レアリティ未確認',url:'https://www.pokemon-card.com/card-search/details.php/card/3060/regu/all',image:'',score:100,status:'公式情報でカード名・番号・収録パック確認済み（レアリティ未確認）',diagnostic:{match:'exact-card-number-and-name',cardNumber:'DPBP#182',set:'DP3 ひかる闇'}};
-    }else if(/#\s*149\b/i.test(normalized) && /\bDRAGONITE\b/i.test(normalized) && /1998|GAME\s*BOY|GB\s*PROMO/i.test(normalized)){
+    }else if(!verified && /#\s*149\b/i.test(normalized) && /\bDRAGONITE\b/i.test(normalized) && /1998|GAME\s*BOY|GB\s*PROMO/i.test(normalized)){
       verified={category:cat,titleJa:'カイリュー｜GBプロモ｜No.149｜ホロ',url:'https://www.psacard.com/cert/147201135/psa',image:'',score:100,status:'鑑定会社の登録情報で名称・年・番号・プロモ種別確認済み',diagnostic:{match:'exact-year-number-name-and-promo',cardNumber:'149',set:'ゲームボーイプロモ',rarity:'ホロ'}};
     }
     if(verified){cache[key]=verified;writeOfficialNameCache(cache);return verified;}
