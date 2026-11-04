@@ -529,8 +529,8 @@ const normalize=s=>String(s||'').normalize('NFKC').toLowerCase();
 function acceptCandidate(p,cat){
  const t=normalize([p.name,p.displayName,p.title].filter(Boolean).join(' '));
  const reject={
-  'ポケモンカード':/(?:fishing|camera|digital camera|lens|flash|gunpla|plastic model|playstation|nintendo|switch console|攻略本|controller)/i,
-  'ポケモン関連サプライ用品':/(?:fishing|camera|digital camera|lens|flash|gunpla|plastic model|playstation|攻略本)/i,
+  'ポケモンカード':/(?:fishing|camera|digital camera|lens|flash|gunpla|plastic model|playstation|nintendo|switch console|攻略本|controller|mystery|random|assorted|bulk lot|lot of|bundle)/i,
+  'ポケモン関連サプライ用品':/(?:fishing|camera|digital camera|lens|flash|gunpla|plastic model|playstation|攻略本|pokemon center\\s*[~\\-–]\\s*goods)/i,
   '釣具':/(?:pokemon|ポケモン|camera|digital camera|lens|flash|gunpla|plastic model|playstation|攻略本)/i,
   'カメラ':/(?:pokemon|ポケモン|fishing|reel|gunpla|plastic model|playstation|攻略本|\b(?:lot|bundle|parts|repair|untested|for parts)\b|\b(?:lens|flash|speedlight|battery|charger|adapter|tripod|filter)\b|レンズ|フラッシュ|まとめ売り|ジャンク|未テスト)/i,
   'レトロゲーム':/(?:pokemon|ポケモン|fishing|reel|camera|digital camera|lens|gunpla|plastic model|攻略本|guidebook|magazine|controller|arcade pad|\b(?:lot|bundle|untested|for parts)\b|まとめ売り|攻略|雑誌)/i,
