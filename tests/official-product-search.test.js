@@ -35,6 +35,32 @@ test('official Pokémon card search returns unconfirmed candidates from official
   }
 });
 
+test('Gurusha SAR exact Japanese card identity uses official card record without retired catalog', async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async () => {
+    throw new Error('retired catalog should not be requested for curated exact match');
+  };
+  try {
+    const res = responseRecorder();
+    await handler({
+      method: 'GET',
+      query: {
+        category: 'ポケモンカード',
+        q: 'Gurusha Japanese SAR 095/071',
+        original: 'Pokemon Gurusha Japanese SAR 095/071 Rare Collectible Card BCTC-9'
+      }
+    }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.status, 'candidate_found');
+    assert.equal(res.body.verification, 'candidate_only');
+    assert.equal(res.body.candidates[0].title, 'グルーシャ｜SV2P 095/071｜スノーハザード');
+    assert.equal(res.body.candidates[0].url, 'https://www.pokemon-card.com/card-search/details.php/card/43688');
+    assert.deepEqual(res.body.sourceErrors, []);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
 test('official-source failure is not reported as product absence', async () => {
   const previousFetch = global.fetch;
   global.fetch = async () => ({ ok: false, status: 503, text: async () => '' });
