@@ -18,7 +18,7 @@ async function storage(req,res){
     if(req.method==='PUT'){
       const data=req.body?.data;
       if(!data||typeof data!=='object'||Array.isArray(data)) return res.status(400).json({error:'data object is required'});
-      const safe={version:1,updatedAt:new Date().toISOString(),sourcingCandidates:data.sourcingCandidates&&typeof data.sourcingCandidates==='object'?data.sourcingCandidates:{},selectedSourcing:data.selectedSourcing&&typeof data.selectedSourcing==='object'?data.selectedSourcing:{}};
+      const safe={version:2,updatedAt:new Date().toISOString(),sourcingCandidates:data.sourcingCandidates&&typeof data.sourcingCandidates==='object'&&!Array.isArray(data.sourcingCandidates)?data.sourcingCandidates:{},selectedSourcing:data.selectedSourcing&&typeof data.selectedSourcing==='object'&&!Array.isArray(data.selectedSourcing)?data.selectedSourcing:{},officialCandidates:data.officialCandidates&&typeof data.officialCandidates==='object'&&!Array.isArray(data.officialCandidates)?data.officialCandidates:{},domesticSearchNames:data.domesticSearchNames&&typeof data.domesticSearchNames==='object'&&!Array.isArray(data.domesticSearchNames)?data.domesticSearchNames:{}};
       await command(['SET',key,JSON.stringify(safe)]);
       return res.json({configured:true,saved:true,updatedAt:safe.updatedAt});
     }
