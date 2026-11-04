@@ -1,5 +1,9 @@
 function config(){const url=process.env.KV_REST_API_URL||process.env.UPSTASH_REDIS_REST_URL;const token=process.env.KV_REST_API_TOKEN||process.env.UPSTASH_REDIS_REST_TOKEN;if(!url||!token)return null;return{url:String(url).replace(/\/$/,''),token};}
 module.exports=async(req,res)=>{
+ res.setHeader('Access-Control-Allow-Origin','*');
+ res.setHeader('Access-Control-Allow-Methods','GET,OPTIONS');
+ res.setHeader('Access-Control-Allow-Headers','Content-Type');
+ if(req.method==='OPTIONS')return res.status(204).end();
  if(req.method!=='GET')return res.status(405).json({ok:false,error:'GET only'});
  const c=config();
  if(!c)return res.status(503).json({ok:false,configured:false,error:'cloud storage is not configured'});
