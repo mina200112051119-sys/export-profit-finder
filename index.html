@@ -449,7 +449,7 @@ if(typeof window.detail==='function'){
  const originalDetail=window.detail;
  window.detail=function(id){
   const out=originalDetail(id);
-  const p=(window.__exportApp?.getData?.()||[]).find(x=>encodeURIComponent(String(x.id))===id);
+  const p=(data||[]).find(x=>encodeURIComponent(String(x.id))===id);
   if(p&&p.cost<=0&&!p.soldHistoryAvailable){
    const body=document.getElementById('body');
    if(body){
