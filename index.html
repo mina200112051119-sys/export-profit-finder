@@ -377,7 +377,7 @@ function cleanPokemonDisplayName(p, translated){
   return [name,number,set?'（'+set+'）':''].filter(Boolean).join(' ');
 }
 async function enrichOfficialNames(items, categoryOverride){
-  const list=(items||[]).slice(0,50);
+  const list=(items||[]).slice(0,20);
   await Promise.all(list.map(async p=>{
     const candidate=await officialNameCandidate(p,categoryOverride);
     const id=String(p.id||p.itemId||'');
