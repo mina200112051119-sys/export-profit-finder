@@ -424,27 +424,13 @@ function acceptCandidate(p,cat){
 if(typeof originalMap==='function'){
  window.map=function(d,cat,cost=0){
   const result=originalMap(d,cat,cost);
-  return result.filter(p=>acceptCandidate(p,cat)).map(p=>{
-   if(!p.officialNameVerified)return {...p,displayName:p.name,titleJa:p.name,officialNameStatus:'正式名称・型番未確認（eBay出品名を表示）'};
-   return p;
-  });
+  // Keep Japanese candidate names produced by the enrichment step.
+  // The previous wrapper replaced every unverified candidate with the raw English eBay title.
+  return result.filter(p=>acceptCandidate(p,cat));
  };
 }
-if(typeof window.enrichOfficialNames==='function'){
- const originalEnrich=window.enrichOfficialNames;
- window.enrichOfficialNames=async function(items,cat){
-  await originalEnrich(items,cat);
-  for(const p of items||[]){
-   if(!p)continue;
-   const verified=Boolean(p.officialNameVerified);
-   if(!verified){
-    p.displayName=p.name;
-    p.titleJa=p.name;
-    p.officialNameStatus='正式名称・型番未確認（eBay出品名を表示）';
-   }
-  }
- };
-}
+// Do not overwrite translated / official-search candidate names after enrichment.
+// Their verification status remains visible separately in the product details.
 if(typeof window.detail==='function'){
  const originalDetail=window.detail;
  window.detail=function(id){
