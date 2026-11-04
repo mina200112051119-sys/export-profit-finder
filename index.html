@@ -306,17 +306,17 @@ function cleanProductDisplayName(p, translated, category){
   const raw=String(translated||p.displayName||p.titleJa||p.name||p.title||'').normalize('NFKC');
   const model=String(p.modelNumber||p.mpn||p.productCode||'').normalize('NFKC').trim();
   let value=raw
-    .replace(/\\b(?:NEW|BRAND\\s*NEW|USED|PREOWNED|PRE-OWNED|MINT|NEAR\\s*MINT|EXCELLENT|GOOD\\s*CONDITION|JUNK|FOR\\s*PARTS|UNTESTED|FREE\\s*SHIPPING|FAST\\s*SHIPPING|AUTHENTIC|RARE|HOT|SALE|LOT\\s*OF\\s*\\d+|SET\\s*OF\\s*\\d+)\\b/gi,' ')
-    .replace(/\\b(?:PSA|CGC|BGS|SGC)\\s*\\d+(?:\\.\\d+)?\\b/gi,' ')
+    .replace(/\b(?:NEW|BRAND\s*NEW|USED|PREOWNED|PRE-OWNED|MINT|NEAR\s*MINT|EXCELLENT|GOOD\s*CONDITION|JUNK|FOR\s*PARTS|UNTESTED|FREE\s*SHIPPING|FAST\s*SHIPPING|AUTHENTIC|RARE|HOT|SALE|LOT\s*OF\s*\d+|SET\s*OF\s*\d+)\b/gi,' ')
+    .replace(/\b(?:PSA|CGC|BGS|SGC)\s*\d+(?:\.\d+)?\b/gi,' ')
     .replace(/(?:送料無料|即日発送|新品|未使用|中古|美品|極美品|ジャンク|動作未確認|動作確認済み|まとめ売り|大量セット|限定セール|希少|レア|正規品)/g,' ')
-    .replace(/\\b(?:Japanese|Japan|English|US\\s*Version|PAL|NTSC|Region\\s*[A-Z0-9]+|Read\\s*Description|See\\s*Photos|Please\\s*Read)\\b/gi,' ')
-    .replace(/[【】\\[\\]{}<>]/g,' ')
+    .replace(/\b(?:Japanese|Japan|English|US\s*Version|PAL|NTSC|Region\s*[A-Z0-9]+|Read\s*Description|See\s*Photos|Please\s*Read)\b/gi,' ')
+    .replace(/[【】\[\]{}<>]/g,' ')
     .replace(/[|｜]{2,}/g,' ')
-    .replace(/\\s*[|｜・,，;；]+\\s*/g,' ')
-    .replace(/\\s+/g,' ').trim();
+    .replace(/\s*[|｜・,，;；]+\s*/g,' ')
+    .replace(/\s+/g,' ').trim();
   if(model && !value.toLowerCase().includes(model.toLowerCase())) value += ' '+model;
   // Keep useful model codes, sizes, grades, and series identifiers; remove only listing noise.
-  value=value.replace(/^ポケモン(?:カード|ＴＣＧ|TCG)?\\s*/i,'').trim();
+  value=value.replace(/^ポケモン(?:カード|ＴＣＧ|TCG)?\s*/i,'').trim();
   const categoryPrefix={
     'ポケモン関連サプライ用品':'ポケモン',
     '釣具':'',
@@ -330,18 +330,18 @@ function cleanProductDisplayName(p, translated, category){
 function cleanPokemonDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
   const ja=cleanProductDisplayName(p,translated,'ポケモンカード');
-  const number=(raw.match(/\\b\\d{1,3}\\s*\\/\\s*\\d{1,3}\\b/)||[])[0]||(raw.match(/#\\s*(\\d{1,3})\\b/)||[])[1]||'';
+  const number=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
   const setRules=[
     [/VSTAR Universe|S12a/i,'VSTARユニバース'],
     [/Terastal Festival|SV8a/i,'テラスタルフェスex'],
     [/Mega Dream|M2a/i,'MEGAドリームex'],
     [/Pokemon GO|Pok[eé]mon GO|S10b/i,'Pokémon GO'],
-    [/20th\\s*Anniversary|20\\s*周年|CP6/i,'20th Anniversary（CP6）'],
-    [/30th\\s*Celebration/i,'30th Celebration'],
+    [/20th\s*Anniversary|20\s*周年|CP6/i,'20th Anniversary（CP6）'],
+    [/30th\s*Celebration/i,'30th Celebration'],
     [/151|SV2a/i,'ポケモンカード151']
   ];
   const set=(setRules.find(([re])=>re.test(raw))||[])[1]||'';
-  const name=ja.replace(/\\b(?:PSA|CGC|BGS|SGC)\\s*\\d+(?:\\.\\d+)?\\b/gi,' ').replace(/\\s+/g,' ').trim();
+  const name=ja.replace(/\b(?:PSA|CGC|BGS|SGC)\s*\d+(?:\.\d+)?\b/gi,' ').replace(/\s+/g,' ').trim();
   return [name,number,set?'（'+set+'）':''].filter(Boolean).join(' ');
 }
 async function enrichOfficialNames(items, categoryOverride){
