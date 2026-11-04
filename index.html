@@ -51,7 +51,7 @@ function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&
 function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:INT,domesticShipping:+$('domestic').value||0,packaging:+$('pack').value||0,otherCost:+$('other').value||0,conversionFeeRate:+$('conv').value||0}}
 function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
 function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value))}
-const CLOUD_STORAGE_API='/api/translate?action=storage';
+const CLOUD_STORAGE_API=API_BASE+'/api/translate?action=storage';
 function getExportUserId(){
   let id=localStorage.getItem('exportUserId:v1');
   if(!id){
@@ -83,7 +83,7 @@ async function checkCloudStorage(){
   const el=$('cloud-status');
   if(el)el.textContent='☁️ クラウド保存：確認中…';
   try{
-    const r=await fetch('/api/storage-health',{cache:'no-store'});
+    const r=await fetch(API_BASE+'/api/storage-health',{cache:'no-store'});
     const d=await r.json().catch(()=>({}));
     if(r.ok&&d.ok){if(el)el.textContent='☁️ クラウド保存：接続済み';return true;}
     if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：接続できません';
@@ -266,7 +266,7 @@ async function officialNameCandidate(p, categoryOverride){
   let entry=null, lookupResult=null;
   if(translated&&hasJapaneseText(translated)){
     try{
-      const response=await fetch('/api/official-product-search?category='+encodeURIComponent(cat)+'&q='+encodeURIComponent(translated)+'&original='+encodeURIComponent(raw),{cache:'no-store'});
+      const response=await fetch(API_BASE+'/api/official-product-search?category='+encodeURIComponent(cat)+'&q='+encodeURIComponent(translated)+'&original='+encodeURIComponent(raw),{cache:'no-store'});
       if(response.ok){
         lookupResult=await response.json(); const result=lookupResult, candidates=Array.isArray(result.candidates)?result.candidates:[];
         // Never treat a Japanese set label around an English card name as a Japanese card name.
@@ -408,7 +408,7 @@ async function enrichOfficialNames(items, categoryOverride){
     }
   }));
 }
-async function translateText(text,to='ja'){try{const from=to==='ja'&&/[A-Za-z]{2,}/u.test(String(text||''))?'en':'auto';const r=await fetch('/api/translate?text='+encodeURIComponent(text)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
+async function translateText(text,to='ja'){try{const from=to==='ja'&&/[A-Za-z]{2,}/u.test(String(text||''))?'en':'auto';const r=await fetch(API_BASE+'/api/translate?text='+encodeURIComponent(text)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
 async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];await enrichOfficialNames(enriched,cat);const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" style="margin-top:8px">詳細分析を見る</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
 function photo(e){const file=e.target.files?.[0];if(!file)return;const ok=['image/jpeg','image/png','image/webp'];if(!ok.includes(file.type)){photoDataUrl='';$('photoMsg').style.display='block';$('photoMsg').textContent='JPEG・PNG・WebPを選択してください。';$('photoSearch').style.display='none';return}const reader=new FileReader();reader.onload=()=>{photoDataUrl=String(reader.result||'');$('preview').src=photoDataUrl;$('preview').style.display='block';$('photoSearch').style.display='block';$('photoMsg').style.display='block';$('photoMsg').textContent='写真を確認しました。「写真からeBay候補を探す」を押してください。'};reader.readAsDataURL(file)}
 function photoPriceLabel(amount,currency){
