@@ -249,7 +249,7 @@ async function officialNameCandidate(p, categoryOverride){
     curated={titleJa:'ダイワ プレッソ スピニングリール',score:100,status:'商品名・メーカー・シリーズ整理済み（細かな型番は出品画像で要確認）',diagnostic:{match:'daiwa-presso-spinning-reel'}};
   }else if(cat==='釣具' && /DAIWA/i.test(titleKey) && /PRESSO/i.test(titleKey) && /SHIMANO/i.test(titleKey) && /AERNOS/i.test(titleKey) && /XT\s*2000/i.test(titleKey)){
     curated={titleJa:'釣具まとめ売り｜ダイワ プレッソ／シマノ エアノス XT 2000｜複数点セット',score:100,status:'まとめ売りとして整理（点数・各商品の状態は要確認）',diagnostic:{match:'multi-item-lot-keywords'}};
-  }else if(cat==='カメラ' && /CANON/i.test(titleKey) && /POWERSHOT/i.test(titleKey) && /\bG9\b/i.test(titleKey)){
+  }else if(cat==='カメラ' && /CANON/i.test(titleKey) && /POWERSHOT/i.test(titleKey) && /\bG9\b/i.test(titleKey) && !/SONY\s*H300|FZ40|E550|S5200|DC215/i.test(titleKey)){
     curated={titleJa:'キヤノン PowerShot G9 コンパクトデジタルカメラ',score:100,status:'メーカー・商品名・型番整理済み（付属品・動作状態は要確認）',diagnostic:{match:'canon-powershot-g9'}};
   }else if(cat==='カメラ' && /CANON\s*G9/i.test(titleKey) && /SONY\s*H300/i.test(titleKey) && /FZ40/i.test(titleKey) && /E550/i.test(titleKey) && /S5200/i.test(titleKey) && /DC215/i.test(titleKey)){
     curated={titleJa:'デジタルカメラ6台セット｜Canon G9・Sony H300・Lumix FZ40・Fujifilm E550・Nikon S5200・Kodak DC215',score:100,status:'6台セットとして整理（各機種・動作状態は要確認）',diagnostic:{match:'six-camera-lot-models'}};
