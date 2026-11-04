@@ -29,7 +29,7 @@ async function displayListingName(item,cat){
  try{
   if(typeof window.officialNameCandidate==='function'){
    const candidate=await window.officialNameCandidate(p,cat);
-   if(candidate&&Number(candidate.score)>=60&&candidate.titleJa)return {name:candidate.titleJa,status:'名称候補（公式情報との一致確認が必要）'};
+   if(candidate&&Number(candidate.score)>=60&&candidate.titleJa)return {name:candidate.titleJa,status:candidate.status||'名称候補（公式情報との一致確認が必要）'};
   }
  }catch(e){}
  let translated=String(item.titleJa||'').trim();
