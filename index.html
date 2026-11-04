@@ -377,8 +377,73 @@ async function enrichOfficialNames(items, categoryOverride){
 async function translateText(text,to='ja'){try{const from=to==='ja'&&/[A-Za-z]{2,}/u.test(String(text||''))?'en':'auto';const r=await fetch('/api/translate?text='+encodeURIComponent(text)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
 async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];await enrichOfficialNames(enriched,cat);const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" style="margin-top:8px">詳細分析を見る</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
 function photo(e){const file=e.target.files?.[0];if(!file)return;const ok=['image/jpeg','image/png','image/webp'];if(!ok.includes(file.type)){photoDataUrl='';$('photoMsg').style.display='block';$('photoMsg').textContent='JPEG・PNG・WebPを選択してください。';$('photoSearch').style.display='none';return}const reader=new FileReader();reader.onload=()=>{photoDataUrl=String(reader.result||'');$('preview').src=photoDataUrl;$('preview').style.display='block';$('photoSearch').style.display='block';$('photoMsg').style.display='block';$('photoMsg').textContent='写真を確認しました。「写真からeBay候補を探す」を押してください。'};reader.readAsDataURL(file)}
-async function searchByPhoto(){if(!photoDataUrl)return;$('photoSearch').disabled=true;$('photoResults').innerHTML='';$('photoMsg').style.display='block';$('photoMsg').textContent='eBay画像検索中…';try{const r=await fetch(IMAGE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoDataUrl})});const d=await r.json();if(!r.ok)throw new Error(d.error||'画像検索に失敗しました');if(!d.items?.length){$('photoMsg').textContent='候補が見つかりませんでした。別の角度・明るい写真でも試してください。';return}const photoCategory=document.getElementById('cat').value;window.photoCandidates=dedupeCategoryProducts(d.items.map(x=>({...x,name:x.title||x.name||''})),photoCategory);if(!window.photoCandidates.length){$('photoMsg').textContent='選択カテゴリーに合う候補がありません。カテゴリーを確認してください。';return}await Promise.all(window.photoCandidates.map(async(x,i)=>{try{const named=await officialNameCandidate({id:'photo:'+String(x.itemId||x.url||x.title),name:x.title,cat:photoCategory},photoCategory);x.titleJa=named&&named.titleJa?named.titleJa:x.title;x.officialNameStatus=named&&named.status?named.status:'商品名・型番は未確認'}catch(e){x.titleJa=x.title;x.officialNameStatus='商品名・型番は未確認'}}));$('photoMsg').textContent='候補が見つかりました。近い商品を1つ選んでください。';$('photoResults').innerHTML=window.photoCandidates.map((x,i)=>'<div class="photo-card" onclick="selectPhotoCandidate('+i+')">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'')+'<h3>'+esc(x.titleJa||x.title)+'</h3><div><b>'+(x.currency==='USD'?yen(Number(x.price)*fxRate)+'（USD '+Number(x.price).toFixed(2)+'）':esc(x.currency)+' '+Number(x.price).toFixed(2))+'</b></div><div>送料 '+(x.currency==='USD'?yen(Number(x.shipping)*fxRate)+'（USD '+Number(x.shipping).toFixed(2)+'）':esc(x.currency)+' '+Number(x.shipping).toFixed(2))+'</div><small>'+esc(x.condition||'状態不明')+'</small><button class="primary" style="margin-top:8px">この候補を選ぶ</button></div>').join('')}catch(e){$('photoMsg').textContent='画像検索に失敗しました。eBay API設定または画像形式を確認してください。'}finally{$('photoSearch').disabled=false}}
-async function selectPhotoCandidate(i){const x=window.photoCandidates?.[i];if(!x)return;window.__selectedPhotoCandidate=x;let title=x.title||'';try{const candidate=await officialNameCandidate({id:'photo:'+String(x.itemId||x.url||title),name:title,cat:document.getElementById('cat').value},document.getElementById('cat').value);if(candidate&&candidate.titleJa)title=candidate.titleJa}catch(e){}x.titleJa=title;$('photoMsg').style.display='block';$('photoMsg').innerHTML='<b>候補を確認中</b><br>写真だけで商品を確定しません。内容を確認して「この商品で分析する」を押してください。';$('photoResults').innerHTML='<div class="card" style="grid-column:1/-1"><h3>選択した候補</h3>'+(x.image?'<img class="detail-image" src="'+esc(x.image)+'" alt="">':'')+'<div class="row"><span>商品名</span><b>'+esc(title)+'</b></div><div class="row"><span>eBay表示価格</span><b>'+(x.currency==='USD'?yen(Number(x.price)*fxRate)+'円（USD '+Number(x.price).toFixed(2)+'）':esc(x.currency)+' '+Number(x.price).toFixed(2))+'</b></div><div class="row"><span>送料</span><b>'+(x.currency==='USD'?yen(Number(x.shipping)*fxRate)+'円（USD '+Number(x.shipping).toFixed(2)+'）':esc(x.currency)+' '+Number(x.shipping).toFixed(2))+'</b></div><div class="row"><span>状態</span><b>'+esc(x.condition||'状態不明')+'</b></div><div class="notice">この候補が写真の商品と一致するか確認してください。一致しない場合は別候補を選び直してください。</div><button class="primary" type="button" onclick="confirmPhotoCandidate()">この商品で分析する</button>'+(x.url?'<a class="secondary" style="display:block;text-decoration:none;text-align:center;margin-top:8px" href="'+esc(x.url)+'" target="_blank" rel="noopener">eBayの商品ページで確認</a>':'')+'</div>'}async function confirmPhotoCandidate(){const x=window.__selectedPhotoCandidate;if(!x)return;const title=String(x.title||'').trim();if(!title)return;$('photoMsg').textContent='選択した商品のeBay情報を再取得し、通常の商品検索と同じ詳細分析を作成中…';try{const cat=document.getElementById('cat');const low=title.toLowerCase();const guessed=low.includes('pokemon')?'ポケモンカード':low.includes('camera')?'カメラ':low.includes('fishing')?'釣具':low.includes('game')?'レトロゲーム':'ポケモン関連サプライ用品';cat.value=guessed;$('q').value=title;const d=await ebay(title);const items=map(d,guessed,0);const enriched=await enrichSold(items);if(!enriched.length){$('photoMsg').textContent='選択した商品の再検索結果がありませんでした。商品検索から再確認してください。';return}data=[...enriched,...data.filter(old=>!enriched.some(p=>String(p.id)===String(old.id)))];const selected=enriched[0];window.__detailProduct=selected;$('photoMsg').textContent='商品を確定しました。商品検索と同じ詳細分析を表示します。';detail(encodeURIComponent(selected.id));}catch(e){$('photoMsg').textContent='商品情報の再取得に失敗しました。eBay検索をもう一度お試しください。'}}
+function photoPriceLabel(amount,currency){
+  const value=Number(amount||0),cur=String(currency||'USD').toUpperCase();
+  if(cur==='JPY')return yen(value);
+  if(cur==='USD')return yen(value*fxRate)+'（USD '+value.toFixed(2)+'）';
+  return esc(cur)+' '+value.toFixed(2)+'（円換算未対応）';
+}
+async function photoDisplayName(x,cat){
+  const p={id:'photo:'+String(x.itemId||x.url||x.title),name:x.title,cat};
+  try{
+    const candidate=await officialNameCandidate(p,cat);
+    if(candidate&&Number(candidate.score)>=60&&candidate.titleJa){
+      x.titleJa=candidate.titleJa;
+      x.officialNameStatus='名称候補（公式情報との一致確認が必要）';
+      return x.titleJa;
+    }
+  }catch(e){}
+  let translated=String(x.titleJa||'').trim();
+  if(!translated||translated===x.title){
+    try{translated=await translateText(x.title,'ja')}catch(e){translated=x.title}
+  }
+  try{
+    x.titleJa=cat==='ポケモンカード'?cleanPokemonDisplayName(p,translated):cleanProductDisplayName(p,translated,cat);
+  }catch(e){x.titleJa=translated||x.title}
+  x.officialNameStatus='名称未確認';
+  return x.titleJa||x.title;
+}
+async function searchByPhoto(){
+ if(!photoDataUrl)return;
+ $('photoSearch').disabled=true;$('photoResults').innerHTML='';$('photoMsg').style.display='block';$('photoMsg').textContent='eBay画像検索中…';
+ try{
+  const r=await fetch(IMAGE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoDataUrl})});
+  const d=await r.json();if(!r.ok)throw new Error(d.error||'画像検索に失敗しました');
+  if(!d.items?.length){$('photoMsg').textContent='候補が見つかりませんでした。別の角度・明るい写真でも試してください。';return}
+  const photoCategory=document.getElementById('cat').value;
+  window.photoCandidates=dedupeCategoryProducts(d.items.map(x=>({...x,name:x.title||x.name||'',category:photoCategory})),photoCategory);
+  if(!window.photoCandidates.length){$('photoMsg').textContent='選択カテゴリーに合う候補がありません。カテゴリーを確認してください。';return}
+  await Promise.all(window.photoCandidates.map(x=>photoDisplayName(x,photoCategory)));
+  $('photoMsg').textContent='候補が見つかりました。商品名と写真を確認して、近い商品を選んでください。';
+  $('photoResults').innerHTML=window.photoCandidates.map((x,i)=>'<div class="photo-card" onclick="selectPhotoCandidate('+i+')">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'')+'<h3>'+esc(x.titleJa||x.title)+'</h3><div><b>eBay価格 '+photoPriceLabel(x.price,x.currency)+'</b></div><div>送料 '+photoPriceLabel(x.shipping,x.currency)+'</div><small>'+esc(x.officialNameStatus||'名称未確認')+'｜'+esc(x.condition||'状態不明')+'</small><button class="primary" style="margin-top:8px">この候補を選ぶ</button></div>').join('');
+ }catch(e){$('photoMsg').textContent='画像検索に失敗しました。eBay API設定または画像形式を確認してください。'}
+ finally{$('photoSearch').disabled=false}
+}
+async function selectPhotoCandidate(i){
+ const x=window.photoCandidates?.[i];if(!x)return;
+ window.__selectedPhotoCandidate=x;
+ const title=await photoDisplayName(x,x.category||document.getElementById('cat').value);
+ $('photoMsg').style.display='block';
+ $('photoMsg').innerHTML='<b>候補を確認</b><br>写真だけで商品を確定しません。内容を確認して「この商品で分析する」を押してください。';
+ $('photoResults').innerHTML='<div class="card" style="grid-column:1/-1"><h3>選択した候補</h3>'+(x.image?'<img class="detail-image" src="'+esc(x.image)+'" alt="">':'')+'<div class="row"><span>商品名</span><b>'+esc(title)+'</b></div><div class="row"><span>名称の確認</span><b>'+esc(x.officialNameStatus||'名称未確認')+'</b></div><div class="row"><span>eBay表示価格</span><b>'+photoPriceLabel(x.price,x.currency)+'</b></div><div class="row"><span>送料</span><b>'+photoPriceLabel(x.shipping,x.currency)+'</b></div><div class="row"><span>状態</span><b>'+esc(x.condition||'状態不明')+'</b></div><div class="notice">写真の商品と一致するか確認してください。一致しない場合は別候補を選び直してください。</div><button class="primary" type="button" onclick="confirmPhotoCandidate()">この商品で分析する</button>'+(x.url?'<a class="secondary" style="display:block;text-decoration:none;text-align:center;margin-top:8px" href="'+esc(x.url)+'" target="_blank" rel="noopener">eBayの商品ページで確認</a>':'')+'</div>';
+}
+async function confirmPhotoCandidate(){
+ const x=window.__selectedPhotoCandidate;if(!x)return;
+ const title=String(x.title||'').trim();if(!title)return;
+ $('photoMsg').textContent='選択した商品のeBay情報を再取得し、詳細分析を作成中…';
+ try{
+  const cat=document.getElementById('cat'),chosenCategory=x.category||cat.value;
+  cat.value=chosenCategory;$('q').value=title;
+  const d=await ebay(title),items=map(d,chosenCategory,0);
+  if(!items.length){$('photoMsg').textContent='選択した商品の再検索結果がありませんでした。商品検索から再確認してください。';return}
+  await enrichOfficialNames(items,chosenCategory);
+  const enriched=await enrichSold(items);
+  data=[...enriched,...data.filter(old=>!enriched.some(p=>String(p.id)===String(old.id)))];
+  const selected=enriched[0];window.__detailProduct=selected;
+  $('photoMsg').textContent='商品情報を取得しました。詳細を確認してください。';
+  detail(encodeURIComponent(selected.id));
+ }catch(e){$('photoMsg').textContent='商品情報の再取得に失敗しました。eBay検索をもう一度お試しください。'}
+}
 function domesticSearchQuery(p){
   try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim()}catch(e){}
   const raw=String(p.name||p.title||'').normalize('NFKC');
