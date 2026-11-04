@@ -213,7 +213,7 @@ async function officialNameCandidate(p, categoryOverride){
       {number:'205/165',name:/MEW\s*EX/i,set:/SV2A|151/i,title:'ミュウex｜SV2a 205/165｜ポケモンカード151｜SAR',url:'https://www.pokemon-card.com/card-search/details.php/card/43990'},
       {number:'202/165',name:/BLASTOISE\s*EX/i,set:/SV2A|151/i,title:'カメックスex｜SV2a 202/165｜ポケモンカード151｜SAR',url:'https://www.pokemon-card.com/card-search/details.php/card/43987'},
       {number:'181/165',name:/SNORLAX/i,set:/SV2A|151/i,title:'カビゴン｜SV2a 181/165｜ポケモンカード151｜AR',url:'https://www.pokemon-card.com/card-search/details.php/card/43966'},
-      {number:'095/071',name:/GURUSHA/i,set:/SV2P|SNOW\s*HAZARD/i,title:'グルーシャ SAR｜SV2P 095/071｜スノーハザード',url:'https://www.pokemon-card.com/card-search/details.php/card/43688'},
+      {number:'095/071',name:/GURUSHA/i,set:/SV2P|SNOW\s*HAZARD|JAPANESE/i,title:'グルーシャ SAR｜SV2P 095/071｜スノーハザード',url:'https://www.pokemon-card.com/card-search/details.php/card/43688'},
     ];
     const matched=knownCards.find(x=>normalized.includes(x.number)&&x.name.test(normalized)&&x.set.test(normalized));
     if(matched){
