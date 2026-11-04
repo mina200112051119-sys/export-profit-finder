@@ -178,7 +178,7 @@ window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,
    自動更新データは初回表示時だけ利用し、「今すぐ更新・再計算」は必ずeBayライブAPIを取得する。 */
 (() => {
 'use strict';
-const originalFetch=window.fetch.bind(window),queryToCategory={'Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Shimano Daiwa fishing reel Japan':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Japanese retro video game Nintendo Sega PlayStation':'レトロゲーム','Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'};
+const originalFetch=window.fetch.bind(window),queryToCategory={'Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Shimano Daiwa fishing reel Japan':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Japanese retro video game software':'レトロゲーム','Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'};
 let snapshot=null;
 const snapshotPromise=originalFetch('/api/data-snapshot?ts='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
 const makeResponse=p=>new Response(JSON.stringify(p),{status:200,headers:{'Content-Type':'application/json'}});
