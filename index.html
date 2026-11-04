@@ -424,7 +424,10 @@ function acceptCandidate(p,cat){
 if(typeof originalMap==='function'){
  window.map=function(d,cat,cost=0){
   const result=originalMap(d,cat,cost);
-  return result.filter(p=>acceptCandidate(p,cat));
+  return result.filter(p=>acceptCandidate(p,cat)).map(p=>{
+   if(!p.officialNameVerified)return {...p,displayName:p.name,titleJa:p.name,officialNameStatus:'正式名称・型番未確認（eBay出品名を表示）'};
+   return p;
+  });
  };
 }
 if(typeof window.enrichOfficialNames==='function'){
