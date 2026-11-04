@@ -1,5 +1,6 @@
 (() => {
 'use strict';
+const BACKEND_BASE = location.hostname.endsWith('.github.io') ? 'https://export-profit-finder.vercel.app' : '';
 
 const SOURCES = [
   ['メルカリ','mercari','https://jp.mercari.com/search?keyword='],
@@ -300,7 +301,7 @@ function render(p) {
       translateSearchButton.disabled = true;
       translateSearchButton.textContent = '日本語に変換中…';
       try {
-        const response = await fetch('/api/translate?text=' + encodeURIComponent(original) + '&to=ja');
+        const response = await fetch(BACKEND_BASE+'/api/translate?text=' + encodeURIComponent(original) + '&to=ja');
         const data = await response.json();
         if (!response.ok || !data.translated) throw new Error(data.error || '翻訳に失敗しました');
         const translated = String(data.translated).trim();
@@ -343,7 +344,7 @@ function render(p) {
       officialSearchButton.textContent = '公式情報を確認中…';
       officialResults.innerHTML = '<div class="muted">公式情報を取得しています。</div>';
       try {
-        const url = '/api/official-product-search?category=' + encodeURIComponent(categoryOf(p)) + '&q=' + encodeURIComponent(query);
+        const url = BACKEND_BASE+'/api/official-product-search?category=' + encodeURIComponent(categoryOf(p)) + '&q=' + encodeURIComponent(query);
         const response = await fetch(url);
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || data.error || '取得に失敗しました');
