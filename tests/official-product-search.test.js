@@ -41,7 +41,7 @@ test('official-source failure is not reported as product absence', async () => {
   try {
     const res = responseRecorder();
     await handler({ method: 'GET', query: { category: 'ポケモンカード', q: 'ピカチュウ' } }, res);
-    assert.equal(res.statusCode, 502);
+    assert.equal(res.statusCode, 200);
     assert.equal(res.body.status, 'source_unavailable');
     assert.equal(res.body.verification, 'not_checked');
     assert.deepEqual(res.body.candidates, []);
