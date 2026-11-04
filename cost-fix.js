@@ -129,3 +129,32 @@ if(body){
   if (note) note.textContent =
     '手数料率の目安：eBay.comのストア未契約を想定し、ポケモンカードは13.25％、その他は13.6％で計算します。日本のセラーにかかる海外決済手数料1.35％は別に計算します。ストア契約や売上条件で実際の率は変わります。eBay.comのUSD取引では通常、eBayの通貨換算手数料はかかりません。受取先で円に替える費用は別です。';
 })();
+
+/* Keep the retro-game daily snapshot aligned with the live search term. */
+(() => {
+  'use strict';
+  const previousFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const raw = typeof input === 'string' ? input : input?.url || '';
+    try {
+      const url = new URL(raw, location.origin);
+      if (window.__dailySnapshotMode &&
+          url.pathname.endsWith('/api/ebay-search') &&
+          url.searchParams.get('q') === 'Japanese retro video game software') {
+        const snapshot = window.__dailySnapshotLoaded;
+        const found = snapshot?.categories?.find(x => x.category === 'レトロゲーム');
+        if (found) {
+          const items = found.items || [];
+          return new Response(JSON.stringify({
+            query: 'Japanese retro video game software',
+            count: items.length,
+            total: found.count || items.length,
+            items,
+            priceStatsUsd: found.priceStatsUsd || null
+          }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+      }
+    } catch {}
+    return previousFetch(input, init);
+  };
+})();
