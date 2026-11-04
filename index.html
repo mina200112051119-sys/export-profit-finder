@@ -393,4 +393,70 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList
 data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}$('status').textContent='実データを読み込み中…';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}refresh();</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
+
+<script>
+/* Candidate quality guard: reject category mismatches and unidentifiable bundles. */
+(()=>{
+'use strict';
+const originalMap=window.map;
+const normalize=s=>String(s||'').normalize('NFKC').toLowerCase();
+function acceptCandidate(p,cat){
+ const t=normalize([p.name,p.displayName,p.title].filter(Boolean).join(' '));
+ const reject={
+  'ポケモンカード':/(?:fishing|camera|digital camera|lens|flash|gunpla|plastic model|playstation|nintendo|switch console|攻略本|controller)/i,
+  'ポケモン関連サプライ用品':/(?:fishing|camera|digital camera|lens|flash|gunpla|plastic model|playstation|攻略本)/i,
+  '釣具':/(?:pokemon|ポケモン|camera|digital camera|lens|flash|gunpla|plastic model|playstation|攻略本)/i,
+  'カメラ':/(?:pokemon|ポケモン|fishing|reel|gunpla|plastic model|playstation|攻略本|\b(?:lot|bundle|parts|repair|untested|for parts)\b|\b(?:lens|flash|speedlight|battery|charger|adapter|tripod|filter)\b|レンズ|フラッシュ|まとめ売り|ジャンク|未テスト)/i,
+  'レトロゲーム':/(?:pokemon|ポケモン|fishing|reel|camera|digital camera|lens|gunpla|plastic model|攻略本|guidebook|magazine|controller|arcade pad|\b(?:lot|bundle|untested|for parts)\b|まとめ売り|攻略|雑誌)/i,
+  'ガンプラ':/(?:pokemon|ポケモン|fishing|reel|camera|digital camera|playstation|nintendo)/i
+ };
+ if(reject[cat]?.test(t))return false;
+ const include={
+  'ポケモンカード':/(?:pokemon|ポケモン).{0,35}(?:card|カード)|(?:card|カード).{0,35}(?:pokemon|ポケモン)/i,
+  'ポケモン関連サプライ用品':/(?:pokemon center|ポケモンセンター|deck.?box|sleeve|playmat|デッキケース|スリーブ|プレイマット|ぬいぐるみ|フィギュア)/i,
+  '釣具':/(?:fishing|shimano|daiwa|シマノ|ダイワ|リール|ロッド|釣竿|ルアー)/i,
+  'カメラ':/(?:digital camera|camera body|compact camera|mirrorless|dslr|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ)/i,
+  'レトロゲーム':/(?:playstation|ps[1-5]|nintendo|super famicom|famicom|game ?boy|sega|dreamcast|ゲームボーイ|ファミコン|スーパーファミコン|メガドライブ|ドリームキャスト).{0,80}(?:game|software|ソフト|ゲーム)|(?:game|software|ソフト|ゲーム).{0,80}(?:playstation|ps[1-5]|nintendo|super famicom|famicom|game ?boy|sega|dreamcast|ゲームボーイ|ファミコン|スーパーファミコン|メガドライブ|ドリームキャスト)/i,
+  'ガンプラ':/(?:gunpla|ガンプラ|gundam).{0,50}(?:model|kit|plastic|プラモデル|組立)|(?:model|kit|プラモデル).{0,50}(?:gunpla|ガンプラ|gundam)/i
+ };
+ return !include[cat]||include[cat].test(t);
+}
+if(typeof originalMap==='function'){
+ window.map=function(d,cat,cost=0){
+  const result=originalMap(d,cat,cost);
+  return result.filter(p=>acceptCandidate(p,cat));
+ };
+}
+if(typeof window.enrichOfficialNames==='function'){
+ const originalEnrich=window.enrichOfficialNames;
+ window.enrichOfficialNames=async function(items,cat){
+  await originalEnrich(items,cat);
+  for(const p of items||[]){
+   if(!p)continue;
+   const verified=Boolean(p.officialNameVerified);
+   if(!verified){
+    p.displayName=p.name;
+    p.titleJa=p.name;
+    p.officialNameStatus='正式名称・型番未確認（eBay出品名を表示）';
+   }
+  }
+ };
+}
+if(typeof window.renderList==='function'){
+ const originalRender=window.renderList;
+ window.renderList=function(list,title,reviewList=[]){
+  const prepared=(list||[]).map(p=>({...p,stars:(p.cost<=0&&!p.soldHistoryAvailable)?'評価保留':p.stars,totalScore:(p.cost<=0&&!p.soldHistoryAvailable)?'—':p.totalScore}));
+  originalRender(prepared,title,reviewList);
+  document.querySelectorAll('.product[data-product-id]').forEach(card=>{
+   const p=(list||[]).find(x=>String(x.id)===card.getAttribute('data-product-id'));
+   if(p&&p.cost<=0&&!p.soldHistoryAvailable){
+    const star=card.querySelector('.stars');if(star)star.textContent='評価保留';
+    const score=card.querySelector('.score');if(score)score.textContent='—';
+    const label=[...card.querySelectorAll('.row span')].find(x=>x.textContent==='候補スコア');if(label)label.textContent='評価状態';
+   }
+  });
+ };
+}
+})();
+</script>
 </body></html>
