@@ -101,7 +101,7 @@ if(body){
   if (!E) return;
   const feeFor = p => {
     const cat = String(p?.cat || p?.category || '');
-    return /ポケモンカード|trading cards?|collectible card games|\btc g\b|\btc g\b/i.test(cat)
+    return /ポケモンカード|trading cards?|collectible card games|\btcg\b|\btc g\b/i.test(cat)
       && !/accessor|supply|サプライ/i.test(cat) ? 0.1325 : 0.136;
   };
   if (typeof E.calcCosts === 'function') {
