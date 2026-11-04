@@ -380,7 +380,7 @@ function photo(e){const file=e.target.files?.[0];if(!file)return;const ok=['imag
 function photoPriceLabel(amount,currency){
   const value=Number(amount||0),cur=String(currency||'USD').toUpperCase();
   if(cur==='JPY')return yen(value);
-  if(cur==='USD')return yen(value*fxRate)+'（USD '+value.toFixed(2)+'）';
+  if(cur==='USD')return yen(value*fxRate)+'円';
   return esc(cur)+' '+value.toFixed(2)+'（円換算未対応）';
 }
 async function photoDisplayName(x,cat){
