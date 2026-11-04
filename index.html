@@ -235,15 +235,15 @@ async function officialNameCandidate(p, categoryOverride){
   // Multi-item lots are explicitly labeled as lots, not misrepresented as one official SKU.
   const titleKey=raw.normalize('NFKC');
   let curated=null;
-  if(cat==='ポケモンカード' && /\\bMEW\\b/i.test(titleKey) && /8\\s*\\/\\s*53/.test(titleKey) && /WOTC|WIZARDS|PROMO/i.test(titleKey)){
+  if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /8\s*\/\s*53/.test(titleKey) && /WOTC|WIZARDS|PROMO/i.test(titleKey)){
     curated={titleJa:'ミュウ｜Wizards Black Star Promos｜8/53｜プロモ',score:100,status:'カード名・番号の一致候補（収録元は要確認）',diagnostic:{match:'exact-name-number-promo'}};
-  }else if(cat==='ポケモン関連サプライ用品' && /POKEMON\\s*CENTER\\s*HIROSHIMA|ポケモンセンターヒロシマ/i.test(titleKey)){
+  }else if(cat==='ポケモン関連サプライ用品' && /POKEMON\s*CENTER\s*HIROSHIMA|ポケモンセンターヒロシマ/i.test(titleKey)){
     curated={titleJa:'スペシャルBOX ポケモンセンターヒロシマ',score:100,status:'商品名整理済み（商品画像・封入内容は要確認）',diagnostic:{match:'product-name-keywords'}};
-  }else if(cat==='釣具' && /DAIWA/i.test(titleKey) && /PRESSO/i.test(titleKey) && /SHIMANO/i.test(titleKey) && /AERNOS/i.test(titleKey) && /XT\\s*2000/i.test(titleKey)){
+  }else if(cat==='釣具' && /DAIWA/i.test(titleKey) && /PRESSO/i.test(titleKey) && /SHIMANO/i.test(titleKey) && /AERNOS/i.test(titleKey) && /XT\s*2000/i.test(titleKey)){
     curated={titleJa:'釣具まとめ売り｜ダイワ プレッソ／シマノ エアノス XT 2000｜複数点セット',score:100,status:'まとめ売りとして整理（点数・各商品の状態は要確認）',diagnostic:{match:'multi-item-lot-keywords'}};
-  }else if(cat==='カメラ' && /CANON\\s*G9/i.test(titleKey) && /SONY\\s*H300/i.test(titleKey) && /FZ40/i.test(titleKey) && /E550/i.test(titleKey) && /S5200/i.test(titleKey) && /DC215/i.test(titleKey)){
+  }else if(cat==='カメラ' && /CANON\s*G9/i.test(titleKey) && /SONY\s*H300/i.test(titleKey) && /FZ40/i.test(titleKey) && /E550/i.test(titleKey) && /S5200/i.test(titleKey) && /DC215/i.test(titleKey)){
     curated={titleJa:'デジタルカメラ6台セット｜Canon G9・Sony H300・Lumix FZ40・Fujifilm E550・Nikon S5200・Kodak DC215',score:100,status:'6台セットとして整理（各機種・動作状態は要確認）',diagnostic:{match:'six-camera-lot-models'}};
-  }else if(cat==='レトロゲーム' && /VIB[-\\s]?RIBBON/i.test(titleKey) && /PLAYSTATION|PS1/i.test(titleKey)){
+  }else if(cat==='レトロゲーム' && /VIB[-\s]?RIBBON/i.test(titleKey) && /PLAYSTATION|PS1/i.test(titleKey)){
     curated={titleJa:'ビブリボン（Vib-Ribbon）｜PlayStation',score:100,status:'商品名整理済み（版・付属品は要確認）',diagnostic:{match:'game-title-platform'}};
   }else if(cat==='ガンプラ' && /MGSD/i.test(titleKey) && /KSHATRIYA/i.test(titleKey)){
     curated={titleJa:'MGSD クシャトリヤ｜機動戦士ガンダムUC',score:100,status:'メーカー公式商品名と一致候補',diagnostic:{match:'bandai-product-name'}};
