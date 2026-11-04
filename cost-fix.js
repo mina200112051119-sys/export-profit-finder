@@ -93,3 +93,39 @@ if(body){
   decorateDetail();
 }
 })();
+
+/* Align all profit calculations with conservative eBay.com no-Store base fees. */
+(() => {
+  'use strict';
+  const E = window.RankingEngine;
+  if (!E) return;
+  const feeFor = p => {
+    const cat = String(p?.cat || p?.category || '');
+    return /ポケモンカード|trading cards?|collectible card games|\btc g\b|\btc g\b/i.test(cat)
+      && !/accessor|supply|サプライ/i.test(cat) ? 0.1325 : 0.136;
+  };
+  if (typeof E.calcCosts === 'function') {
+    const original = E.calcCosts.bind(E);
+    E.calcCosts = (p, settings = {}) => original(p, { ...settings, feeRate: feeFor(p) });
+  }
+  if (typeof E.rank === 'function') {
+    const original = E.rank.bind(E);
+    E.rank = (products, settings = {}, category = null) => {
+      const rates = { ...(settings.feeRateByCategory || {}) };
+      (products || []).forEach(p => { rates[p.cat || p.category || ''] = feeFor(p); });
+      return original(products, { ...settings, feeRateByCategory: rates }, category);
+    };
+  }
+  if (typeof E.scoreV2 === 'function') {
+    const original = E.scoreV2.bind(E);
+    E.scoreV2 = (p, settings = {}, universe = []) =>
+      original(p, { ...settings, feeRate: feeFor(p) }, universe);
+  }
+  const subtitle = document.querySelector('header p');
+  if (subtitle) subtitle.textContent = 'eBayの現在出品を確認し、仕入れ価格から利益を試算';
+  const settingsCard = [...document.querySelectorAll('.card')]
+    .find(el => el.querySelector('h2')?.textContent.trim() === '利益計算の設定');
+  const note = settingsCard?.querySelector('.notice');
+  if (note) note.textContent =
+    '手数料率の目安：eBay.comのストア未契約を想定し、ポケモンカードは13.25％、その他は13.6％で計算します。日本のセラーにかかる海外決済手数料1.35％は別に計算します。ストア契約や売上条件で実際の率は変わります。eBay.comのUSD取引では通常、eBayの通貨換算手数料はかかりません。受取先で円に替える費用は別です。';
+})();
