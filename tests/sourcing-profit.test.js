@@ -101,7 +101,7 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
 
 test('default refresh queries distinguish retro games from Gunpla', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /'レトロゲーム':'Japanese retro video game Nintendo Sega PlayStation'/);
+  assert.match(html, /'レトロゲーム':'Japanese retro video game software'/);
   assert.match(html, /'ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'/);
   assert.match(html, /ebay\(defaultSearchQueryForCategory\(c\)\)/);
 });
@@ -113,7 +113,7 @@ test('daily snapshot category mapping matches all current refresh queries', () =
     "'Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品'",
     "'Shimano Daiwa fishing reel Japan':'釣具'",
     "'Japanese digital camera Canon Nikon Fujifilm':'カメラ'",
-    "'Japanese retro video game Nintendo Sega PlayStation':'レトロゲーム'",
+    "'Japanese retro video game software':'レトロゲーム'",
     "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'"
   ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
 });
@@ -125,7 +125,7 @@ test('scheduled daily refresh includes all six current product categories', () =
     "cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed'",
     "cat: '釣具', q: 'Shimano Daiwa fishing reel Japan'",
     "cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm'",
-    "cat: 'レトロゲーム', q: 'Japanese retro video game Nintendo Sega PlayStation'",
+    "cat: 'レトロゲーム', q: 'Japanese retro video game software'",
     "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'"
   ]) assert.ok(cron.includes(entry), 'scheduled refresh contains ' + entry);
 });
