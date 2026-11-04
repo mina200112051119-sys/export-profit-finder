@@ -445,6 +445,21 @@ if(typeof window.enrichOfficialNames==='function'){
   }
  };
 }
+if(typeof window.detail==='function'){
+ const originalDetail=window.detail;
+ window.detail=function(id){
+  const out=originalDetail(id);
+  const p=(window.__exportApp?.getData?.()||[]).find(x=>encodeURIComponent(String(x.id))===id);
+  if(p&&p.cost<=0&&!p.soldHistoryAvailable){
+   const body=document.getElementById('body');
+   if(body){
+    const row=[...body.querySelectorAll('.row')].find(x=>x.querySelector('span')?.textContent==='総合評価');
+    if(row){const value=row.querySelector('b');if(value)value.textContent='評価保留（仕入価格・販売実績不足）';}
+   }
+  }
+  return out;
+ };
+}
 if(typeof window.renderList==='function'){
  const originalRender=window.renderList;
  window.renderList=function(list,title,reviewList=[]){
