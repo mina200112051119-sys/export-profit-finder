@@ -83,9 +83,9 @@ async function checkCloudStorage(){
   const el=$('cloud-status');
   if(el)el.textContent='☁️ クラウド保存：確認中…';
   try{
-    const r=await fetch(API_BASE+'/api/storage-health',{cache:'no-store'});
+    const r=await fetch(CLOUD_STORAGE_API,{headers:{'X-User-Id':getExportUserId()},cache:'no-store'});
     const d=await r.json().catch(()=>({}));
-    if(r.ok&&d.ok){if(el)el.textContent='☁️ クラウド保存：接続済み';return true;}
+    if(r.ok&&d.configured){if(el)el.textContent='☁️ クラウド保存：接続済み';return true;}
     if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：接続できません';
     return false;
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
