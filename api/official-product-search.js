@@ -382,10 +382,10 @@ async function searchPokemonCards(query, originalQuery = '') {
   const rawTitle = String(originalQuery || query || '').normalize('NFKC');
   // Exact official card match for Gurusha SAR. eBay titles often omit the set code,
   // so Japanese + character name + full card number is sufficient for this curated entry.
-  if (/\\bGURUSHA\\b/i.test(rawTitle) &&
-      /\\bSAR\\b/i.test(rawTitle) &&
-      /\\b095\\s*\\/\\s*071\\b/.test(rawTitle) &&
-      /\\bJAPANESE\\b|\\bJAPAN\\b|SV2P|SNOW\\s*HAZARD/i.test(rawTitle)) {
+  if (/\bGURUSHA\b/i.test(rawTitle) &&
+      /\bSAR\b/i.test(rawTitle) &&
+      /\b095\s*\/\s*071\b/.test(rawTitle) &&
+      /\bJAPANESE\b|\bJAPAN\b|SV2P|SNOW\s*HAZARD/i.test(rawTitle)) {
     return {
       candidates: [{
         title: 'グルーシャ｜SV2P 095/071｜スノーハザード',
