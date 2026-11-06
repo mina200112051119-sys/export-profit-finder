@@ -3,8 +3,20 @@ const QUERIES = [
   { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
   { cat: '釣具', q: 'Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
-  { cat: 'レトロゲーム', q: 'Japanese retro video game console Famicom Super Famicom Game Boy Nintendo 64 Sega Saturn Dreamcast PlayStation game cartridge disc controller Japan -lot -bundle -collection' },
-  { cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan' },
+  { cat: 'レトロゲーム', q: 'Nintendo Famicom console Japan' },
+  { cat: 'レトロゲーム', q: 'Super Famicom game cartridge Japan' },
+  { cat: 'レトロゲーム', q: 'Nintendo Game Boy game cartridge Japan' },
+  { cat: 'レトロゲーム', q: 'Nintendo 64 game cartridge Japan' },
+  { cat: 'レトロゲーム', q: 'Sega Saturn game disc Japan' },
+  { cat: 'レトロゲーム', q: 'Sega Dreamcast game disc Japan' },
+  { cat: 'レトロゲーム', q: 'Sony PlayStation PS1 PS2 game disc Japan' },
+  { cat: 'レトロゲーム', q: 'Nintendo Sega Sony retro game controller gamepad Japan' },
+  { cat: 'レトロゲーム', q: 'Game Boy Advance Nintendo DS PSP handheld console Japan' },
+  { cat: 'ガンプラ', q: 'Bandai Gunpla HG 1/144 model kit' },
+  { cat: 'ガンプラ', q: 'Bandai Gundam MG Master Grade 1/100 model kit' },
+  { cat: 'ガンプラ', q: 'Bandai Gundam RG Real Grade 1/144 model kit' },
+  { cat: 'ガンプラ', q: 'Bandai Gundam PG Perfect Grade model kit' },
+  { cat: 'ガンプラ', q: 'Vintage Bandai Gundam plastic model kit Japan' }
   { cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts' }
 ];
 
