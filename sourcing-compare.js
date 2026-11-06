@@ -30,6 +30,15 @@ const OFFICIAL_CATALOGS = {
   ],
   'ガンプラ': [
     ['BANDAI SPIRITS公式 商品検索','https://www.bandaispirits.co.jp/products/search/']
+  ],
+  '交換部品・消耗品': [
+    ['シマノ公式 製品情報','https://fish.shimano.com/ja-JP'],
+    ['ダイワ公式 製品情報','https://www.daiwa.com/jp/product'],
+    ['キヤノン公式 カメラミュージアム','https://global.canon/ja/c-museum/camera.html'],
+    ['ニコン公式 製品情報','https://nij.nikon.com/'],
+    ['任天堂公式','https://www.nintendo.com/jp/'],
+    ['セガ公式 家庭用ゲーム検索','https://www.sega.jp/game/soft/'],
+    ['BANDAI SPIRITS公式 商品検索','https://www.bandaispirits.co.jp/products/search/']
   ]
 };
 
@@ -84,7 +93,8 @@ function feeOf(p) {
     '釣具':.136,
     'カメラ':.0935,
     'レトロゲーム':.136,
-    'ガンプラ':.136
+    'ガンプラ':.136,
+    '交換部品・消耗品':.136
   };
   return fees[categoryOf(p)] ?? .136;
 }
