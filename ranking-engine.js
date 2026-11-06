@@ -178,7 +178,7 @@ window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,
    自動更新データは初回表示時だけ利用し、「今すぐ更新・再計算」は必ずeBayライブAPIを取得する。 */
 (() => {
 'use strict';
-const originalFetch=window.fetch.bind(window),API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'',queryToCategory={'Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Shimano Daiwa fishing reel Japan':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Japanese Famicom Super Famicom Nintendo 64 Sega Saturn Dreamcast PlayStation retro game console system tested Japan -lot -bundle -parts':'レトロゲーム','Japanese individual Famicom Super Famicom Game Boy Nintendo 64 game cartridge single title Japan -lot -bundle -collection':'レトロゲーム','Japanese PlayStation PS1 PS2 Sega Saturn Dreamcast game disc individual title Japan -lot -bundle -collection':'レトロゲーム','Nintendo Sega Sony original retro game controller gamepad joystick Japan -lot -bundle -replacement':'レトロゲーム','Japanese Game Boy Game Boy Color Game Boy Advance Nintendo DS PSP handheld game console system Japan -lot -bundle':'レトロゲーム','Japanese retro video game software console controller cartridge disc Nintendo Sega Sony vintage Japan -lot -bundle -collection':'レトロゲーム','Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ','Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts':'交換部品・消耗品'};
+const originalFetch=window.fetch.bind(window),API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'',queryToCategory={'Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Nintendo Famicom console Japan':'レトロゲーム','Super Famicom game cartridge Japan':'レトロゲーム','Nintendo Game Boy game cartridge Japan':'レトロゲーム','Nintendo 64 game cartridge Japan':'レトロゲーム','Sega Saturn game disc Japan':'レトロゲーム','Sega Dreamcast game disc Japan':'レトロゲーム','Sony PlayStation PS1 PS2 game disc Japan':'レトロゲーム','Nintendo Sega Sony retro game controller gamepad Japan':'レトロゲーム','Game Boy Advance Nintendo DS PSP handheld console Japan':'レトロゲーム','Bandai Gunpla HG 1/144 model kit':'ガンプラ','Bandai Gundam MG Master Grade 1/100 model kit':'ガンプラ','Bandai Gundam RG Real Grade 1/144 model kit':'ガンプラ','Bandai Gundam PG Perfect Grade model kit':'ガンプラ','Vintage Bandai Gundam plastic model kit Japan':'ガンプラ','Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts':'交換部品・消耗品'};
 let snapshot=null;
 const snapshotPromise=originalFetch(API_BASE+'/api/data-snapshot?ts='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
 const makeResponse=p=>new Response(JSON.stringify(p),{status:200,headers:{'Content-Type':'application/json'}});
@@ -188,7 +188,7 @@ window.fetch=async function(input,init){
     const u=new URL(url,location.origin),q=u.searchParams.get('q')||'',cat=queryToCategory[q];
     if(cat){
       if(snapshot===null)snapshot=await snapshotPromise;
-      const found=snapshot?.categories?.find(x=>x.category===cat);
+      const found=snapshot?.categories?.find(x=>x.query===q);
       if(found)return makeResponse({items:found.items||[],count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
     }
   }
