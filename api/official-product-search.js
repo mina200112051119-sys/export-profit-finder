@@ -16,7 +16,11 @@ const OFFICIAL_SOURCES = {
   ],
   'レトロゲーム': [
     { name: '任天堂公式', url: 'https://www.nintendo.com/jp/' },
-    { name: 'セガ公式 ゲーム情報', url: 'https://www.sega.jp/game/soft/' }
+    { name: 'セガ公式 ゲーム情報', url: 'https://www.sega.jp/game/soft/' },
+    { name: 'PlayStation公式', url: 'https://www.playstation.com/ja-jp/' }
+  ],
+  '交換部品・消耗品': [
+    { name: 'eBay部品・消耗品検索（対応型番は商品ごとに確認）', url: 'https://www.ebay.com/' }
   ],
   'ガンプラ': [
     { name: 'BANDAI SPIRITS公式 商品検索', url: 'https://www.bandaispirits.co.jp/products/search/result.php?search=true&category=1&freeword=' }
