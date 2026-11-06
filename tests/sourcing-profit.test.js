@@ -115,7 +115,8 @@ test('daily snapshot category mapping matches all current refresh queries', () =
     "'Shimano Daiwa fishing reel Japan':'釣具'",
     "'Japanese digital camera Canon Nikon Fujifilm':'カメラ'",
     "'Japanese retro video game software':'レトロゲーム'",
-    "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'"
+    "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'",
+    "'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts':'交換部品・消耗品'"
   ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
 });
 
