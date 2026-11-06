@@ -420,29 +420,42 @@ async function officialNameCandidate(p, categoryOverride){
   return entry;
 }
 function cleanProductDisplayName(p, translated, category){
-  const raw=String(translated||p.displayName||p.titleJa||p.name||p.title||'').normalize('NFKC');
+  const raw=String(p.name||p.title||'').normalize('NFKC');
+  const ja=String(translated||p.displayName||p.titleJa||raw).normalize('NFKC');
+  const cat=category||p.cat||p.category||'';
   const model=String(p.modelNumber||p.mpn||p.productCode||'').normalize('NFKC').trim();
-  let value=raw
-    .replace(/\b(?:NEW|BRAND\s*NEW|USED|PREOWNED|PRE-OWNED|MINT|NEAR\s*MINT|EXCELLENT|GOOD\s*CONDITION|JUNK|FOR\s*PARTS|UNTESTED|FREE\s*SHIPPING|FAST\s*SHIPPING|AUTHENTIC|RARE|HOT|SALE|LOT\s*OF\s*\d+|SET\s*OF\s*\d+)\b/gi,' ')
-    .replace(/\b(?:PSA|CGC|BGS|SGC)\s*\d+(?:\.\d+)?\b/gi,' ')
+  const modelFromRaw=(raw.match(/\\b(?:COOLPIX\\s*[A-Z]?\\d{2,4}|CYBER.?SHOT\\s*[A-Z]?\\d{2,4}|FINEPIX\\s*[A-Z]?\\d{2,4}|LUMIX\\s*[A-Z0-9-]{3,}|POWERSHOT\\s*[A-Z0-9-]{3,}|[A-Z]{1,5}[- ]?\\d{2,5}[A-Z0-9-]*|[A-Z]{2,5}\\d{2,5}[A-Z0-9-]*)\\b/i)||[])[0]||'';
+  const code=model||modelFromRaw;
+  const brand=(raw.match(/\\b(Samsung|Nikon|Canon|Sony|Olympus|Fujifilm|Panasonic|Nintendo|Sega|Bandai|Shimano|Daiwa|Ultra\\s*Pro)\\b/i)||[])[0]||'';
+  const typeRules={
+    'カメラ':[/デジタルカメラ|デジカメ|コンパクトカメラ|カメラ/i,'デジタルカメラ'],
+    'レトロゲーム':[/ゲーム機本体|本体|console|system/i,'ゲーム機本体'],
+    '釣具':[/スピニングリール|ベイトリール|フィッシングリール|リール|ロッド|釣り竿/i,'釣具'],
+    'ガンプラ':[/ガンプラ|プラモデル|モデルキット/i,'ガンプラ'],
+    '交換部品・消耗品':[/スプール|ラインローラー|ドラグノブ|ノブ|電源アダプター|ACアダプター|充電器|バッテリー|ケーブル|キャップ|アイカップ|デカール|シール|交換部品|消耗品/i,'交換部品']
+  };
+  if(cat==='カメラ' && code){
+    const type=(typeRules[cat][0].test(ja)?'デジタルカメラ':'カメラ');
+    return [brand,code,type].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+  }
+  if(cat==='レトロゲーム' && code && /console|system|本体|handheld/i.test(raw)){
+    const type=/game boy|gameboy|gba|nintendo ds|psp/i.test(raw)?'携帯ゲーム機':'ゲーム機本体';
+    return [brand,code,type].filter(Boolean).join(' ').replace(/\\s+/g,' ').trim();
+  }
+  let value=ja
+    .replace(/\\b(?:NEW|BRAND\\s*NEW|USED|PREOWNED|PRE-OWNED|MINT|NEAR\\s*MINT|EXCELLENT|GOOD\\s*CONDITION|JUNK|FOR\\s*PARTS|UNTESTED|FREE\\s*SHIPPING|FAST\\s*SHIPPING|AUTHENTIC|RARE|HOT|SALE|LOT\\s*OF\\s*\\d+|SET\\s*OF\\s*\\d+)\\b/gi,' ')
+    .replace(/\\b(?:PSA|CGC|BGS|SGC)\\s*\\d+(?:\\.\\d+)?\\b/gi,' ')
     .replace(/(?:送料無料|即日発送|新品|未使用|中古|美品|極美品|ジャンク|動作未確認|動作確認済み|まとめ売り|大量セット|限定セール|希少|レア|正規品)/g,' ')
-    .replace(/\b(?:Japanese|Japan|English|US\s*Version|PAL|NTSC|Region\s*[A-Z0-9]+|Read\s*Description|See\s*Photos|Please\s*Read)\b/gi,' ')
-    .replace(/[【】\[\]{}<>]/g,' ')
+    .replace(/\\b(?:Japanese|Japan|English|US\\s*Version|PAL|NTSC|Region\\s*[A-Z0-9]+|Read\\s*Description|See\\s*Photos|Please\\s*Read|Vlog|Selfie)\\b/gi,' ')
+    .replace(/\\b\\d+(?:\\.\\d+)?\\s*(?:MP|X|倍|GB|MB)\\b/gi,' ')
+    .replace(/[【】\\[\\]{}<>]/g,' ')
     .replace(/[|｜]{2,}/g,' ')
-    .replace(/\s*[|｜・,，;；]+\s*/g,' ')
-    .replace(/\s+/g,' ').trim();
-  if(model && !value.toLowerCase().includes(model.toLowerCase())) value += ' '+model;
-  // Keep useful model codes, sizes, grades, and series identifiers; remove only listing noise.
-  value=value.replace(/^ポケモン(?:カード|ＴＣＧ|TCG)?\s*/i,'').trim();
-  const categoryPrefix={
-    'ポケモン関連サプライ用品':'ポケモン',
-    '釣具':'',
-    'カメラ':'',
-    'レトロゲーム':'',
-    'ガンプラ':''
-  }[category||p.cat||p.category] || '';
-  if(categoryPrefix && !value.includes(categoryPrefix)) value=categoryPrefix+' '+value;
-  return value || '正式名称未確認';
+    .replace(/\\s*[|｜・,，;；]+\\s*/g,' ')
+    .replace(/\\s+/g,' ').trim();
+  if(code && !value.toLowerCase().includes(code.toLowerCase())) value=code+' '+value;
+  if(brand && !value.toLowerCase().includes(brand.toLowerCase())) value=brand+' '+value;
+  value=value.replace(/^ポケモン(?:カード|ＴＣＧ|TCG)?\\s*/i,'').trim();
+  return value || '商品名未確認';
 }
 function cleanPokemonDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
