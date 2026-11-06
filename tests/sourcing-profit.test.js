@@ -101,8 +101,9 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
 
 test('default refresh queries distinguish retro games from Gunpla', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /'レトロゲーム':'Japanese retro video game software'/);
-  assert.match(html, /'ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'/);
+  assert.match(html, /'レトロゲーム':\['Japanese single Japanese retro video game software/);
+  assert.match(html, /'ガンプラ':\['Bandai Gunpla plastic model kit/);
+  assert.match(html, /'交換部品・消耗品':\['Japanese fishing reel replacement parts/);
   assert.match(html, /ebay\(defaultSearchQueryForCategory\(c\)\)/);
 });
 
@@ -118,7 +119,7 @@ test('daily snapshot category mapping matches all current refresh queries', () =
   ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
 });
 
-test('scheduled daily refresh includes all six current product categories', () => {
+test('scheduled daily refresh includes all seven current product categories', () => {
   const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
   for (const entry of [
     "cat: 'ポケモンカード', q: 'Pokemon card graded rare Japanese'",
@@ -126,7 +127,8 @@ test('scheduled daily refresh includes all six current product categories', () =
     "cat: '釣具', q: 'Shimano Daiwa fishing reel Japan'",
     "cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm'",
     "cat: 'レトロゲーム', q: 'Japanese retro video game software'",
-    "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'"
+    "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'",
+    "cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts'"
   ]) assert.ok(cron.includes(entry), 'scheduled refresh contains ' + entry);
 });
 
@@ -248,4 +250,19 @@ test('cloud storage preserves official matches and Japanese sourcing search name
   assert.match(html, /selectedOfficialCandidate:v1:'\+id/);
   assert.match(html, /domesticSearchName:v1:'\+id/);
   assert.match(html, /some\(prefix=>key\.startsWith\(prefix\)\)/);
+});
+
+
+test('replacement parts are a first-class category with item detail and official references', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  const sourcing = fs.readFileSync('sourcing-compare.js', 'utf8');
+  const official = fs.readFileSync('api/official-product-search.js', 'utf8');
+  assert.match(engine, /'交換部品・消耗品'/);
+  assert.match(html, /p\.cat==='交換部品・消耗品'\?classifyPartsDetail\(p\):null/);
+  assert.match(html, /部品の種類/);
+  assert.match(html, /対象分野/);
+  assert.match(html, /対応機種・型番の手がかり/);
+  assert.match(sourcing, /'交換部品・消耗品': \[/);
+  assert.match(official, /'交換部品・消耗品': \[/);
 });
