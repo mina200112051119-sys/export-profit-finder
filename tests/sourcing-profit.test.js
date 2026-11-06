@@ -99,10 +99,9 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
   assert.ok(forecast.scenarios.every((x, i) => x.profit === forecastWithoutShipping.scenarios[i].profit - 200));
 });
 
-test('default refresh queries distinguish retro games from Gunpla', () => {
+test('retro and Gunpla refresh use focused queries instead of long mixed keyword searches', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /'レトロゲーム':\['Japanese Famicom Super Famicom Nintendo 64 Sega Saturn Dreamcast PlayStation retro game console system tested Japan/);\n  assert.match(html, /Nintendo Sega Sony original retro game controller gamepad joystick Japan/);\n  assert.match(html, /Japanese individual Famicom Super Famicom Game Boy Nintendo 64 game cartridge single title Japan/);
-  assert.match(html, /'ガンプラ':\['Bandai Gunpla plastic model kit/);
+  for (const q of ['Nintendo Famicom console Japan','Super Famicom game cartridge Japan','Nintendo Game Boy game cartridge Japan','Nintendo 64 game cartridge Japan','Sega Saturn game disc Japan','Sega Dreamcast game disc Japan','Sony PlayStation PS1 PS2 game disc Japan','Bandai Gunpla HG 1/144 model kit','Bandai Gundam MG Master Grade 1/100 model kit','Bandai Gundam RG Real Grade 1/144 model kit']) assert.ok(html.includes(q), 'focused query exists: '+q);
   assert.match(html, /'交換部品・消耗品':\['Japanese fishing reel replacement parts/);
   assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
 });
@@ -295,4 +294,12 @@ test('fishing search separates Shimano and Daiwa and rejects mixed-brand listing
   assert.match(html, /function fishingBrandConflict\(raw\)/);
   assert.match(html, /if\(cat==='釣具'\) return cleanFishingDisplayName\(p,translated\)/);
   assert.match(html, /lot of\|job lot\|bundle\|assorted\|choose\|select/);
+});
+
+
+test('listing title model candidates are not mislabeled as entirely unverified', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /出品タイトルから型番候補を確認（公式照合前）/);
+  assert.match(html, /effectiveCategory==='釣具'/);
+  assert.match(html, /effectiveCategory==='カメラ'/);
 });
