@@ -178,7 +178,7 @@ window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,
    自動更新データは初回表示時だけ利用し、「今すぐ更新・再計算」は必ずeBayライブAPIを取得する。 */
 (() => {
 'use strict';
-const originalFetch=window.fetch.bind(window),API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'',queryToCategory={'Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Shimano Daiwa fishing reel Japan':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Japanese retro video game software':'レトロゲーム','Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'};
+const originalFetch=window.fetch.bind(window),API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'',queryToCategory={'Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Shimano Daiwa fishing reel Japan':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Japanese retro video game software':'レトロゲーム','Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ','Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts':'交換部品・消耗品'};
 let snapshot=null;
 const snapshotPromise=originalFetch(API_BASE+'/api/data-snapshot?ts='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
 const makeResponse=p=>new Response(JSON.stringify(p),{status:200,headers:{'Content-Type':'application/json'}});
@@ -221,7 +221,8 @@ const sourceRules={
  'ポケモン関連サプライ用品':[['メルカリ','https://jp.mercari.com/search?keyword=','search'],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=','search'],['スニダン','https://snkrdunk.com/search','search']],
  '釣具':[['メルカリ','https://jp.mercari.com/search?keyword=','search'],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=','search']],
  'カメラ':[['メルカリ','https://jp.mercari.com/search?keyword=','search'],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=','search']],
- 'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword=','search'],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=','search']]
+ 'レトロゲーム':[['メルカリ','https://jp.mercari.com/search?keyword=','search'],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=','search']],
+ '交換部品・消耗品':[['メルカリ','https://jp.mercari.com/search?keyword=','search'],['Yahoo!オークション','https://auctions.yahoo.co.jp/search/search?p=','search']]
 };
 const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
 const yen=v=>v==null?'—':Math.round(Number(v||0)).toLocaleString()+'円';
