@@ -328,3 +328,21 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
   assert.match(html, /レトロゲームの商品分類/);
   assert.match(html, /ガンプラの商品分類/);
 });
+
+
+test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /Japanese Pokemon TCG graded PSA CGC Japanese cards/);
+  assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
+  assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
+  assert.match(html, /Japanese mirrorless digital camera body/);
+  assert.match(html, /function renderList\\(list,title,reviewList=\\[\\]\\)\\{const ranked=list\\.slice\\(0,50\\)/);
+  assert.match(html, /return ranked\\.filter\\(p=>p\\.cost<=0\\|\\|\\(p\\.costs\\?\\.profit>0&&p\\.risk!==\'高\'\\)\\)/);
+});
+
+test('deduplication keeps the listing with a saved sourcing cost instead of replacing it with a cheaper duplicate', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /const priorHasSavedCost=Number\\(prior\\.cost\\|\\|0\\)>0/);
+  assert.match(html, /const candidateHasSavedCost=Number\\(p\\.cost\\|\\|0\\)>0/);
+  assert.match(html, /candidateHasSavedCost&&!priorHasSavedCost/);
+});
