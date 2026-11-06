@@ -336,13 +336,13 @@ test('candidate shortlist expands broad categories, caps display at 50, and remo
   assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
-  assert.match(html, /function renderList\\(list,title,reviewList=\\[\\]\\)\\{const ranked=list\\.slice\\(0,50\\)/);
-  assert.match(html, /return ranked\\.filter\\(p=>p\\.cost<=0\\|\\|\\(p\\.costs\\?\\.profit>0&&p\\.risk!==\'高\'\\)\\)/);
+  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
+  assert.ok(html.includes("return ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!=='高'))"));
 });
 
 test('deduplication keeps the listing with a saved sourcing cost instead of replacing it with a cheaper duplicate', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /const priorHasSavedCost=Number\\(prior\\.cost\\|\\|0\\)>0/);
-  assert.match(html, /const candidateHasSavedCost=Number\\(p\\.cost\\|\\|0\\)>0/);
+  assert.ok(html.includes('const priorHasSavedCost=Number(prior.cost||0)>0'));
+  assert.ok(html.includes('const candidateHasSavedCost=Number(p.cost||0)>0'));
   assert.ok(html.includes('candidateHasSavedCost&&!priorHasSavedCost'));
 });
