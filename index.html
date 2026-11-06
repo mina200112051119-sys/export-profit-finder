@@ -223,8 +223,8 @@ function defaultSearchQueriesForCategory(c){const queries={
 'ポケモン関連サプライ用品':['Pokemon Center Japan official card sleeves deck box playmat binder','Japanese Pokemon TCG accessories official deck case sleeves storage'],
 '釣具':['Shimano fishing reel spinning baitcasting Japan -Daiwa -parts -bearing -bearings -replacement -lot','Daiwa fishing reel spinning baitcasting Japan -Shimano -parts -bearing -bearings -replacement -lot','Shimano fishing rod surf rod bass rod Japan -Daiwa -parts -replacement -lot','Daiwa fishing rod surf rod bass rod Japan -Shimano -parts -replacement -lot','Shimano fishing lure hard bait soft bait Japan -Daiwa -parts -replacement -lot','Daiwa fishing lure hard bait soft bait Japan -Shimano -parts -replacement -lot'],
 'カメラ':['Japanese digital camera compact camera Canon Nikon Sony Fujifilm Panasonic Olympus','used Japanese compact digital camera Lumix Powershot Coolpix FinePix Cyber-shot'],
-'レトロゲーム':['Japanese Famicom Super Famicom Nintendo 64 Sega Saturn Dreamcast PlayStation retro game console system tested Japan -lot -bundle -parts','Japanese individual Famicom Super Famicom Game Boy Nintendo 64 game cartridge single title Japan -lot -bundle -collection','Japanese PlayStation PS1 PS2 Sega Saturn Dreamcast game disc individual title Japan -lot -bundle -collection','Nintendo Sega Sony original retro game controller gamepad joystick Japan -lot -bundle -replacement','Japanese Game Boy Game Boy Color Game Boy Advance Nintendo DS PSP handheld game console system Japan -lot -bundle','Japanese retro video game software console controller cartridge disc Nintendo Sega Sony vintage Japan -lot -bundle -collection'],
-'ガンプラ':['Bandai Gunpla plastic model kit HG MG RG vintage Japan','Japanese Gundam plastic model kit Bandai vintage 1/144 1/100 Master Grade High Grade'],
+'レトロゲーム':['Nintendo Famicom console Japan','Super Famicom game cartridge Japan','Nintendo Game Boy game cartridge Japan','Nintendo 64 game cartridge Japan','Sega Saturn game disc Japan','Sega Dreamcast game disc Japan','Sony PlayStation PS1 PS2 game disc Japan','Nintendo Sega Sony retro game controller gamepad Japan','Game Boy Advance Nintendo DS PSP handheld console Japan'],
+'ガンプラ':['Bandai Gunpla HG 1/144 model kit','Bandai Gundam MG Master Grade 1/100 model kit','Bandai Gundam RG Real Grade 1/144 model kit','Bandai Gundam PG Perfect Grade model kit','Vintage Bandai Gundam plastic model kit Japan'],
 '交換部品・消耗品':['Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal','Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal','Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan','Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan','Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan']
 };return queries[c]||[c]}
 function defaultSearchQueryForCategory(c){return defaultSearchQueriesForCategory(c)[0]}
@@ -523,11 +523,20 @@ async function enrichOfficialNames(items, categoryOverride){
     }else{
       displayName=isStrongCandidate?cleanProductDisplayName(p,candidate.titleJa,effectiveCategory):cleanProductDisplayName(p,translated,effectiveCategory);
     }
+    const rawIdentity=String(p.name||p.title||'').normalize('NFKC');
+    const identityText=rawIdentity+' '+String(translated||'').normalize('NFKC');
+    const hasModelCode=effectiveCategory==='釣具'
+      ? /(?:C?\d{3,5}[A-Z]{0,4}|\bX\s*\d{2,5}[A-Z]{0,4}\b|\b(?:STELLA|STRADIC|TWIN\s*POWER|VANQUISH|EXIST|CERTATE|LUVIAS|TATULA|STEEZ)\b)/i.test(identityText)
+      : effectiveCategory==='カメラ'
+        ? /(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|\b[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*\b|\b[A-Z]{2,5}\d{2,5}[A-Z0-9-]*\b)/i.test(identityText)
+        : false;
     const status=isStrongCandidate
       ? (candidate.status||'名称候補（商品画像・型番・仕様の一致確認が必要）')
-      : (candidate&&candidate.diagnostic?.sourceErrors?.length
-        ? '正式名称未確認（公式情報を取得できませんでした）'
-        : '名称候補（自動翻訳・正式名称未確認）');
+      : hasModelCode
+        ? '出品タイトルから型番候補を確認（公式照合前）'
+        : (candidate&&candidate.diagnostic?.sourceErrors?.length
+          ? '正式名称未確認（公式情報を取得できませんでした）'
+          : '名称候補（自動翻訳・正式名称未確認）');
     const source=isStrongCandidate?candidate.url||'':'';
     for(const item of [p,target].filter(Boolean)){
       item.displayName=displayName;
