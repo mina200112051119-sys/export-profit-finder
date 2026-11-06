@@ -16,8 +16,12 @@ const QUERIES = [
   { cat: 'ガンプラ', q: 'Bandai Gundam MG Master Grade 1/100 model kit' },
   { cat: 'ガンプラ', q: 'Bandai Gundam RG Real Grade 1/144 model kit' },
   { cat: 'ガンプラ', q: 'Bandai Gundam PG Perfect Grade model kit' },
-  { cat: 'ガンプラ', q: 'Vintage Bandai Gundam plastic model kit Japan' }
-  { cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts' }
+  { cat: 'ガンプラ', q: 'Vintage Bandai Gundam plastic model kit Japan' },
+  { cat: '交換部品・消耗品', q: 'Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal' },
+  { cat: '交換部品・消耗品', q: 'Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal' },
+  { cat: '交換部品・消耗品', q: 'Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan' },
+  { cat: '交換部品・消耗品', q: 'Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan' },
+  { cat: '交換部品・消耗品', q: 'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan' }
 ];
 
 const { saveSnapshot, storageConfigured } = require('./data-store');
