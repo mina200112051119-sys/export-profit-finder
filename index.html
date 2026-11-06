@@ -189,6 +189,7 @@ function dedupeCategoryProducts(rows,cat){
   const rule=rules[cat];
   for(const p of rows){
     const raw=String(p.name||'');
+    if(cat==='釣具'&&fishingBrandConflict(raw))continue;
     if(rule&&(!rule.include.test(raw)||rule.exclude.test(raw)))continue;
     const title=raw.normalize('NFKC').toLowerCase().replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
     if(!title)continue;
