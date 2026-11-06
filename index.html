@@ -134,7 +134,23 @@ Storage.prototype.removeItem=function(k){
 function load(){['domestic','pack','other','conv'].forEach(id=>{const v=localStorage.getItem(id);if(v!==null)$(id).value=v})}
 function samples(){return[{name:'ポケモンカード 人気カード（サンプル）',cat:'ポケモンカード',cost:8000,sell:95,ship:18,sold:72,list:28,trend:'横ばい',risk:'低',source:'サンプル'},{name:'ポケモンTCG デッキケース（サンプル）',cat:'ポケモン関連サプライ用品',cost:2500,sell:39,ship:14,sold:46,list:34,trend:'上昇',risk:'低',source:'サンプル'},{name:'日本製フィッシングリール（サンプル）',cat:'釣具',cost:18000,sell:165,ship:35,sold:31,list:29,trend:'横ばい',risk:'中',source:'サンプル'},{name:'日本製中古カメラ（サンプル）',cat:'カメラ',cost:30000,sell:285,ship:42,sold:18,list:42,trend:'下落',risk:'中',source:'サンプル'},{name:'レトロゲーム本体（サンプル）',cat:'レトロゲーム',cost:9000,sell:105,ship:30,sold:39,list:21,trend:'横ばい',risk:'低',source:'サンプル'}].map(RankingEngine.normalizeProduct)}
 async function fx(){try{const r=await fetch(FX,{cache:'no-store'}),d=await r.json();if(d.rate){fxRate=+d.rate;fxDate=d.date||''}}catch(e){}}
-async function ebay(q){const r=await fetch(API+'?q='+encodeURIComponent(q),{cache:'no-store'});if(!r.ok)throw Error('eBay検索失敗 '+r.status);return r.json()}
+async function ebay(q,parentSignal){
+ const controller=new AbortController();
+ const abort=()=>controller.abort();
+ if(parentSignal){if(parentSignal.aborted)controller.abort();else parentSignal.addEventListener('abort',abort,{once:true});}
+ const timer=setTimeout(()=>controller.abort(),18000);
+ try{
+  const r=await fetch(API+'?q='+encodeURIComponent(q),{cache:'no-store',signal:controller.signal});
+  if(!r.ok)throw Error('eBay検索失敗 '+r.status);
+  return await r.json();
+ }catch(e){
+  if(controller.signal.aborted)throw Error(parentSignal?.aborted?'更新を中止しました':'検索が18秒で時間切れになりました');
+  throw e;
+ }finally{
+  clearTimeout(timer);
+  if(parentSignal)parentSignal.removeEventListener('abort',abort);
+ }
+}
 async function sold(q,cat){return null}
 
 const MANUAL_EVIDENCE_KEY='manualSalesEvidence:v1';
@@ -211,7 +227,55 @@ function defaultSearchQueriesForCategory(c){const queries={
 '交換部品・消耗品':['Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts','Japanese camera replacement parts battery charger eyecup body cap lens cap genuine accessories','Japanese retro game replacement parts AC adapter power cable AV cable console parts','Japanese Gunpla replacement parts runner parts decals stickers weapon parts Bandai']
 };return queries[c]||[c]}
 function defaultSearchQueryForCategory(c){return defaultSearchQueriesForCategory(c)[0]}
-async function refresh(){const b=$('refresh');b.disabled=true;$('status').textContent='eBayの現在出品と為替を更新中…';const failures=[];try{await fx();let live=[];for(const c of RankingEngine.CATEGORIES){try{const queries=defaultSearchQueriesForCategory(c),responses=[];for(const q of queries){try{const d=await ebay(q);if(d&&Array.isArray(d.items))responses.push(d);else failures.push(c+'：応答形式を確認できません')}catch(e){failures.push(c+'：'+(e&&e.message?e.message:String(e)))}}if(!responses.length)continue;const mergedItems=[...new Map(responses.flatMap(d=>d.items).map(x=>[String(x.itemId||x.id||x.url||x.title),x])).values()];const merged={items:mergedItems,total:responses.reduce((n,d)=>n+Number(d.total||0),0)};live.push(...map(merged,c))}catch(e){failures.push(c+'：'+(e&&e.message?e.message:String(e)))}}data=live;updated=new Date().toLocaleString('ja-JP');try{render()}catch(e){$('status').textContent='ランキング作成エラー：'+(e&&e.message?e.message:String(e));return}const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>使用データ：eBayの現在出品価格・送料・検索結果件数・為替のみ。過去90日販売APIは呼び出していません。';if(failures.length>=RankingEngine.CATEGORIES.length){$('status').innerHTML='<b>一部または全部のeBay検索に失敗しました</b><br>'+summary+'<br>取得エラー：'+failures.map(esc).join('<br>')}else if(failures.length){$('status').innerHTML='<b>一部の検索語で更新できませんでした</b><br>'+summary+'<br>取得エラー：'+failures.map(esc).join('<br>')}else{$('status').innerHTML='<b>更新完了</b><br>'+summary+'<br>商品本体価格が1,000円相当以上の候補を表示しています。複数の検索語をまとめ、重複商品は1件に整理しています。'}}catch(e){data=[];try{render()}catch(renderError){}$('status').textContent='更新処理エラー：'+(e&&e.message?e.message:String(e))}finally{b.disabled=false}}
+let activeRefreshController=null;
+async function refresh(){
+ const b=$('refresh');
+ if(activeRefreshController){activeRefreshController.abort();return;}
+ const controller=new AbortController();activeRefreshController=controller;
+ const oldLabel=b.textContent;b.disabled=false;b.textContent='⏹ 更新を中止';
+ $('status').textContent='eBayの現在出品と為替を更新中…（検索は最大4件ずつ実行。ボタンで中止できます）';
+ const failures=[],tasks=[];
+ try{
+  await fx();
+  for(const c of RankingEngine.CATEGORIES)for(const q of defaultSearchQueriesForCategory(c))tasks.push({cat:c,q});
+  const results=Array(tasks.length),errors=[];
+  let next=0,finished=0;
+  const worker=async()=>{
+   while(!controller.signal.aborted){
+    const i=next++;if(i>=tasks.length)return;
+    const task=tasks[i];
+    try{
+     const d=await ebay(task.q,controller.signal);
+     if(d&&Array.isArray(d.items))results[i]={...task,data:d};
+     else errors.push(task.cat+'：検索結果の形式を確認できません');
+    }catch(e){
+     if(!controller.signal.aborted)errors.push(task.cat+'：'+(e?.message||String(e)));
+    }
+    finished++;
+    $('status').textContent='eBay検索中… '+finished+'/'+tasks.length+'件を確認済み（ボタンで中止できます）';
+   }
+  };
+  await Promise.all(Array.from({length:Math.min(4,tasks.length)},()=>worker()));
+  if(controller.signal.aborted){$('status').textContent='更新を中止しました。取得済みの候補は変更していません。';return;}
+  const live=[];
+  for(const c of RankingEngine.CATEGORIES){
+   const rows=results.filter(x=>x&&x.cat===c);
+   if(!rows.length)continue;
+   const mergedItems=[...new Map(rows.flatMap(x=>x.data.items).map(x=>[String(x.itemId||x.id||x.url||x.title),x])).values()];
+   const merged={items:mergedItems,total:rows.reduce((n,x)=>n+Number(x.data.total||0),0)};
+   try{live.push(...map(merged,c));}catch(e){errors.push(c+'：候補の整理に失敗しました '+(e?.message||String(e)));}
+  }
+  data=live;updated=new Date().toLocaleString('ja-JP');
+  try{render();}catch(e){$('status').textContent='ランキング作成エラー：'+(e?.message||String(e));return;}
+  const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>検索 '+(tasks.length-errors.length)+'/'+tasks.length+'件成功。現在の出品価格・送料・為替を使用しています。';
+  $('status').innerHTML=(errors.length?'<b>更新完了（一部検索できず）</b>':'<b>更新完了</b>')+'<br>'+summary+(errors.length?'<br>取得エラー：'+errors.map(esc).join('<br>'):'')+'<br>商品本体価格が1,000円相当以上の候補を表示しています。';
+ }catch(e){
+  if(!controller.signal.aborted)$('status').textContent='更新処理エラー：'+(e?.message||String(e));
+ }finally{
+  if(activeRefreshController===controller)activeRefreshController=null;
+  b.disabled=false;b.textContent=oldLabel;
+ }
+}
 const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v21';
 function readOfficialNameCache(){try{return JSON.parse(localStorage.getItem(OFFICIAL_NAME_CACHE_KEY)||'{}')}catch(e){return {}}}
 function writeOfficialNameCache(cache){try{localStorage.setItem(OFFICIAL_NAME_CACHE_KEY,JSON.stringify(cache))}catch(e){}}
