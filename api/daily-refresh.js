@@ -4,7 +4,8 @@ const QUERIES = [
   { cat: '釣具', q: 'Shimano Daiwa fishing reel Japan' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
   { cat: 'レトロゲーム', q: 'Japanese retro video game software' },
-  { cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan' }
+  { cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan' },
+  { cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts' }
 ];
 
 const { saveSnapshot, storageConfigured } = require('./data-store');
