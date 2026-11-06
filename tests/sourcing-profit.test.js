@@ -106,32 +106,42 @@ test('retro and Gunpla refresh use focused queries instead of long mixed keyword
   assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
 });
 
-test('daily snapshot category mapping matches all current refresh queries', () => {
+test('daily snapshot category mapping matches all current retro, Gunpla, and replacement-part refresh queries', () => {
   const engine = fs.readFileSync('ranking-engine.js', 'utf8');
   for (const query of [
-    "'Pokemon card graded rare Japanese':'ポケモンカード'",
-    "'Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品'",
-    "'Shimano Daiwa fishing reel Japan':'釣具'",
-    "'Japanese digital camera Canon Nikon Fujifilm':'カメラ'",
-    "'Japanese Famicom Super Famicom Nintendo 64 Sega Saturn Dreamcast PlayStation retro game console system tested Japan -lot -bundle -parts':'レトロゲーム'",
-    "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'",
-    "'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts':'交換部品・消耗品'"
+    "'Nintendo Famicom console Japan':'レトロゲーム'",
+    "'Super Famicom game cartridge Japan':'レトロゲーム'",
+    "'Nintendo Game Boy game cartridge Japan':'レトロゲーム'",
+    "'Nintendo 64 game cartridge Japan':'レトロゲーム'",
+    "'Sega Saturn game disc Japan':'レトロゲーム'",
+    "'Sega Dreamcast game disc Japan':'レトロゲーム'",
+    "'Sony PlayStation PS1 PS2 game disc Japan':'レトロゲーム'",
+    "'Nintendo Sega Sony retro game controller gamepad Japan':'レトロゲーム'",
+    "'Game Boy Advance Nintendo DS PSP handheld console Japan':'レトロゲーム'",
+    "'Bandai Gunpla HG 1/144 model kit':'ガンプラ'",
+    "'Bandai Gundam MG Master Grade 1/100 model kit':'ガンプラ'",
+    "'Bandai Gundam RG Real Grade 1/144 model kit':'ガンプラ'",
+    "'Bandai Gundam PG Perfect Grade model kit':'ガンプラ'",
+    "'Vintage Bandai Gundam plastic model kit Japan':'ガンプラ'",
+    "'Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品'",
+    "'Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品'",
+    "'Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan':'交換部品・消耗品'",
+    "'Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan':'交換部品・消耗品'",
+    "'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan':'交換部品・消耗品'"
   ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
 });
 
-test('scheduled daily refresh includes all seven current product categories', () => {
+test('scheduled daily refresh has valid separators and all focused replacement-part searches', () => {
   const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
-  for (const entry of [
-    "cat: 'ポケモンカード', q: 'Pokemon card graded rare Japanese'",
-    "cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed'",
-    "cat: '釣具', q: 'Shimano Daiwa fishing reel Japan'",
-    "cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm'",
-    "cat: 'レトロゲーム', q: 'Japanese retro video game console Famicom Super Famicom Game Boy Nintendo 64 Sega Saturn Dreamcast PlayStation game cartridge disc controller Japan -lot -bundle -collection'",
-    "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'",
-    "cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts'"
-  ]) assert.ok(cron.includes(entry), 'scheduled refresh contains ' + entry);
+  for (const query of [
+    "Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal",
+    "Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal",
+    "Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan",
+    "Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan",
+    "Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan"
+  ]) assert.ok(cron.includes(query), 'scheduled refresh contains ' + query);
+  assert.match(cron, /Vintage Bandai Gundam plastic model kit Japan' \},\s*\{ cat: '交換部品/);
 });
-
 test('applying or clearing a sourcing price refreshes the current ranking view', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /function refreshCurrentRanking\(\)\{if\(!\$\('ranking'\)\)return;renderList\(rank\(currentRankingCategory\),currentRankingTitle\)\}/);
@@ -303,4 +313,18 @@ test('listing title model candidates are not mislabeled as entirely unverified',
   assert.match(html, /effectiveCategory==='釣具'/);
   assert.match(html, /effectiveCategory==='カメラ'/);
   assert.match(html, /\(\?:μ\|µ\)\[- \]\?\\d\{3,4\}/);
+});
+
+test('retro game, Gunpla, and replacement-part listings receive separate identity details', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /function classifyRetroListing\(p\)/);
+  assert.match(html, /function classifyGunplaListing\(p\)/);
+  assert.match(html, /function classifyPartsDetail\(p\)/);
+  assert.match(html, /function categoryIdentityKey\(p,cat\)/);
+  assert.match(html, /対応機種を特定できる型番なし/);
+  assert.match(html, /完成品・組立済/);
+  assert.match(html, /未組立・未開封の記載あり/);
+  assert.match(html, /型番候補あり・対応機種との一致は未確認/);
+  assert.match(html, /レトロゲームの商品分類/);
+  assert.match(html, /ガンプラの商品分類/);
 });
