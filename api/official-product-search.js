@@ -20,7 +20,13 @@ const OFFICIAL_SOURCES = {
     { name: 'PlayStation公式', url: 'https://www.playstation.com/ja-jp/' }
   ],
   '交換部品・消耗品': [
-    { name: 'eBay部品・消耗品検索（対応型番は商品ごとに確認）', url: 'https://www.ebay.com/' }
+    { name: 'シマノ公式 製品情報', url: 'https://fish.shimano.com/ja-JP' },
+    { name: 'ダイワ公式 製品情報', url: 'https://www.daiwa.com/jp/product' },
+    { name: 'キヤノン公式 カメラミュージアム', url: 'https://global.canon/ja/c-museum/camera.html' },
+    { name: 'ニコン公式 製品情報', url: 'https://nij.nikon.com/' },
+    { name: '任天堂公式', url: 'https://www.nintendo.com/jp/' },
+    { name: 'セガ公式 ゲーム情報', url: 'https://www.sega.jp/game/soft/' },
+    { name: 'BANDAI SPIRITS公式 商品検索', url: 'https://www.bandaispirits.co.jp/products/search/' }
   ],
   'ガンプラ': [
     { name: 'BANDAI SPIRITS公式 商品検索', url: 'https://www.bandaispirits.co.jp/products/search/result.php?search=true&category=1&freeword=' }
