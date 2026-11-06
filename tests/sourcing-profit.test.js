@@ -302,4 +302,5 @@ test('listing title model candidates are not mislabeled as entirely unverified',
   assert.match(html, /出品タイトルから型番候補を確認（公式照合前）/);
   assert.match(html, /effectiveCategory==='釣具'/);
   assert.match(html, /effectiveCategory==='カメラ'/);
+  assert.match(html, /\(\?:μ\|µ\)\[- \]\?\\d\{3,4\}/);
 });
