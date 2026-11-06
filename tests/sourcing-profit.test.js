@@ -344,5 +344,5 @@ test('deduplication keeps the listing with a saved sourcing cost instead of repl
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /const priorHasSavedCost=Number\\(prior\\.cost\\|\\|0\\)>0/);
   assert.match(html, /const candidateHasSavedCost=Number\\(p\\.cost\\|\\|0\\)>0/);
-  assert.match(html, /candidateHasSavedCost&&!priorHasSavedCost/);
+  assert.ok(html.includes('candidateHasSavedCost&&!priorHasSavedCost'));
 });
