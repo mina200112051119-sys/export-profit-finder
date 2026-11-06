@@ -160,22 +160,31 @@ function map(d,cat,cost=0){
   return dedupeCategoryProducts(rows,cat);
 }
 function dedupeCategoryProducts(rows,cat){
-  const seen=new Set(),out=[];
-  const wrong={
-    'ポケモンカード':/fishing reel|shimano tld|daiwa reel|camera lens|digital camera|gunpla|plastic model kit|playstation|nintendo switch console/i,
-    'ポケモン関連サプライ用品':/fishing reel|shimano tld|daiwa reel|camera lens|digital camera|gunpla|plastic model kit/i,
-    '釣具':/pokemon|ポケモン|camera lens|digital camera|gunpla|plastic model kit|playstation|nintendo switch/i,
-    'カメラ':/pokemon|ポケモン|fishing reel|shimano tld|daiwa reel|gunpla|plastic model kit/i,
-    'レトロゲーム':/pokemon|ポケモン|fishing reel|shimano tld|daiwa reel|camera lens|digital camera|gunpla|plastic model kit/i,
-    'ガンプラ':/pokemon|ポケモン|fishing reel|shimano tld|daiwa reel|camera lens|digital camera|playstation|nintendo switch/i
+  const seen=new Map(),out=[];
+  const rules={
+    'ポケモンカード':{include:/(pokemon|pok[eé]mon|ポケモン|pikachu|charizard|mew|tcg|trading card|card game)/i,exclude:/(fishing|camera|gunpla|plastic model|playstation|nintendo switch console)/i},
+    'ポケモン関連サプライ用品':{include:/(pokemon|pok[eé]mon|ポケモン|deck box|deck case|sleeve|playmat|binder|カードケース|デッキケース|スリーブ|プレイマット)/i,exclude:/(fishing|camera|gunpla|plastic model)/i},
+    '釣具':{include:/(fishing|釣り|reel|リール|fishing rod|釣竿|rod|lure|ルアー|bait|tackle|shimano|シマノ|daiwa|ダイワ|abu garcia|penn)/i,exclude:/(pokemon|ポケモン|camera|カメラ|gunpla|plastic model|bearing|ベアリング|replacement part|spare part|repair part|パーツ|部品|manual|説明書)/i},
+    'カメラ':{include:/(camera|カメラ|lumix|panasonic|canon|powershot|nikon|coolpix|fujifilm|finepix|sony|cyber.?shot|olympus|コンパクトデジタル)/i,exclude:/(pokemon|ポケモン|fishing|釣具|gunpla|plastic model|camera strap|カメラケース単品)/i},
+    'レトロゲーム':{include:/(video game|ゲームソフト|game software|nintendo|ニンテンドー|famicom|ファミコン|super famicom|スーパーファミコン|game boy|ゲームボーイ|n64|nintendo 64|playstation|セガ|sega|mega drive|メガドライブ|ゲームカセット)/i,exclude:/(pokemon card|ポケモンカード|fishing|釣具|camera|カメラ|gunpla|plastic model|controller only|コントローラー)/i},
+    'ガンプラ':{include:/(gunpla|ガンプラ|gundam|ガンダム|bandai|バンダイ|plastic model kit|プラモデル)/i,exclude:/(pokemon|ポケモン|fishing|釣具|camera|カメラ|video game|ゲームソフト)/i}
   };
+  const rule=rules[cat];
   for(const p of rows){
     const raw=String(p.name||'');
-    if(wrong[cat]?.test(raw))continue;
+    if(rule&&(!rule.include.test(raw)||rule.exclude.test(raw)))continue;
     const title=raw.normalize('NFKC').toLowerCase().replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
-    const key=title+'|'+Number(p.sell||0);
-    if(seen.has(key))continue;
-    seen.add(key);out.push(p);
+    if(!title)continue;
+    // 同じ商品名が別価格で重複した場合は、商品＋送料の合計が安い出品を残す。
+    const key=title;
+    const prior=seen.get(key);
+    const total=Number(p.sell||0)+Number(p.ship||0);
+    if(prior){
+      const priorTotal=Number(prior.sell||0)+Number(prior.ship||0);
+      if(total<priorTotal){out[out.indexOf(prior)]=p;seen.set(key,p);}
+      continue;
+    }
+    seen.set(key,p);out.push(p);
   }
   return out;
 }
@@ -190,7 +199,7 @@ function renderCats(){$('cats').innerHTML=RankingEngine.CATEGORIES.map(c=>{const
 function refreshCurrentRanking(){if(!$('ranking'))return;renderList(rank(currentRankingCategory),currentRankingTitle)}
 function render(){renderCats();currentRankingCategory=null;currentRankingTitle='仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle);enrichOfficialNames(rank(currentRankingCategory)).then(()=>{document.querySelectorAll('.product[data-product-id]').forEach(el=>{const p=data.find(x=>String(x.id)===el.getAttribute('data-product-id'));const h=el.querySelector('h3');if(h&&p)h.textContent=p.displayName||p.name})});$('fx').textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')}
 function category(c){currentRankingCategory=c;currentRankingTitle=c+'｜仕入れ候補ランキング（現在出品・利益ベース）';renderList(rank(currentRankingCategory),currentRankingTitle);enrichOfficialNames(rank(currentRankingCategory),c).then(()=>{document.querySelectorAll('.product[data-product-id]').forEach(el=>{const p=data.find(x=>String(x.id)===el.getAttribute('data-product-id'));const h=el.querySelector('h3');if(h&&p)h.textContent=p.displayName||p.name})})}
-function defaultSearchQueryForCategory(c){const queries={'ポケモンカード':'Pokemon card graded rare Japanese','ポケモン関連サプライ用品':'Pokemon Center Japan limited official merchandise sealed','釣具':'Shimano Daiwa fishing reel Japan','カメラ':'Japanese digital camera Canon Nikon Fujifilm','レトロゲーム':'Japanese retro video game software','ガンプラ':'Bandai Spirits Gunpla plastic model kit Japan'};return queries[c]||c}
+function defaultSearchQueryForCategory(c){const queries={'ポケモンカード':'Japanese Pokemon trading card single -lot -deck','ポケモン関連サプライ用品':'Pokemon Center Japan deck box card sleeves playmat official -plush','釣具':'Shimano Daiwa fishing reel Japan -bearing -bearings -replacement -parts','カメラ':'Japanese compact digital camera Lumix Canon Nikon Fujifilm Sony -lens -battery -charger','レトロゲーム':'Japanese retro video game software Nintendo 64 Famicom Super Famicom Game Boy PlayStation -controller','ガンプラ':'Bandai Gunpla plastic model kit HG MG RG vintage Japan -tool'};return queries[c]||c}
 async function refresh(){const b=$('refresh');b.disabled=true;$('status').textContent='eBayの現在出品と為替を更新中…';const failures=[];try{await fx();let live=[];for(const c of RankingEngine.CATEGORIES){try{const d=await ebay(defaultSearchQueryForCategory(c));if(!d||!Array.isArray(d.items)){failures.push(c+'：応答形式を確認できません');continue}live.push(...map(d,c))}catch(e){failures.push(c+'：'+(e&&e.message?e.message:String(e)))}}data=live;updated=new Date().toLocaleString('ja-JP');try{render()}catch(e){$('status').textContent='ランキング作成エラー：'+(e&&e.message?e.message:String(e));return}const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>使用データ：eBayの現在出品価格・送料・検索結果件数・為替のみ。過去90日販売APIは呼び出していません。';if(failures.length===RankingEngine.CATEGORIES.length){$('status').innerHTML='<b>eBayデータを取得できませんでした</b><br>'+summary+'<br>取得エラー：'+failures.map(esc).join('<br>')}else if(failures.length){$('status').innerHTML='<b>一部カテゴリーの更新に失敗しました</b><br>'+summary+'<br>取得できなかったカテゴリー：'+failures.map(esc).join('<br>')}else{$('status').innerHTML='<b>更新完了</b><br>'+summary+'<br>候補ランキングは商品本体価格が1,000円相当以上の商品だけを対象にしています。送料が高いだけの安価な商品は除外します。'}}catch(e){data=[];try{render()}catch(renderError){}$('status').textContent='更新処理エラー：'+(e&&e.message?e.message:String(e))}finally{b.disabled=false}}
 const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v21';
 function readOfficialNameCache(){try{return JSON.parse(localStorage.getItem(OFFICIAL_NAME_CACHE_KEY)||'{}')}catch(e){return {}}}
