@@ -276,3 +276,14 @@ test('replacement parts are a first-class category with item detail and official
   assert.match(sourcing, /'交換部品・消耗品': \[/);
   assert.match(official, /'交換部品・消耗品': \[/);
 });
+
+
+test('Japanese product display names prioritize model numbers and concise product types', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /COOLPIX\\s\*\[A-Z\]\?\\d\{2,4\}/);
+  assert.match(html, /Samsung\|Nikon\|Canon\|Sony\|Olympus/);
+  assert.match(html, /デジタルカメラ/);
+  assert.match(html, /携帯ゲーム機/);
+  assert.match(html, /Vlog\|Selfie/);
+  assert.match(html, /function cleanProductDisplayName\(p, translated, category\)/);
+});
