@@ -287,3 +287,12 @@ test('Japanese product display names prioritize model numbers and concise produc
   assert.match(html, /Vlog\|Selfie/);
   assert.match(html, /function cleanProductDisplayName\(p, translated, category\)/);
 });
+
+test('fishing search separates Shimano and Daiwa and rejects mixed-brand listings', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /Shimano fishing reel spinning baitcasting Japan -Daiwa/);
+  assert.match(html, /Daiwa fishing reel spinning baitcasting Japan -Shimano/);
+  assert.match(html, /function fishingBrandConflict\(raw\)/);
+  assert.match(html, /if\(cat==='釣具'\) return cleanFishingDisplayName\(p,translated\)/);
+  assert.match(html, /lot of\|job lot\|bundle\|assorted\|choose\|select/);
+});
