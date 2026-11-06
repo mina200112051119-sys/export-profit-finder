@@ -1,7 +1,7 @@
 const QUERIES = [
   { cat: 'ポケモンカード', q: 'Pokemon card graded rare Japanese' },
   { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
-  { cat: '釣具', q: 'Shimano Daiwa fishing reel Japan' },
+  { cat: '釣具', q: 'Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
   { cat: 'レトロゲーム', q: 'Japanese retro video game console Famicom Super Famicom Game Boy Nintendo 64 Sega Saturn Dreamcast PlayStation game cartridge disc controller Japan -lot -bundle -collection' },
   { cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan' },
