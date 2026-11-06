@@ -101,7 +101,7 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
 
 test('default refresh queries distinguish retro games from Gunpla', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /'レトロゲーム':\['Japanese single Japanese retro video game software/);
+  assert.match(html, /'レトロゲーム':\['Japanese Famicom Super Famicom Nintendo 64 Sega Saturn Dreamcast PlayStation retro game console system tested Japan/);\n  assert.match(html, /Nintendo Sega Sony original retro game controller gamepad joystick Japan/);\n  assert.match(html, /Japanese individual Famicom Super Famicom Game Boy Nintendo 64 game cartridge single title Japan/);
   assert.match(html, /'ガンプラ':\['Bandai Gunpla plastic model kit/);
   assert.match(html, /'交換部品・消耗品':\['Japanese fishing reel replacement parts/);
   assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
@@ -114,7 +114,7 @@ test('daily snapshot category mapping matches all current refresh queries', () =
     "'Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品'",
     "'Shimano Daiwa fishing reel Japan':'釣具'",
     "'Japanese digital camera Canon Nikon Fujifilm':'カメラ'",
-    "'Japanese retro video game software':'レトロゲーム'",
+    "'Japanese Famicom Super Famicom Nintendo 64 Sega Saturn Dreamcast PlayStation retro game console system tested Japan -lot -bundle -parts':'レトロゲーム'",
     "'Bandai Spirits Gunpla plastic model kit Japan':'ガンプラ'",
     "'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts':'交換部品・消耗品'"
   ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
@@ -127,7 +127,7 @@ test('scheduled daily refresh includes all seven current product categories', ()
     "cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed'",
     "cat: '釣具', q: 'Shimano Daiwa fishing reel Japan'",
     "cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm'",
-    "cat: 'レトロゲーム', q: 'Japanese retro video game software'",
+    "cat: 'レトロゲーム', q: 'Japanese retro video game console Famicom Super Famicom Game Boy Nintendo 64 Sega Saturn Dreamcast PlayStation game cartridge disc controller Japan -lot -bundle -collection'",
     "cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan'",
     "cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts'"
   ]) assert.ok(cron.includes(entry), 'scheduled refresh contains ' + entry);
