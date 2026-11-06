@@ -254,6 +254,15 @@ test('cloud storage preserves official matches and Japanese sourcing search name
 });
 
 
+test('replacement parts searches prioritize genuine model-specific spare components over generic upgrades', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob/);
+  assert.match(html, /Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob/);
+  assert.match(html, /Canon Nikon genuine camera replacement spare parts/);
+  assert.match(html, /Nintendo Sega genuine retro game console replacement parts/);
+  assert.match(html, /Bandai Gunpla genuine replacement parts/);
+});
+
 test('replacement parts are a first-class category with item detail and official references', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   const engine = fs.readFileSync('ranking-engine.js', 'utf8');
