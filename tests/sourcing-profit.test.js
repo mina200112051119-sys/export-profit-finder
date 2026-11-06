@@ -104,7 +104,7 @@ test('default refresh queries distinguish retro games from Gunpla', () => {
   assert.match(html, /'レトロゲーム':\['Japanese single Japanese retro video game software/);
   assert.match(html, /'ガンプラ':\['Bandai Gunpla plastic model kit/);
   assert.match(html, /'交換部品・消耗品':\['Japanese fishing reel replacement parts/);
-  assert.match(html, /ebay\(defaultSearchQueryForCategory\(c\)\)/);
+  assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
 });
 
 test('daily snapshot category mapping matches all current refresh queries', () => {
