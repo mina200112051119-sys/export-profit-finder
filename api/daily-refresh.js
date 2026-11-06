@@ -3,7 +3,7 @@ const QUERIES = [
   { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
   { cat: '釣具', q: 'Shimano Daiwa fishing reel Japan' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
-  { cat: 'レトロゲーム', q: 'Japanese retro video game software' },
+  { cat: 'レトロゲーム', q: 'Japanese retro video game console Famicom Super Famicom Game Boy Nintendo 64 Sega Saturn Dreamcast PlayStation game cartridge disc controller Japan -lot -bundle -collection' },
   { cat: 'ガンプラ', q: 'Bandai Spirits Gunpla plastic model kit Japan' },
   { cat: '交換部品・消耗品', q: 'Japanese fishing reel replacement parts spool handle drag knob Shimano Daiwa spare parts' }
 ];
