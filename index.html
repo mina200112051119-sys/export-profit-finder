@@ -450,7 +450,7 @@ function cleanProductDisplayName(p, translated, category){
   const ja=String(translated||p.displayName||p.titleJa||raw).normalize('NFKC');
   const cat=category||p.cat||p.category||'';
   const model=String(p.modelNumber||p.mpn||p.productCode||'').normalize('NFKC').trim();
-  const modelFromRaw=(raw.match(/\b(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*|[A-Z]{2,5}\d{2,5}[A-Z0-9-]*)\b/i)||[])[0]||'';
+  const modelFromRaw=(raw.match(/\b(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*|[A-Z]{2,5}\d{2,5}[A-Z0-9-]*)\b|(?:μ|µ)[- ]?\d{3,4}/i)||[])[0]||'';
   const code=model||modelFromRaw;
   const brand=(raw.match(/\b(Samsung|Nikon|Canon|Sony|Olympus|Fujifilm|Panasonic|Nintendo|Sega|Bandai|Shimano|Daiwa|Ultra\s*Pro)\b/i)||[])[0]||'';
   const typeRules={
@@ -528,7 +528,7 @@ async function enrichOfficialNames(items, categoryOverride){
     const hasModelCode=effectiveCategory==='釣具'
       ? /(?:C?\d{3,5}[A-Z]{0,4}|\bX\s*\d{2,5}[A-Z]{0,4}\b|\b(?:STELLA|STRADIC|TWIN\s*POWER|VANQUISH|EXIST|CERTATE|LUVIAS|TATULA|STEEZ)\b)/i.test(identityText)
       : effectiveCategory==='カメラ'
-        ? /(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|\b[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*\b|\b[A-Z]{2,5}\d{2,5}[A-Z0-9-]*\b)/i.test(identityText)
+        ? /(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|(?:μ|µ)[- ]?\d{3,4}|\b[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*\b|\b[A-Z]{2,5}\d{2,5}[A-Z0-9-]*\b)/i.test(identityText)
         : false;
     const status=isStrongCandidate
       ? (candidate.status||'名称候補（商品画像・型番・仕様の一致確認が必要）')
