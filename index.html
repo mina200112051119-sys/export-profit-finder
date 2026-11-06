@@ -164,7 +164,7 @@ function dedupeCategoryProducts(rows,cat){
   const rules={
     'ポケモンカード':{include:/(pokemon|pok[eé]mon|ポケモン|pikachu|charizard|mew|tcg|trading card|card game)/i,exclude:/(fishing|camera|gunpla|plastic model|playstation|nintendo switch console)/i},
     'ポケモン関連サプライ用品':{include:/(pokemon|pok[eé]mon|ポケモン|deck box|deck case|sleeve|playmat|binder|カードケース|デッキケース|スリーブ|プレイマット)/i,exclude:/(fishing|camera|gunpla|plastic model)/i},
-    '釣具':{include:/(fishing|釣り|reel|リール|fishing rod|釣竿|rod|lure|ルアー|bait|tackle|shimano|シマノ|daiwa|ダイワ|abu garcia|penn)/i,exclude:/(pokemon|ポケモン|camera|カメラ|gunpla|plastic model|bearing|ベアリング|replacement part|spare part|repair part|パーツ|部品|manual|説明書)/i},
+    '釣具':{include:/(fishing|釣り|reel|リール|fishing rod|釣竿|rod|lure|ルアー|bait|tackle|shimano|シマノ|daiwa|ダイワ|abu garcia|penn)/i,exclude:/(pokemon|ポケモン|camera|カメラ|gunpla|plastic model|bearing|ベアリング|replacement part|spare part|repair part|reel stand|lubricant|grease|maintenance|fishing oil|tool|パーツ|部品|ベアリング|オイル|グリス|メンテナンス|スタンド|manual|説明書)/i},
     'カメラ':{include:/(camera|カメラ|lumix|panasonic|canon|powershot|nikon|coolpix|fujifilm|finepix|sony|cyber.?shot|olympus|コンパクトデジタル)/i,exclude:/(pokemon|ポケモン|fishing|釣具|gunpla|plastic model|camera strap|カメラケース単品)/i},
     'レトロゲーム':{include:/(video game|ゲームソフト|game software|nintendo|ニンテンドー|famicom|ファミコン|super famicom|スーパーファミコン|game boy|ゲームボーイ|n64|nintendo 64|playstation|セガ|sega|mega drive|メガドライブ|ゲームカセット)/i,exclude:/(pokemon card|ポケモンカード|fishing|釣具|camera|カメラ|gunpla|plastic model|controller only|コントローラー)/i},
     'ガンプラ':{include:/(gunpla|ガンプラ|gundam|ガンダム|bandai|バンダイ|plastic model kit|プラモデル)/i,exclude:/(pokemon|ポケモン|fishing|釣具|camera|カメラ|video game|ゲームソフト)/i}
