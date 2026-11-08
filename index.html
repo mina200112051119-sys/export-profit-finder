@@ -748,8 +748,8 @@ function acceptCandidate(p,cat){
  const has=(re)=>re.test(t);
  const unrelated=/(pokemon|ポケモン|fishing|釣具|camera|カメラ|gunpla|plastic model|playstation|攻略本|guidebook|magazine)/i;
  if(cat==='ポケモンカード'){
-  return has(/pokemon|pok[eé]mon|ポケモン/) && has(/card|カード|tcg|trading card/)
-    && !has(/fishing|camera|lens|flash|gunpla|plastic model|playstation|nintendo switch console|controller|mystery|random|assorted|bulk lot|lot of|bundle/);
+  const cardEvidence=has(/card|カード|tcg|trading card/)||(has(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)&&has(/\b(?:ex|sar|sr|ur|ar|promo|holo|psa|cgc|bgs)\b/i));
+  return cardEvidence&&!has(/fishing|camera|lens|flash|gunpla|plastic model|playstation|nintendo switch console|controller|mystery|random|assorted|bulk lot|lot of|bundle|yu.?gi.?oh|magic the gathering/);
  }
  if(cat==='ポケモン関連サプライ用品'){
   return has(/pokemon|pok[eé]mon|ポケモン/) && has(/deck.?box|deck.?case|sleeve|playmat|binder|card.?file|storage|album|デッキケース|スリーブ|プレイマット|バインダー|カードファイル|収納/)
@@ -760,7 +760,7 @@ function acceptCandidate(p,cat){
     && !has(/pokemon|camera|lens|gunpla|plastic model|\b(?:lot|bundle|parts?|spare|replacement|repair|untested|for parts|handle|knob)\b|まとめ売り|ジャンク/);
  }
  if(cat==='カメラ'){
-  return has(/digital camera|camera body|compact camera|mirrorless|dslr|film camera|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ|フィルムカメラ/)
+  return has(/digital camera|camera body|compact camera|mirrorless|dslr|film camera|powershot|coolpix|finepix|cyber.?shot|lumix|μ[- ]?\d{3,4}|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ|フィルムカメラ/)
     && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery|charger|adapter|tripod|filter|strap|bag)\b|まとめ売り|ジャンク|未テスト/);
  }
  if(cat==='レトロゲーム'){
@@ -771,8 +771,9 @@ function acceptCandidate(p,cat){
   return platform&&itemType;
  }
  if(cat==='ガンプラ'){
-  return has(/gunpla|ガンプラ|gundam|ガンダム/) && has(/model|kit|plastic|プラモデル|組立|hg|mg|rg|pg|eg|mgsd/)
-    && !has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩/);
+  const maker=has(/gunpla|ガンプラ|gundam|ガンダム|bandai|バンダイ/);
+  const model=has(/model kit|plastic model|プラモデル|組立|\b(?:hg|mg|rg|pg|eg|mgsd)\b|1\s*\/\s*(?:144|100|60|72|48)/);
+  return maker&&model&&!has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩|figure only/);
  }
  if(cat==='交換部品・消耗品'){
   const part=has(/line roller|spool|bail arm|drag knob|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
