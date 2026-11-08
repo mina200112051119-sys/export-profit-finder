@@ -265,6 +265,7 @@ function classifyPartsDetail(p){
     :/spool|スプール/i.test(t)?'スプール'
     :/bail arm|ベール/i.test(t)?'ベール'
     :/drag knob|knob|ドラグノブ|ノブ/i.test(t)?'ドラグノブ'
+    :/handle|ハンドル/i.test(t)?'ハンドル'
     :/battery door|電池ぶた|バッテリーカバー/i.test(t)?'電池カバー'
     :/battery|バッテリー|電池/i.test(t)?'電池・バッテリー'
     :/charger|充電器/i.test(t)?'充電器'
@@ -774,7 +775,7 @@ function acceptCandidate(p,cat){
     && !has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩/);
  }
  if(cat==='交換部品・消耗品'){
-  const part=has(/line roller|spool|bail arm|drag knob|battery door|battery|charger|ac adapter|power adapter|cable|cord|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
+  const part=has(/line roller|spool|bail arm|drag knob|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
   const maker=has(/shimano|シマノ|daiwa|ダイワ|canon|キヤノン|nikon|ニコン|sony|ソニー|olympus|オリンパス|nintendo|任天堂|sega|セガ|bandai|バンダイ|gundam|gunpla/);
   return part&&maker&&!has(/pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ|universal fit|fits all|汎用品/);
  }
