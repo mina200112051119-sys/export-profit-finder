@@ -49,3 +49,24 @@ test('a sourcing price alone cannot turn an item without sales evidence into a s
   assert.equal(scored.provisional, true);
   assert.equal(scored.risk, '要確認');
 });
+
+test('zero recorded sales remain on evaluation hold even when the sold-history lookup succeeded', () => {
+  const product = normalizeProduct({
+    id: 'camera-zero-sales',
+    name: 'Nikon Coolpix camera',
+    cat: 'カメラ',
+    cost: 1000,
+    sell: 100,
+    ship: 0,
+    condition: 'Used',
+    soldHistoryAvailable: true,
+    soldHistoryCount: 0,
+    sold: 0,
+    list: 20,
+    activeListingsTotal: 20
+  });
+  const scored = scoreV2(product, { fxRate: 150, feeRate: 0.136, internationalRate: 0.0135 }, [product]);
+  assert.ok(scored.totalScore <= 44);
+  assert.equal(scored.provisional, true);
+  assert.equal(scored.risk, '要確認');
+});
