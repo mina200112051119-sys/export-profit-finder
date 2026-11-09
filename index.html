@@ -61,7 +61,7 @@ function getExportUserId(){
   return id;
 }
 function cloudStorageData(){
-  const sourcingCandidates={},selectedSourcing={},officialCandidates={},domesticSearchNames={};
+  const sourcingCandidates={},selectedSourcing={},officialCandidates={},domesticSearchNames={},manualEvidence=getManualEvidence();
   const prefixes={
     candidates:'sourcingCandidates:v1:',
     selected:'selectedSourcingCost:v1:',
@@ -77,7 +77,7 @@ function cloudStorageData(){
       else if(k.startsWith(prefixes.searchName)){const v=localStorage.getItem(k);if(v)domesticSearchNames[k.slice(prefixes.searchName.length)]=v;}
     }catch(e){}
   }
-  return {sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames};
+  return {sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames,manualEvidence};
 }
 async function checkCloudStorage(){
   const el=$('cloud-status');
@@ -110,13 +110,14 @@ async function loadCloudStorage(){
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.domesticSearchNames||{}).forEach(([id,name])=>localStorage.setItem('domesticSearchName:v1:'+id,String(name)));
+    if(Array.isArray(d.data.manualEvidence))localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
 const _removeItem=Storage.prototype.removeItem;
 function scheduleSourcingCloudSave(k){
   const key=String(k);
-  if(['sourcingCandidates:v1:','selectedSourcingCost:v1:','selectedOfficialCandidate:v1:','domesticSearchName:v1:'].some(prefix=>key.startsWith(prefix))){
+  if(['sourcingCandidates:v1:','selectedSourcingCost:v1:','selectedOfficialCandidate:v1:','domesticSearchName:v1:','manualSalesEvidence:v1'].some(prefix=>key.startsWith(prefix))){
     clearTimeout(window.__cloudSaveTimer);
     window.__cloudSaveTimer=setTimeout(saveCloudStorage,800);
   }
