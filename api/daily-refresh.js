@@ -24,7 +24,19 @@ const QUERIES = [
   { cat: '交換部品・消耗品', q: 'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan' }
 ];
 
-const { saveSnapshot, storageConfigured } = require('./data-store');
+const { loadSnapshot, saveSnapshot, storageConfigured } = require('./data-store');
+
+function mergeSnapshotCategories(previousCategories = [], currentCategories = []) {
+  const byQuery = new Map((previousCategories || []).map(row => [row.query, row]));
+  for (const row of currentCategories || []) {
+    if (row.ok || !byQuery.has(row.query)) byQuery.set(row.query, row);
+  }
+  return [...byQuery.values()];
+}
+
+function hasSuccessfulCategories(categories = []) {
+  return (categories || []).some(row => row && row.ok && Array.isArray(row.items));
+}
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
@@ -67,19 +79,38 @@ module.exports = async (req, res) => {
     fx = r.ok ? d : null;
   } catch (_) {}
 
+  const failed = categories.filter(x => !x.ok);
+  if (!hasSuccessfulCategories(categories)) {
+    // Do not replace a usable snapshot with an all-failed/empty refresh.
+    return res.status(502).json({
+      ok: false,
+      saved: false,
+      error: 'All category searches failed; the previous snapshot was kept.',
+      failedCategories: failed.map(x => x.category)
+    });
+  }
+
+  let previousSnapshot = null;
+  try {
+    previousSnapshot = await loadSnapshot();
+  } catch (e) {
+    // If the previous snapshot cannot be read, avoid overwriting it with partial data.
+    return res.status(500).json({ error: 'Previous snapshot read failed; no data was overwritten.' });
+  }
+
   const snapshot = {
     version: 1,
     refreshedAt: new Date().toISOString(),
     source: 'eBay Browse + Frankfurter',
-    categories,
-    fx,
+    categories: mergeSnapshotCategories(previousSnapshot?.categories || [], categories),
+    fx: fx || previousSnapshot?.fx || null,
     warnings: [
       '保存しているeBayデータは現在出品データです。過去の販売実績はMarketplace Insightsの利用可否に依存します。',
+      '検索に失敗した項目は、前回取得できたデータがあれば保持します。最新データとは限りません。',
       '利益・ランキングは取得時点の情報を基にした推定です。'
     ]
   };
 
-  const failed = categories.filter(x => !x.ok);
   try {
     await saveSnapshot(snapshot);
   } catch (e) {
@@ -90,7 +121,11 @@ module.exports = async (req, res) => {
     ok: failed.length === 0,
     saved: true,
     refreshedAt: snapshot.refreshedAt,
-    categoryCount: categories.length,
+    categoryCount: snapshot.categories.length,
+    updatedCategoryCount: categories.filter(x => x.ok).length,
     failedCategories: failed.map(x => x.category)
   });
 };
+
+module.exports.mergeSnapshotCategories = mergeSnapshotCategories;
+module.exports.hasSuccessfulCategories = hasSuccessfulCategories;
