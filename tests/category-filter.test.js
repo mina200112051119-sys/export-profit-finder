@@ -53,3 +53,7 @@ test('live eBay category search uses the same sales-evidence-aware ranking as th
   assert.match(live, /p\.soldHistoryAvailable\?p\.stars:'評価保留'/);
   assert.match(live, /評価保留（販売実績未確認）/);
 });
+
+test('name enrichment is limited to the 50 candidates that can be displayed', () => {
+  assert.match(html, /const list=\(items\|\|\[\]\)\.slice\(0,50\)/);
+});
