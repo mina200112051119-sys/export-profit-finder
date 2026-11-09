@@ -198,7 +198,7 @@ window.fetch=async function(input,init){
 async function useDaily(){
   snapshot=await snapshotPromise;
   if(!snapshot)return;
-  const wait=setInterval(()=>{
+  const wait=setInterval(async()=>{
     if(typeof window.refresh!=='function')return;
     clearInterval(wait);
     window.__dailySnapshotLoaded=snapshot;
