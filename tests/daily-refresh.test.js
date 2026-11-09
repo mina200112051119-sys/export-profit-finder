@@ -52,7 +52,7 @@ test('scheduled searches skip duplicate title translations and use bounded paral
   const source = fs.readFileSync('api/daily-refresh.js', 'utf8');
   const search = fs.readFileSync('api/ebay-search.js', 'utf8');
   assert.match(source, /skipTranslation: '1'/);
-  assert.match(source, /length: 3/);
+  assert.match(source, /length: 4/);
   assert.doesNotMatch(source, /req\.headers\.host/);
   assert.match(search, /skipTranslation \|\| ''\) !== '1'/);
 });
