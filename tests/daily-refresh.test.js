@@ -37,3 +37,22 @@ test('a failed query without previous data remains marked failed, not as a valid
   assert.equal(merged[0].ok, false);
   assert.equal(refresh.hasSuccessfulCategories(merged), false);
 });
+
+test('daily refresh invokes the JSON API handler directly without a protected self-request', async () => {
+  const result = await refresh.invokeApi(async (req, res) => {
+    assert.equal(req.method, 'GET');
+    return res.status(202).json({ items: [{ itemId: 'direct-call' }] });
+  }, { method: 'GET', query: {}, headers: {} });
+  assert.equal(result.statusCode, 202);
+  assert.equal(result.body.items[0].itemId, 'direct-call');
+});
+
+test('scheduled searches skip duplicate title translations and use bounded parallel workers', () => {
+  const fs = require('node:fs');
+  const source = fs.readFileSync('api/daily-refresh.js', 'utf8');
+  const search = fs.readFileSync('api/ebay-search.js', 'utf8');
+  assert.match(source, /skipTranslation: '1'/);
+  assert.match(source, /length: 3/);
+  assert.doesNotMatch(source, /req\.headers\.host/);
+  assert.match(search, /skipTranslation \|\| ''\) !== '1'/);
+});
