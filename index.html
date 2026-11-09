@@ -110,7 +110,7 @@ async function loadCloudStorage(){
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.domesticSearchNames||{}).forEach(([id,name])=>localStorage.setItem('domesticSearchName:v1:'+id,String(name)));
-    if(Array.isArray(d.data.manualEvidence))localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));
+    if(Array.isArray(d.data.manualEvidence)){localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));data=mergeManualEvidence(data);if(typeof render==='function')render();}
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
@@ -362,7 +362,7 @@ async function refresh(){
    const merged={items:mergedItems,total:rows.reduce((n,x)=>n+Number(x.data.total||0),0)};
    try{live.push(...map(merged,c));}catch(e){errors.push(c+'：候補の整理に失敗しました '+(e?.message||String(e)));}
   }
-  data=live;updated=new Date().toLocaleString('ja-JP');
+  data=mergeManualEvidence(live);updated=new Date().toLocaleString('ja-JP');
   try{render();}catch(e){$('status').textContent='ランキング作成エラー：'+(e?.message||String(e));return;}
   const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>検索 '+(tasks.length-errors.length)+'/'+tasks.length+'件成功。現在の出品価格・送料・為替を使用しています。';
   $('status').innerHTML=(errors.length?'<b>更新完了（一部検索できず）</b>':'<b>更新完了</b>')+'<br>'+summary+(errors.length?'<br>取得エラー：'+errors.map(esc).join('<br>'):'')+'<br>商品本体価格が1,000円相当以上の候補を表示しています。';
