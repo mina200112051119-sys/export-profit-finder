@@ -25,6 +25,30 @@ const QUERIES = [
 ];
 
 const { loadSnapshot, saveSnapshot, storageConfigured } = require('./data-store');
+const ebaySearch = require('./ebay-search');
+const exchangeRate = require('./exchange-rate');
+
+function invokeApi(handler, req) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let statusCode = 200;
+    const res = {
+      setHeader() {},
+      status(code) { statusCode = code; return this; },
+      json(body) {
+        if (!settled) { settled = true; resolve({ statusCode, body }); }
+        return this;
+      },
+      end() {
+        if (!settled) { settled = true; resolve({ statusCode, body: null }); }
+        return this;
+      }
+    };
+    Promise.resolve(handler(req, res)).catch(error => {
+      if (!settled) { settled = true; reject(error); }
+    });
+  });
+}
 
 function mergeSnapshotCategories(previousCategories = [], currentCategories = []) {
   const byQuery = new Map((previousCategories || []).map(row => [row.query, row]));
@@ -47,38 +71,47 @@ module.exports = async (req, res) => {
     return res.status(503).json({ error: 'Durable storage is not configured. Connect Upstash Redis/KV to Vercel first.' });
   }
 
-  const host = req.headers.host;
-  if (!host) return res.status(500).json({ error: 'Host header is missing' });
-  const protocol = req.headers['x-forwarded-proto'] || 'https';
-  const base = `${protocol}://${host}`;
-  const categories = [];
-
-  for (const item of QUERIES) {
-    try {
-      const r = await fetch(`${base}/api/ebay-search?q=${encodeURIComponent(item.q)}`, {
-        headers: { 'x-cron-refresh': '1' }
-      });
-      const d = await r.json();
-      categories.push({
-        category: item.cat,
-        query: item.q,
-        ok: r.ok,
-        count: d.count || 0,
-        items: d.items || [],
-        priceStatsUsd: d.priceStatsUsd || null
-      });
-    } catch (e) {
-      categories.push({ category: item.cat, query: item.q, ok: false, count: 0, items: [], error: e.message || 'request failed' });
+  // Call the API handlers directly. Calling this deployment over HTTP can return
+  // an SSO/HTML page to a scheduled function instead of the JSON API response.
+  const categories = new Array(QUERIES.length);
+  let next = 0;
+  const worker = async () => {
+    while (true) {
+      const index = next++;
+      if (index >= QUERIES.length) return;
+      const item = QUERIES[index];
+      try {
+        const result = await invokeApi(ebaySearch, {
+          method: 'GET',
+          query: { q: item.q, limit: '50', skipTranslation: '1' },
+          headers: {}
+        });
+        const body = result.body || {};
+        categories[index] = {
+          category: item.cat,
+          query: item.q,
+          ok: result.statusCode >= 200 && result.statusCode < 300 && Array.isArray(body.items),
+          count: Number(body.count || 0),
+          items: Array.isArray(body.items) ? body.items : [],
+          priceStatsUsd: body.priceStatsUsd || null,
+          ...((result.statusCode < 200 || result.statusCode >= 300) ? { error: body.error || 'eBay search failed' } : {})
+        };
+      } catch (e) {
+        categories[index] = {
+          category: item.cat, query: item.q, ok: false, count: 0, items: [],
+          error: e.message || 'request failed'
+        };
+      }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: 3 }, () => worker()));
 
   let fx = null;
   try {
-    const r = await fetch(`${base}/api/exchange-rate`, { headers: { 'x-cron-refresh': '1' } });
-    const d = await r.json();
-    fx = r.ok ? d : null;
+    const result = await invokeApi(exchangeRate, { method: 'GET', query: {}, headers: {} });
+    fx = result.statusCode >= 200 && result.statusCode < 300 ? result.body : null;
   } catch (_) {}
-
+  
   const failed = categories.filter(x => !x.ok);
   if (!hasSuccessfulCategories(categories)) {
     // Do not replace a usable snapshot with an all-failed/empty refresh.
@@ -129,3 +162,5 @@ module.exports = async (req, res) => {
 
 module.exports.mergeSnapshotCategories = mergeSnapshotCategories;
 module.exports.hasSuccessfulCategories = hasSuccessfulCategories;
+
+module.exports.invokeApi = invokeApi;
