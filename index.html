@@ -187,8 +187,20 @@ function dedupeCategoryProducts(rows,cat){
     'カメラ':{include:/(camera|カメラ|digital camera|compact camera|point.?and.?shoot|lumix|panasonic|canon|powershot|nikon|coolpix|fujifilm|finepix|sony|cyber.?shot|olympus|コンパクトデジタル|デジカメ)/i,exclude:/(pokemon|ポケモン|fishing|釣具|gunpla|plastic model|camera strap|カメラケース単品|lens only|レンズ単品|battery only|charger only|充電器単品|camera bag|カメラバッグ)/i}
   };
   const rule=rules[cat];
+  const hardExcludes={
+    'ポケモンカード':/(?:s[- ]?chinese|simplified chinese|traditional chinese|korean|english[- ](?:language|version)|sticker(?:s)?|choose\s+(?:your\s+)?cards?|select\s+(?:your\s+)?cards?|complete\s+sets?|mixed\s+card\s+lots?|\b(?:lot|bundle|bulk)\s+of\s+\d+|\b\d+\s*(?:pcs|cards)\b)/i,
+    'ポケモン関連サプライ用品':/(?:s[- ]?chinese|simplified chinese|traditional chinese|korean|choose\s+(?:your\s+)?type|select\s+(?:your\s+)?type)/i,
+    '交換部品・消耗品':/(?:choose\s+(?:your\s+)?type|select\s+(?:your\s+)?type|choose\s+(?:your\s+)?model|select\s+(?:your\s+)?model|choose\s+option|select\s+option|options?\s+available)/i
+  };
   for(const p of rows){
     const raw=String(p.name||'');
+    if(hardExcludes[cat]?.test(raw))continue;
+    if(cat==='カメラ'){
+      const isLensOnly=/(?:\blens\s+only\b|\bcamera\s+lens\b|\b\d{2,3}\s*mm\b|レンズ単品)/i.test(raw)&&!/(?:digital\s+camera|compact\s+camera|camera\s+body|デジタルカメラ|コンパクトカメラ)/i.test(raw);
+      const modelTokens=raw.match(/(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{2,}|\b[A-Z]{2,5}-\d{2,5}[A-Z0-9-]*\b)/gi)||[];
+      const multiBrand=(raw.match(/\b(?:canon|nikon|sony|fujifilm|olympus|panasonic|samsung)\b/gi)||[]).map(x=>x.toLowerCase()).filter((x,i,a)=>a.indexOf(x)===i);
+      if(isLensOnly||(modelTokens.length>1&&!/(?:\blot\b|\bbundle\b|\bset\s+of\b|複数台|まとめ売り)/i.test(raw))||(multiBrand.length>1&&!/(?:\blot\b|\bbundle\b|\bset\s+of\b|複数台|まとめ売り)/i.test(raw)))continue;
+    }
     if(cat==='釣具'&&fishingBrandConflict(raw))continue;
     if(rule&&(!rule.include.test(raw)||rule.exclude.test(raw)))continue;
     const key=categoryIdentityKey(p,cat);
