@@ -197,14 +197,13 @@ window.fetch=async function(input,init){
 };
 async function useDaily(){
   snapshot=await snapshotPromise;
-  if(!snapshot)return;
   const wait=setInterval(async()=>{
     if(typeof window.refresh!=='function')return;
     clearInterval(wait);
     window.__dailySnapshotLoaded=snapshot;
-    window.__dailySnapshotMode=true;
-    // Keep snapshot mode active until every refresh query has finished.
-    // Turning it off after a fixed delay mixed cached and live results.
+    window.__dailySnapshotMode=!!snapshot;
+    // This is the single initial refresh. index.html does not start a second
+    // refresh before DOMContentLoaded, so the first request is not cancelled.
     try{
       await window.refresh();
     }finally{
