@@ -248,7 +248,8 @@ function classifyRetroListing(p){
     :/dreamcast|ドリームキャスト/i.test(t)?'ドリームキャスト'
     :/playstation 2|\bps2\b/i.test(t)?'PlayStation 2'
     :/playstation|\bps1\b|psx/i.test(t)?'PlayStation'
-    :/mega cd|メガcd/i.test(t)?'メガCD'
+    :/3do/i.test(t)?'3DO'
+    :/mega cd|sega cd|メガcd|セガcd/i.test(t)?'メガCD'
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
     :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
   const productType=/controller|gamepad|joystick|コントローラー|ゲームパッド|ジョイスティック/i.test(t)?'周辺機器'
