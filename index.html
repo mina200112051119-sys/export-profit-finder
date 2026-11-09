@@ -584,13 +584,16 @@ function cleanPokemonDisplayName(p, translated){
   return [name,number,set?'（'+set+'）':''].filter(Boolean).join(' ');
 }
 async function enrichOfficialNames(items, categoryOverride){
-  const list=(items||[]).slice(0,20);
-  await Promise.all(list.map(async p=>{
-    const candidate=await officialNameCandidate(p,categoryOverride);
+  const list=(items||[]);
+  for(let start=0;start<list.length;start+=5){
+    await Promise.all(list.slice(start,start+5).map(async (p,offset)=>{
+    const index=start+offset;
+    // 公式情報との照合は最初の20件に限定し、残りも日本語化する。
+    const candidate=index<20?await officialNameCandidate(p,categoryOverride):null;
     const id=String(p.id||p.itemId||'');
     const target=(data||[]).find(x=>String(x.id)===id);
     const raw=String(p.name||p.title||'');
-    const translated=candidate&&candidate.titleJa?candidate.titleJa:await translateText(raw,'ja');
+    const translated=candidate&&candidate.titleJa?candidate.titleJa:(p.titleJa&&p.titleJa!==raw?p.titleJa:await translateText(raw,'ja'));
     const isStrongCandidate=!!(candidate&&Number(candidate.score)>=60&&hasJapaneseText(candidate.titleJa));
     let displayName;
     // 全体ランキングでは categoryOverride が未指定になるため、商品自身のカテゴリーも使う。
@@ -622,7 +625,8 @@ async function enrichOfficialNames(items, categoryOverride){
       item.officialNameStatus=status;
       item.officialNameDiagnostic=candidate?.diagnostic||null;
     }
-  }));
+    }));
+  }
 }
 async function translateText(text,to='ja'){try{const from=to==='ja'&&/[A-Za-z]{2,}/u.test(String(text||''))?'en':'auto';const r=await fetch(API_BASE+'/api/translate?text='+encodeURIComponent(text)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
 async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];await enrichOfficialNames(enriched,cat);const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" style="margin-top:8px">詳細分析を見る</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
