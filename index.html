@@ -178,7 +178,7 @@ function map(d,cat,cost=0){
 function dedupeCategoryProducts(rows,cat){
   const seen=new Map(),out=[];
   const rules={
-    'レトロゲーム':{include:/(video games?|retro games?|game software|game cartridge|cartridge|ゲームソフト|ゲームカセット|nintendo|ニンテンドー|famicom|ファミコン|super famicom|スーパーファミコン|game boy|ゲームボーイ|n64|nintendo 64|playstation|ps1|ps2|セガ|sega|mega drive|メガドライブ|saturn|サターン|dreamcast|ドリームキャスト|ゲーム本体|console|handheld|controller|gamepad|joystick|ゲームディスク|ゲームパッド|コントローラー|カセット)/i,exclude:/(pokemon card|ポケモンカード|fishing|釣具|camera|カメラ|gunpla|plastic model|choose\s+(?:a\s+|your\s+)?games?|pick\s+(?:a\s+|your\s+)?games?|select\s+(?:a\s+|your\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|\bcategory\b|\bsearch\s+results?\b|\bmenu\b|\bsoftware\s+list\b|\bgame\s+list\b|ゲームを選んで|ゲームを選択|タイトルを選んで|タイトルを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧)/i},
+    'レトロゲーム':{include:/(video games?|retro games?|game software|game cartridge|cartridge|ゲームソフト|ゲームカセット|nintendo|ニンテンドー|famicom|ファミコン|super famicom|スーパーファミコン|game boy|ゲームボーイ|n64|nintendo 64|gamecube|game cube|ゲームキューブ|wii|wii u|ps3|playstation 3|psp|playstation portable|ps vita|vita|umd|pc engine|pcエンジン|turbografx|mega cd|メガcd|nintendo 3ds|3ds|playstation|ps1|ps2|セガ|sega|mega drive|メガドライブ|saturn|サターン|dreamcast|ドリームキャスト|ゲーム本体|console|handheld|controller|gamepad|joystick|ゲームディスク|ゲームパッド|コントローラー|カセット)/i,exclude:/(pokemon card|ポケモンカード|fishing|釣具|camera|カメラ|gunpla|plastic model|choose\s+(?:a\s+|your\s+)?games?|pick\s+(?:a\s+|your\s+)?games?|select\s+(?:a\s+|your\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|\bcategory\b|\bsearch\s+results?\b|\bmenu\b|\bsoftware\s+list\b|\bgame\s+list\b|ゲームを選んで|ゲームを選択|タイトルを選んで|タイトルを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧)/i},
     'ガンプラ':{include:/(gunpla|ガンプラ|gundam|ガンダム|bandai|バンダイ|plastic model kit|model kit|プラモデル|HGUC?|MG|RG|PG|EG)/i,exclude:/(pokemon|ポケモン|fishing|釣具|camera|カメラ|video game|ゲームソフト|action figure|フィギュア完成品|ガシャポン|食玩)/i},
     '交換部品・消耗品':{include:/(replacement|spare|repair|parts?|component|battery|charger|adapter|cable|cord|knob|spool|handle|drag|eyecup|cap|decal|sticker|runner|refill|consumable|交換|補修|修理|部品|パーツ|替え|詰め替え|消耗品|バッテリー|充電器|アダプター|ケーブル|ハンドル|スプール|ノブ|アイカップ|キャップ|デカール|シール|ランナー)/i,exclude:/(pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ)/i},
     'ポケモンカード':{include:/(pokemon|pok[eé]mon|ポケモン|pikachu|charizard|mew|tcg|trading card|card game)/i,exclude:/(fishing|camera|gunpla|plastic model|playstation|nintendo switch console)/i},
@@ -224,16 +224,24 @@ function classifyRetroListing(p){
     :/game boy advance|gba|ゲームボーイアドバンス/i.test(t)?'ゲームボーイアドバンス'
     :/game boy|gameboy|ゲームボーイ/i.test(t)?'ゲームボーイ'
     :/nintendo 64|\bn64\b|ニンテンドー64/i.test(t)?'Nintendo 64'
+    :/gamecube|game cube|ゲームキューブ/i.test(t)?'Nintendo GameCube'
+    :/wii u/i.test(t)?'Nintendo Wii U'
+    :/\bwii\b|ウィー/i.test(t)?'Nintendo Wii'
+    :/nintendo 3ds|\b3ds\b/i.test(t)?'Nintendo 3DS'
+    :/nintendo ds|\bnds\b/i.test(t)?'Nintendo DS'
+    :/ps vita|playstation vita|\bvita\b/i.test(t)?'PS Vita'
+    :/\bpsp\b|playstation portable|\bumd\b/i.test(t)?'PSP'
+    :/playstation 3|\bps3\b/i.test(t)?'PlayStation 3'
     :/saturn|サターン/i.test(t)?'セガサターン'
     :/dreamcast|ドリームキャスト/i.test(t)?'ドリームキャスト'
     :/playstation 2|\bps2\b/i.test(t)?'PlayStation 2'
     :/playstation|\bps1\b|psx/i.test(t)?'PlayStation'
+    :/mega cd|メガcd/i.test(t)?'メガCD'
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
-    :/nintendo ds|\bnds\b/i.test(t)?'Nintendo DS'
-    :/\bpsp\b|playstation portable/i.test(t)?'PSP':'機種未確認';
+    :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
   const productType=/controller|gamepad|joystick|コントローラー|ゲームパッド|ジョイスティック/i.test(t)?'周辺機器'
     :/console|system|本体|handheld|携帯ゲーム機/i.test(t)?'ゲーム機本体'
-    :/cartridge|カセット|ゲームソフト|game software|game disc|disc|ゲームディスク|software|vib[-\s]?ribbon|ビブリボン/i.test(t)?'ゲームソフト':'商品種類未確認';
+    :/cartridge|カセット|ゲームソフト|game software|game disc|disc|ゲームディスク|software|umd|blu.?ray|game card|ゲームカード|vib[-\s]?ribbon|ビブリボン/i.test(t)?'ゲームソフト':'商品種類未確認';
   const bundle=/(?:\blot\b|\bbundle\b|\bcollection\b|\b\d+\s*(?:games?|items?|pieces?)\b|まとめ売り|セット|本体.*(?:games?|本)|ゲーム\d+本)/i.test(t)?'セット商品':'単品候補';
   const model=(t.match(/\b(?:HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/i)||[])[0]||'';
   return {platform,productType,bundle,model};
@@ -297,7 +305,7 @@ function defaultSearchQueriesForCategory(c){const queries={
 'ポケモン関連サプライ用品':['Pokemon Center Japan official Pokemon TCG card sleeves deck box playmat binder','Japanese Pokemon official TCG playmat card file binder storage box','Pokemon Center Japan exclusive deck case sleeves card storage official','Japanese Pokemon TCG official sleeves deck box playmat sealed accessories -single cards -plush -figure','Pokemon Center Japan official playmat card binder collection file','Pokemon Center Japan card album collection file official goods','Pokemon card game official damage counter coin deck case accessories Japan'], 
 '釣具':['Shimano fishing reel spinning baitcasting Japan -Daiwa -parts -bearing -bearings -replacement -lot','Daiwa fishing reel spinning baitcasting Japan -Shimano -parts -bearing -bearings -replacement -lot','Shimano fishing rod surf rod bass rod Japan -Daiwa -parts -replacement -lot','Daiwa fishing rod surf rod bass rod Japan -Shimano -parts -replacement -lot','Shimano fishing lure hard bait soft bait Japan -Daiwa -parts -replacement -lot','Daiwa fishing lure hard bait soft bait Japan -Shimano -parts -replacement -lot'],
 'カメラ':['Japanese digital camera compact camera Canon Nikon Sony Fujifilm Panasonic Olympus','used Japanese compact digital camera Lumix Powershot Coolpix FinePix Cyber-shot','Japanese film camera 35mm rangefinder SLR Canon Nikon Olympus Pentax Minolta','Japanese mirrorless digital camera body Sony Canon Fujifilm Panasonic Olympus'], 
-'レトロゲーム':['Nintendo Famicom console Japan','Super Famicom game cartridge Japan','Nintendo Game Boy game cartridge Japan','Nintendo 64 game cartridge Japan','Sega Saturn game disc Japan','Sega Dreamcast game disc Japan','Sony PlayStation PS1 PS2 game disc Japan','Nintendo Sega Sony retro game controller gamepad Japan','Game Boy Advance Nintendo DS PSP handheld console Japan'],
+'レトロゲーム':['Nintendo Famicom console Japan','Super Famicom game cartridge Japan','Nintendo Game Boy game cartridge Japan','Nintendo 64 game cartridge Japan','Sega Saturn game disc Japan','Sega Dreamcast game disc Japan','Sony PlayStation PS1 PS2 game disc Japan','Nintendo Sega Sony retro game controller gamepad Japan','Game Boy Advance Nintendo DS PSP handheld console Japan','Nintendo GameCube game disc console Japan','Nintendo Wii Wii U game disc Japan','Sony PSP UMD game Japan','Sony PlayStation 3 PS3 game disc Japan','Sony PS Vita game cartridge Japan','Sega Mega Drive Mega CD game cartridge Japan','NEC PC Engine TurboGrafx game Japan'],
 'ガンプラ':['Bandai Gunpla HG 1/144 model kit','Bandai Gundam MG Master Grade 1/100 model kit','Bandai Gundam RG Real Grade 1/144 model kit','Bandai Gundam PG Perfect Grade model kit','Vintage Bandai Gundam plastic model kit Japan'],
 '交換部品・消耗品':['Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal','Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal','Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan','Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan','Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan']
 };return queries[c]||[c]}
