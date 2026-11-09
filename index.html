@@ -855,7 +855,7 @@ if(typeof window.renderList==='function'){
   originalRender(prepared,title,reviewList);
   document.querySelectorAll('.product[data-product-id]').forEach(card=>{
    const p=(list||[]).find(x=>String(x.id)===card.getAttribute('data-product-id'));
-   if(p&&!p.soldHistoryAvailable){
+   if(p&&(!p.soldHistoryAvailable||Number(p.soldHistoryCount||0)<=0)){
     const star=card.querySelector('.stars');if(star)star.textContent='評価保留';
     const score=card.querySelector('.score');if(score)score.textContent='—';
     const label=[...card.querySelectorAll('.row span')].find(x=>x.textContent==='候補スコア');if(label)label.textContent='評価状態';
