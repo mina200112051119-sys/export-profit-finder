@@ -87,9 +87,11 @@ module.exports = async (req, res) => {
       categories: item.categories || []
     })).filter(x => x.price > 0);
 
-    // Translate listing titles server-side so the UI does not depend on a browser-side translation request.
-    const translated = await Promise.all(items.slice(0, 20).map(async item => ({ ...item, titleJa: await translateText(item.title, 'en', 'ja') })));
-    for (let i = 0; i < translated.length; i++) items[i].titleJa = translated[i].titleJa;
+    // Daily snapshots can skip translation to avoid hundreds of redundant translation requests.
+    if (String(req.query?.skipTranslation || '') !== '1') {
+      const translated = await Promise.all(items.slice(0, 20).map(async item => ({ ...item, titleJa: await translateText(item.title, 'en', 'ja') })));
+      for (let i = 0; i < translated.length; i++) items[i].titleJa = translated[i].titleJa;
+    }
 
     res.json({
       query: q,
