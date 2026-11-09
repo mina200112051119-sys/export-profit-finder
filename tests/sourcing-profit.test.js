@@ -358,3 +358,12 @@ test('deduplication keeps the listing with a saved sourcing cost instead of repl
   assert.ok(html.includes('const candidateHasSavedCost=Number(p.cost||0)>0'));
   assert.ok(html.includes('candidateHasSavedCost&&!priorHasSavedCost'));
 });
+
+test('camera profit calculation uses the standard eBay final value fee rather than the obsolete lower rate', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(html, /'カメラ':\.136/);
+  assert.match(live, /camera\|カメラ\/i\.test\(cat\)\?0\.136/);
+  assert.doesNotMatch(html, /'カメラ':\.0935/);
+  assert.doesNotMatch(live, /camera\|カメラ\/i\.test\(cat\)\?0\.0935/);
+});
