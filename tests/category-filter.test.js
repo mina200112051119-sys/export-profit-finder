@@ -27,3 +27,21 @@ test('replacement-part results reject listings that require choosing an unspecif
   assert.match(html, /'交換部品・消耗品':[\s\S]*?choose\\s\+\(\?:your\\s\+\)\?type/);
   assert.match(html, /select\\s\+option/);
 });
+
+test('all seven categories are present in the initial page, including replacement parts', () => {
+  assert.match(html, /category\('交換部品・消耗品'\)/);
+});
+
+test('initial data refresh is not started twice before the snapshot bridge runs', () => {
+  assert.doesNotMatch(html, /loadCloudStorage\(\)\)[\s\S]{0,180}refresh\(\);<\\/script>/);
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  assert.match(engine, /window\.__dailySnapshotMode=!!snapshot/);
+  assert.match(engine, /await window\.refresh\(\)/);
+});
+
+test('retro-game candidate guard accepts the expanded console families', () => {
+  assert.match(html, /gamecube\|game cube\|ゲームキューブ/);
+  assert.match(html, /ps vita\|playstation vita/);
+  assert.match(html, /pc engine\|pcエンジン\|turbografx/);
+  assert.match(html, /3do/);
+});
