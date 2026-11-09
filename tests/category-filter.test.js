@@ -33,7 +33,8 @@ test('all seven categories are present in the initial page, including replacemen
 });
 
 test('initial data refresh is not started twice before the snapshot bridge runs', () => {
-  assert.doesNotMatch(html, /loadCloudStorage\(\)\)[\s\S]{0,180}refresh\(\);<\\/script>/);
+  const boot = html.slice(html.lastIndexOf('data=[];')).split('</script>')[0].trim();
+  assert.equal(boot.endsWith('refresh();'), false);
   const engine = fs.readFileSync('ranking-engine.js', 'utf8');
   assert.match(engine, /window\.__dailySnapshotMode=!!snapshot/);
   assert.match(engine, /await window\.refresh\(\)/);
