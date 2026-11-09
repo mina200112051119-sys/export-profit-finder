@@ -606,7 +606,7 @@ function cleanPokemonDisplayName(p, translated){
   return [name,number,set?'（'+set+'）':''].filter(Boolean).join(' ');
 }
 async function enrichOfficialNames(items, categoryOverride){
-  const list=(items||[]);
+  const list=(items||[]).slice(0,50);
   for(let start=0;start<list.length;start+=5){
     await Promise.all(list.slice(start,start+5).map(async (p,offset)=>{
     const index=start+offset;
