@@ -104,7 +104,7 @@ module.exports = async (req, res) => {
       }
     }
   };
-  await Promise.all(Array.from({ length: 3 }, () => worker()));
+  await Promise.all(Array.from({ length: 4 }, () => worker()));
 
   let fx = null;
   try {
