@@ -189,7 +189,8 @@ window.fetch=async function(input,init){
     if(cat){
       if(snapshot===null)snapshot=await snapshotPromise;
       const found=snapshot?.categories?.find(x=>x.query===q);
-      if(found)return makeResponse({items:found.items||[],count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
+      // Failed snapshot rows are not valid empty results; fall back to the live eBay API.
+      if(found?.ok&&Array.isArray(found.items))return makeResponse({items:found.items,count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
     }
   }
   return originalFetch(input,init);
@@ -202,12 +203,13 @@ async function useDaily(){
     clearInterval(wait);
     window.__dailySnapshotLoaded=snapshot;
     window.__dailySnapshotMode=true;
-    window.refresh();
-    setTimeout(()=>{
+    // Keep snapshot mode active until every refresh query has finished.
+    // Turning it off after a fixed delay mixed cached and live results.
+    try{
+      await window.refresh();
+    }finally{
       window.__dailySnapshotMode=false;
-      const el=document.getElementById('status');
-      if(el)el.innerHTML='<b>保存済み自動更新データを表示中</b><br>最終更新：'+new Date(snapshot.refreshedAt).toLocaleString('ja-JP')+'<br><span class="muted">「今すぐ更新・再計算」を押すと、この端末からeBayの最新データを取得します。</span>';
-    },1500);
+    }
   },50);
   setTimeout(()=>clearInterval(wait),10000);
 }
