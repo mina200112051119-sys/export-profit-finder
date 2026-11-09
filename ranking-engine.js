@@ -139,8 +139,8 @@ function scoreV2(raw,s={},universe=[]){
     base.scores.fees*.06
   ));
   // 仕入価格も実売根拠もない段階では高評価を付けない。
-  if(p.cost<=0&&!p.soldHistoryAvailable)total=Math.min(total,44);
-  const risk=m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
+  if(!p.soldHistoryAvailable)total=Math.min(total,44);
+  const risk=!p.soldHistoryAvailable?'要確認':m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
   if(m.currentProfit!=null) recommendationReasons.push('予想利益 '+(m.currentProfit>=0?'+':'')+Math.round(m.currentProfit).toLocaleString()+'円');
   else recommendationReasons.push('利益は仕入価格入力後に判定');
@@ -152,7 +152,7 @@ function scoreV2(raw,s={},universe=[]){
   recommendationReasons.push('リスク '+risk);
   recommendationReasons.push('信頼度 '+m.confidence);
   const stars=total>=90?'★★★★★':total>=80?'★★★★☆':total>=65?'★★★☆☆':total>=45?'★★☆☆☆':'★☆☆☆☆';
-  return {...base,totalScore:total,stars,risk,confidence:m.confidence,dataCompleteness:completeness,riskMetrics:m,recommendationReasons,provisional:p.cost<=0,scoreVersion:'v4',scoreBreakdown:{marketData:round(marketDataScore),salesEvidence:round(salesEvidenceScore),priceHistory:round(historyEvidenceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
+  return {...base,totalScore:total,stars,risk,confidence:m.confidence,dataCompleteness:completeness,riskMetrics:m,recommendationReasons,provisional:p.cost<=0||!p.soldHistoryAvailable,scoreVersion:'v4',scoreBreakdown:{marketData:round(marketDataScore),salesEvidence:round(salesEvidenceScore),priceHistory:round(historyEvidenceScore),competition:round(competitionScore),shipping:round(shippingScore),condition:round(conditionScore)}};
 }
 function rankV2(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
