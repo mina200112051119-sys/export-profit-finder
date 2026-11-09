@@ -50,7 +50,7 @@ test('retro-game candidate guard accepts the expanded console families', () => {
 test('live eBay category search uses the same sales-evidence-aware ranking as the main app', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
   assert.match(live, /RankingEngine\.rankV2\(items/);
-  assert.match(live, /p\.soldHistoryAvailable\?p\.stars:'評価保留'/);
+  assert.match(live, /p\.soldHistoryAvailable&&Number\(p\.soldHistoryCount\|\|0\)>0\)\?p\.stars/);
   assert.match(live, /評価保留（販売実績未確認）/);
 });
 
