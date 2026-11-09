@@ -367,3 +367,12 @@ test('camera profit calculation uses the standard eBay final value fee rather th
   assert.doesNotMatch(html, /'カメラ':\.0935/);
   assert.doesNotMatch(live, /camera\|カメラ\/i\.test\(cat\)\?0\.0935/);
 });
+
+test('manual research form explains the exact data to enter and saves the checked date', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /eBay Product Research/);
+  assert.match(html, /過去90日の販売件数/);
+  assert.match(html, /現在の出品数/);
+  assert.match(html, /販売価格の中央値（USD）/);
+  assert.match(html, /manual-date/);
+});
