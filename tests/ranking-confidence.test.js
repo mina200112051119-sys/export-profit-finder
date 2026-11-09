@@ -1,7 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-global.window = {};
+global.window = { fetch: global.fetch };
+global.location = { hostname: 'localhost' };
+global.document = { addEventListener() {} };
 require('../ranking-engine.js');
 
 const { normalizeProduct, confidence } = global.window.RankingEngine;
