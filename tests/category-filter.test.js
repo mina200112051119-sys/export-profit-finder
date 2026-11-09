@@ -57,3 +57,19 @@ test('live eBay category search uses the same sales-evidence-aware ranking as th
 test('name enrichment is limited to the 50 candidates that can be displayed', () => {
   assert.match(html, /const list=\(items\|\|\[\]\)\.slice\(0,50\)/);
 });
+
+test('manual sold-history entry is available in the page and records median sold price', () => {
+  assert.match(html, /id="manual-name"/);
+  assert.match(html, /id="manual-sold"/);
+  assert.match(html, /id="manual-active"/);
+  assert.match(html, /id="manual-price"/);
+  assert.match(html, /onclick="saveManualEvidence\(\)"/);
+  assert.match(html, /soldHistoryAvailable:true,soldHistoryCount:sold,soldMedian:price/);
+  assert.match(html, /sold,list:active/);
+  assert.match(html, /renderManualEvidenceList\(\)/);
+});
+
+test('the live category ranking also holds products with zero sold count', () => {
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(live, /Number\(p\.soldHistoryCount\|\|0\)>0/);
+});
