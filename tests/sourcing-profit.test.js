@@ -262,6 +262,8 @@ test('cloud storage preserves official matches and Japanese sourcing search name
   assert.match(html, /manualEvidence=getManualEvidence\(\)/);
   assert.match(html, /manualSalesEvidence:v1/);
   assert.match(html, /d\.data\.manualEvidence/);
+  assert.match(html, /data=mergeManualEvidence\(data\)/);
+  assert.match(html, /data=mergeManualEvidence\(live\)/);
   const api = fs.readFileSync('api/translate.js', 'utf8');
   assert.match(api, /manualEvidence:Array\.isArray\(data\.manualEvidence\)/);
   assert.match(html, /some\(prefix=>key\.startsWith\(prefix\)\)/);
