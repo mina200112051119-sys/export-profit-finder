@@ -250,6 +250,11 @@ test('removing a saved sourcing selection schedules cloud persistence', () => {
 });
 
 
+test('manual evidence IDs preserve kana so different Japanese card names do not collide', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /name\.toLowerCase\(\)\.replace\(\/\[\^a-z0-9一-龯ぁ-んァ-ヶー\]\+\/g,'-'\)/);
+});
+
 test('cloud storage preserves official matches and Japanese sourcing search names', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /officialCandidates,domesticSearchNames/);
