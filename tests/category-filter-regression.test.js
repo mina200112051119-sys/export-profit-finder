@@ -60,3 +60,27 @@ test('retro: reads accessory model codes from title when name is generic', () =>
   assert.equal(classifyRetro(item).model, 'HVC-002');
   assert.equal(classifyRetro(item).productType, '周辺機器');
 });
+
+
+test('retro: keeps Pokémon video games but rejects Pokémon trading cards', () => {
+  assert.equal(accept({title:'Nintendo Game Boy Pokémon Red Version game cartridge'}, 'レトロゲーム'), true);
+  assert.equal(accept({title:'Pokemon TCG Charizard trading card'}, 'レトロゲーム'), false);
+});
+
+const identityStart = html.indexOf('function categoryIdentityKey(p,cat){');
+const identityEnd = html.indexOf('\nasync function enrichSold', identityStart);
+assert.notEqual(identityStart, -1, 'categoryIdentityKey must exist');
+assert.notEqual(identityEnd, -1, 'categoryIdentityKey end marker must exist');
+const identityContext = {classifyRetroListing: classifyRetro};
+vm.runInNewContext(
+  html.slice(identityStart, identityEnd) + '\nglobalThis.categoryIdentityKey = categoryIdentityKey;',
+  identityContext
+);
+test('retro: same model and same Japanese display name deduplicate despite seller bundle wording', () => {
+  const one = {name:'Super Famicom SHVC-001 console with controller',displayName:'スーパーファミコン｜SHVC-001｜ゲーム機本体'};
+  const two = {name:'Super Famicom SHVC-001 console set tested',displayName:'スーパーファミコン｜SHVC-001｜ゲーム機本体'};
+  assert.equal(
+    identityContext.categoryIdentityKey(one, 'レトロゲーム'),
+    identityContext.categoryIdentityKey(two, 'レトロゲーム')
+  );
+});
