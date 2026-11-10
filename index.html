@@ -280,7 +280,7 @@ function classifyRetroListing(p){
     :/mega cd|sega cd|メガcd|セガcd/i.test(t)?'メガCD'
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
     :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
-  const hasConsole=/\b(?:console|system|handheld)\b|ゲーム機本体|本体|携帯ゲーム機/i.test(t);
+  const hasConsole=/\b(?:console|system|handheld)\b|ゲーム機本体|本体|携帯ゲーム機|\b(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\d{3,5}\b/i.test(t);
   const hasAccessory=/controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード/i.test(t);
   const productType=hasConsole?'ゲーム機本体'
     :hasAccessory?'周辺機器'
