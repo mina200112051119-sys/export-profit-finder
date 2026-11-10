@@ -194,7 +194,7 @@ function map(d,cat,cost=0){
 function dedupeCategoryProducts(rows,cat){
   const seen=new Map(),out=[];
   const rules={
-    'レトロゲーム':{include:/(video games?|retro games?|game software|game cartridge|cartridge|ゲームソフト|ゲームカセット|nintendo|ニンテンドー|famicom|ファミコン|super famicom|スーパーファミコン|game boy|ゲームボーイ|n64|nintendo 64|gamecube|game cube|ゲームキューブ|wii|wii u|ps3|playstation 3|psp|playstation portable|ps vita|vita|umd|pc engine|pcエンジン|turbografx|mega cd|メガcd|nintendo 3ds|3ds|playstation|ps1|ps2|セガ|sega|mega drive|メガドライブ|saturn|サターン|dreamcast|ドリームキャスト|ゲーム本体|console|handheld|ゲームディスク|カセット)/i,exclude:/(pokemon card|ポケモンカード|fishing|釣具|camera|カメラ|gunpla|plastic model|controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード|ac adapter|power adapter|power supply|av cable|usb cable|replacement|spare parts?|repair parts?|accessor(?:y|ies)|ケーブル|電源アダプター|周辺機器|交換部品|補修部品|choose\\s+(?:a\\s+|your\\s+)?games?|pick\\s+(?:a\\s+|your\\s+)?games?|select\\s+(?:a\\s+|your\\s+)?games?|games?\\s+to\\s+choose|choose\\s+from|various\\s+games?|assorted\\s+games?|game\\s+collection|games?\\s+collection|\\bcategory\\b|\\bsearch\\s+results?\\b|\\bmenu\\b|\\bsoftware\\s+list\\b|\\bgame\\s+list\\b|ゲームを選んで|ゲームを選択|タイトルを選んで|タイトルを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧)/i},
+    'レトロゲーム':{include:/(video games?|retro games?|game software|game cartridge|cartridge|ゲームソフト|ゲームカセット|nintendo|ニンテンドー|famicom|ファミコン|super famicom|スーパーファミコン|game boy|ゲームボーイ|n64|nintendo 64|gamecube|game cube|ゲームキューブ|wii|wii u|ps3|playstation 3|psp|playstation portable|ps vita|vita|umd|pc engine|pcエンジン|turbografx|mega cd|メガcd|nintendo 3ds|3ds|playstation|ps1|ps2|セガ|sega|mega drive|メガドライブ|saturn|サターン|dreamcast|ドリームキャスト|ゲーム本体|console|handheld|ゲームディスク|カセット)/i,exclude:/(pokemon card|ポケモンカード|fishing|釣具|camera|カメラ|gunpla|plastic model|keyboard|キーボード|ac adapter|power adapter|power supply|av cable|usb cable|replacement|spare parts?|repair parts?|accessor(?:y|ies)|ケーブル|電源アダプター|周辺機器|交換部品|補修部品|choose\\s+(?:a\\s+|your\\s+)?games?|pick\\s+(?:a\\s+|your\\s+)?games?|select\\s+(?:a\\s+|your\\s+)?games?|games?\\s+to\\s+choose|choose\\s+from|various\\s+games?|assorted\\s+games?|game\\s+collection|games?\\s+collection|\\bcategory\\b|\\bsearch\\s+results?\\b|\\bmenu\\b|\\bsoftware\\s+list\\b|\\bgame\\s+list\\b|ゲームを選んで|ゲームを選択|タイトルを選んで|タイトルを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧)/i},
     'ガンプラ':{include:/(gunpla|ガンプラ|gundam|ガンダム|bandai|バンダイ|plastic model kit|model kit|プラモデル|HGUC?|MG|RG|PG|EG)/i,exclude:/(pokemon|ポケモン|fishing|釣具|camera|カメラ|video game|ゲームソフト|action figure|フィギュア完成品|ガシャポン|食玩)/i},
     '交換部品・消耗品':{include:/(replacement|spare|repair|parts?|component|battery|charger|adapter|cable|cord|knob|spool|handle|drag|eyecup|cap|decal|sticker|runner|refill|consumable|交換|補修|修理|部品|パーツ|替え|詰め替え|消耗品|バッテリー|充電器|アダプター|ケーブル|ハンドル|スプール|ノブ|アイカップ|キャップ|デカール|シール|ランナー)/i,exclude:/(pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ)/i},
     'ポケモンカード':{include:/(pokemon|pok[eé]mon|ポケモン|pikachu|charizard|mew|tcg|trading card|card game)/i,exclude:/(fishing|camera|gunpla|plastic model|playstation|nintendo switch console)/i},
@@ -219,6 +219,7 @@ function dedupeCategoryProducts(rows,cat){
     }
     if(cat==='釣具'&&fishingBrandConflict(raw))continue;
     if(rule&&(!rule.include.test(raw)||rule.exclude.test(raw)))continue;
+    if(cat==='レトロゲーム'&&!['ゲーム機本体','ゲームソフト'].includes(classifyRetroListing(p).productType))continue;
     const key=categoryIdentityKey(p,cat);
     if(!key)continue;
     const prior=seen.get(key),total=Number(p.sell||0)+Number(p.ship||0);
@@ -284,7 +285,7 @@ function classifyRetroListing(p){
   const accessoryOnly=/(controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル)/i.test(t) && !/(console|system|handheld|ゲーム機本体|本体)/i.test(t);
   const hasConsole=/\\b(?:console|system|handheld)\\b|ゲーム機本体|本体|携帯ゲーム機|\\b(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\\d{3,5}\\b/i.test(t) && !diskSystem && !/HVC-?007/i.test(t);
   const hasAccessory=diskSystem||accessoryOnly||/controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード/i.test(t);
-  const productType=hasAccessory?'周辺機器':hasConsole?'ゲーム機本体'
+  const productType=hasConsole?'ゲーム機本体':hasAccessory?'周辺機器'
     :/cartridge|カセット|ゲームソフト|game software|game disc|disc|ゲームディスク|software|umd|blu.?ray|game card|ゲームカード|vib[-\\s]?ribbon|ビブリボン/i.test(t)?'ゲームソフト':'商品種類未確認';
   const bundle=/(?:\blot\b|\bbundle\b|\bcollection\b|\b\d+\s*(?:games?|items?|pieces?)\b|まとめ売り|セット|本体.*(?:games?|本)|ゲーム\d+本)/i.test(t)?'セット商品':'単品候補';
   const model=(t.match(/\b(?:HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/i)||[])[0]||'';
