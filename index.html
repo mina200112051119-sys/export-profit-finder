@@ -244,8 +244,13 @@ function categoryIdentityKey(p,cat){
     const x=classifyRetroListing(p);
     // When a real hardware model number exists, merge duplicate listings for the same
     // platform/model and sale type; retain title-based identity when no model is known.
-    const identity=x.model?('model:'+x.model.toLowerCase()):('title:'+compact);
-    return ['retro',x.platform,x.productType,x.bundle,identity].join('|');
+    const display=String(p.displayName||p.titleJa||p.nameJa||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
+    // Identical Japanese display names for the same model/type are one visible candidate,
+    // even if eBay sellers add different bundle/condition wording to the source title.
+    const identity=x.model
+      ? (display?'model:'+x.model.toLowerCase()+'|display:'+display:'model:'+x.model.toLowerCase())
+      : 'title:'+compact;
+    return ['retro',x.platform,x.productType,identity].join('|');
   }
   if(cat==='ガンプラ'){
     const x=classifyGunplaListing(p);
@@ -351,8 +356,8 @@ function classifyPartsDetail(p){
   return {kind,family,brand,modelCandidate,compatibility,model:modelCandidate||'出品タイトルからは確認できず'};
 }
 function rankAll(cat=null){return RankingEngine.rank(data,baseSettings(),cat)}
-function productListingStatus(p){if(p.officialNameStatus)return p.officialNameStatus;const g=p.cat==='ガンプラ'?classifyGunplaListing(p):null;const r=p.cat==='レトロゲーム'?classifyRetroListing(p):null;const model=g?.model||r?.model||'';return model?'型番候補あり・正式名称は未確認':'正式名称・型番は未確認'}
-function rank(cat=null){const eligible=data.filter(p=>p.sell*fxRate>=1000&&(!cat||p.cat===cat));const ranked=RankingEngine.rank(eligible,baseSettings(),cat);return ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!=='高'))}
+function productListingStatus(p){if(p.officialNameStatus)return p.officialNameStatus;if(p.cat==='交換部品・消耗品'){const x=classifyPartsDetail(p);return x.modelCandidate?'対応機種未確認・型番候補あり（'+x.kind+'）':'対応機種未確認（'+x.kind+'）'}const g=p.cat==='ガンプラ'?classifyGunplaListing(p):null;const r=p.cat==='レトロゲーム'?classifyRetroListing(p):null;const model=g?.model||r?.model||'';return model?'型番候補あり・正式名称は未確認':'正式名称・型番は未確認'}
+function rank(cat=null){const eligible=data.filter(p=>p.sell*fxRate>=1000&&(!cat||p.cat===cat));const unique=cat?dedupeCategoryProducts(eligible,cat):eligible;const ranked=RankingEngine.rank(unique,baseSettings(),cat);const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!=='高'));if(cat==='レトロゲーム'){const hardware=safe.filter(p=>classifyRetroListing(p).productType==='ゲーム機本体');const software=safe.filter(p=>classifyRetroListing(p).productType==='ゲームソフト');const other=safe.filter(p=>!['ゲーム機本体','ゲームソフト'].includes(classifyRetroListing(p).productType));return [...hardware.slice(0,25),...software.slice(0,25),...other].slice(0,50)}return safe}
 function rankWithoutPositiveSales(cat=null){return []}
 function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50).map((p,i)=>{const c=p.costs;return '<div class="card product" data-product-id="'+esc(p.id)+'" tabindex="0" onclick="detail(\''+encodeURIComponent(p.id)+'\')"><div style="display:flex;justify-content:space-between"><b>#'+(i+1)+'</b><span class="stars">'+p.stars+'</span></div><h3>'+esc(p.displayName||p.name)+'</h3><div class="muted" style="font-size:12px;margin:3px 0 8px">'+esc(productListingStatus(p))+'</div><div class="row"><span>現在のeBay価格（円換算・送料別）</span><b>'+yen(p.sell*fxRate)+'</b></div><div class="row"><span>eBay送料（円換算）</span><b>'+yen(p.ship*fxRate)+'</b></div><div class="row"><span>候補スコア</span><b class="score">'+p.totalScore+'点</b></div><div class="row"><span>基本情報の充実度</span><b>'+(p.dataCompleteness?.level||'要確認')+'（'+(p.dataCompleteness?.score??'—')+'点）</b></div><div class="row"><span>予想利益</span><b class="ranking-profit '+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit))+'</b></div><div class="row"><span>データの種類</span><b>現在の出品情報のみ</b></div><div class="row"><span>リスク目安</span><b class="'+riskClass(p.risk)+'">'+p.risk+'</b></div><div class="muted">※販売済み価格・販売件数は使用していません。候補スコアは出品価格、利益見込み、手数料、価格下落シナリオ等による比較用です。</div><button class="secondary" type="button" onclick="event.stopPropagation();detail(\''+encodeURIComponent(p.id)+'\')">利益・仕入れ判断の詳細</button></div>'}).join('');$('ranking').innerHTML='<h2>'+esc(title)+'</h2><p class="muted">過去90日販売実績を使わない候補一覧です。現在のeBay出品価格・送料を比較し、最大50件を表示します。仕入れ価格を入力した商品は、利益が0円以下またはリスクが高い場合は候補一覧から除外します。仕入れ価格未入力の商品は利益を判定できません。現在の出品情報だけでは売れ行きは確認できないため、販売実績は別途確認してください。</p>'+(ranked||'<div class="notice">条件に合う候補がまだありません。カテゴリー検索または商品名・型番検索で探してください。商品本体価格が1,000円相当未満の商品は候補ランキングに表示していません。</div>')}function finalJudgment(r,c,p){if(!p.soldHistoryAvailable||Number(p.soldHistoryCount||0)<=0)return '販売実績未確認・判断保留';if(!p.cost||p.cost<=0)return '要仕入価格確認';if(c.profit!=null&&c.profit<0)return 'おすすめしない';if(['ジャンク','傷あり'].includes(p.sourcingCondition))return '慎重（商品の状態を要確認）';if(p.sourcingCondition==='状態不明')return '要確認（状態情報不足）';if(r.risk==='高'||r.totalScore<45)return '慎重';if(r.totalScore<65||r.risk==='中')return '要確認';if(c.profit!=null&&c.profit>=0&&r.risk!=='高')return '仕入れ候補';return '要確認'}
 function judgmentReason(r,c,p){const a=[];if(!p.soldHistoryAvailable||Number(p.soldHistoryCount||0)<=0)a.push('過去90日の販売実績が未確認');a.push('総合点 '+r.totalScore+'点');if(c.profit!=null)a.push('現在利益 '+(c.profit>=0?'+':'')+yen(c.profit));a.push('出品情報ベースの参考評価 '+Math.round(r.scores?.sellability||0)+'点');a.push('リスク '+r.risk);a.push('基本情報の充実度 '+(r.dataCompleteness?.level||'要確認'));return a.join('／')}
@@ -837,7 +842,8 @@ function acceptCandidate(p,cat){
     && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery|charger|adapter|tripod|filter|strap|bag)\b|まとめ売り|ジャンク|未テスト/);
  }
  if(cat==='レトロゲーム'){
-  if(has(/pokemon|ポケモン|fishing|釣具|camera|カメラ|gunpla|plastic model|攻略本|guidebook|magazine/))return false;
+  if(has(/pokemon\s*card|ポケモンカード|pokemon\s*tcg|trading\s*card|攻略本|guidebook|magazine/))return false;
+  if(has(/fishing|釣具|camera|カメラ|gunpla|plastic model/))return false;
   if(has(/choose\s+(?:(?:a|your|one of the|from the)\s+)?games?|pick\s+(?:a\s+|your\s+)?games?|select\s+(?:a\s+|your\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|which\s+game|select\s+one|menu\s+of\s+games|\betc\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧|タイトルを選択|お好きなゲーム|複数タイトルから/))return false;
   if(has(/\b(?:for parts|parts only|repair only|spares? only|untested lot|junk lot|bulk lot|manual only|instruction manual|guide book|strategy guide|magazine)\b|説明書のみ|攻略本|雑誌|修理用|部品取り|ジャンク品まとめ/))return false;
   const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
