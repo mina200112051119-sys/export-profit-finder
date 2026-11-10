@@ -239,8 +239,20 @@ function categoryIdentityKey(p,cat){
   const raw=String([p.name,p.displayName,p.titleJa].filter(Boolean).join(' ')).normalize('NFKC').toLowerCase();
   const compact=raw.replace(/\b(?:japan|japanese|used|new|tested|working|excellent|good condition|free shipping|rare|authentic|region free|ntsc|pal)\b/g,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
   if(!compact)return '';
-  if(cat==='レトロゲーム'){const x=classifyRetroListing(p);return ['retro',x.platform,x.productType,x.model,compact].join('|');}
-  if(cat==='ガンプラ'){const x=classifyGunplaListing(p);return ['gunpla',x.grade,x.scale,x.model,compact].join('|');}
+  if(cat==='レトロゲーム'){
+    const x=classifyRetroListing(p);
+    // When a real hardware model number exists, merge duplicate listings for the same
+    // platform/model and sale type; retain title-based identity when no model is known.
+    const identity=x.model?('model:'+x.model.toLowerCase()):('title:'+compact);
+    return ['retro',x.platform,x.productType,x.bundle,identity].join('|');
+  }
+  if(cat==='ガンプラ'){
+    const x=classifyGunplaListing(p);
+    // Separate model kits from weapons/options/decals, and merge repeated listings
+    // only when a reliable model code is present.
+    const identity=x.model?('model:'+x.model.toLowerCase()):('title:'+compact);
+    return ['gunpla',x.grade,x.scale,x.itemType,x.bundle,identity].join('|');
+  }
   if(cat==='交換部品・消耗品'){const x=classifyPartsDetail(p);return ['parts',x.family,x.kind,x.brand,x.modelCandidate||compact].join('|');}
   return compact;
 }
