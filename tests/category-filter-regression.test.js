@@ -31,3 +31,32 @@ test('Gunpla: rejects tools', () => {
 test('Gunpla: rejects decals and replacement parts', () => {
   assert.equal(accept({title:'Bandai HG Gundam water slide decal replacement parts'}, 'ガンプラ'), false);
 });
+
+const retroStart = html.indexOf('function classifyRetroListing(p){');
+const retroEnd = html.indexOf('\nfunction classifyGunplaListing', retroStart);
+assert.notEqual(retroStart, -1, 'classifyRetroListing must exist');
+assert.notEqual(retroEnd, -1, 'classifyRetroListing end marker must exist');
+const retroContext = {};
+vm.runInNewContext(
+  html.slice(retroStart, retroEnd) + '\nglobalThis.classifyRetroListing = classifyRetroListing;',
+  retroContext
+);
+const classifyRetro = retroContext.classifyRetroListing;
+
+test('retro: rejects an HVC-002 adapter even when seller title says console', () => {
+  const item = {name:'Super Famicom console, Japan', title:'Super Famicom console, Japan (HVC-002)'};
+  assert.equal(accept(item, 'レトロゲーム'), false);
+  assert.equal(classifyRetro(item).productType, '周辺機器');
+});
+
+test('retro: retains a real Super Famicom console with SHVC-001 and included adapter', () => {
+  const item = {name:'Super Famicom console SHVC-001 with AC adapter HVC-002'};
+  assert.equal(accept(item, 'レトロゲーム'), true);
+  assert.equal(classifyRetro(item).productType, 'ゲーム機本体');
+});
+
+test('retro: reads accessory model codes from title when name is generic', () => {
+  const item = {name:'本体、日本', title:'Nintendo Famicom power adapter HVC-002'};
+  assert.equal(classifyRetro(item).model, 'HVC-002');
+  assert.equal(classifyRetro(item).productType, '周辺機器');
+});
