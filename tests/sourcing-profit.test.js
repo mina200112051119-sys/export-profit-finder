@@ -280,7 +280,8 @@ test('replacement parts searches prioritize genuine model-specific spare compone
   assert.match(html, /Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob/);
   assert.match(html, /Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob/);
   assert.match(html, /Canon Nikon genuine camera replacement spare parts/);
-  assert.match(html, /Nintendo Famicom Super Famicom Game Boy genuine controller gamepad keyboard HVC-007 HVC-022 disk system AC adapter power supply AV cable replacement parts Japan/);\n  assert.match(html, /Sega Saturn Dreamcast PlayStation genuine controller gamepad AC adapter power supply AV cable replacement parts Japan/);
+  assert.match(html, /Nintendo Famicom Super Famicom Game Boy genuine controller gamepad keyboard HVC-007 HVC-022 disk system AC adapter power supply AV cable replacement parts Japan/);
+  assert.match(html, /Sega Saturn Dreamcast PlayStation genuine controller gamepad AC adapter power supply AV cable replacement parts Japan/);
   assert.match(html, /Bandai Gunpla genuine replacement parts/);
 });
 
