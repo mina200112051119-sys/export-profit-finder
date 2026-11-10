@@ -282,7 +282,7 @@ function classifyRetroListing(p){
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
     :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
   const diskSystem=/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/i.test(t);
-  const explicitConsole=/\b(?:console|system|handheld)\b|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機/i.test(t);
+  const explicitConsole=/\b(?:console|system|handheld)\b|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機/i.test(t)&&!diskSystem;
   const accessoryOnly=/(controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|adapter|av cable|usb cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|専用アダプター|ケーブル)/i.test(t) && !explicitConsole;
   const hasConsole=explicitConsole||(/\b(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\d{3,5}\b/i.test(t) && !diskSystem && !/HVC-?00[27]/i.test(t));
   const hasAccessory=diskSystem||accessoryOnly||/controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード|HVC-?002/i.test(t);
