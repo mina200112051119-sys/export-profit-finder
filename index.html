@@ -281,13 +281,13 @@ function classifyRetroListing(p){
     :/mega cd|sega cd|メガcd|セガcd/i.test(t)?'メガCD'
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
     :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
-  const diskSystem=/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/i.test(t);
-  const knownAccessoryModel=/HVC-?002|HVC-?007|HVC-?022/i.test(t);
-  const adapterItem=/(?:\\bac\\s+adapter\\b|\\bpower\\s+adapter\\b|\\bpower\\s+supply\\b|\\badapter\\b|電源アダプター|専用アダプター|ACアダプター|電源ユニット)/i.test(t);
-  const explicitConsole=/\\b(?:console|system|handheld)\\b|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機/i.test(t)&&!diskSystem&&!knownAccessoryModel;
-  const accessoryOnly=(knownAccessoryModel||diskSystem||adapterItem||/(controller|gamepad|joystick|keyboard|av cable|usb cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|ケーブル)/i.test(t))&&!explicitConsole;
-  const hasConsole=!knownAccessoryModel&&!diskSystem&&(explicitConsole||(/\\b(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\\d{3,5}\\b/i.test(t)));
-  const hasAccessory=diskSystem||knownAccessoryModel||accessoryOnly||/controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード/i.test(t);
+  const diskSystem=/(?:disk system|disk drive|ディスクシステム|ディスクドライブ|HVC-022)/i.test(t);
+  const knownAccessoryModel=/(?:HVC-002|HVC-007|HVC-022)/i.test(t);
+  const adapterItem=/(?:AC\\s+adapter|power\\s+adapter|power\\s+supply|adapter|電源アダプター|専用アダプター|ACアダプター|電源ユニット)/i.test(t);
+  const explicitConsole=/(?:console|system|handheld|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機)/i.test(t)&&!diskSystem&&!knownAccessoryModel;
+  const accessoryOnly=(knownAccessoryModel||diskSystem||adapterItem||/(?:controller|gamepad|joystick|keyboard|AV cable|USB cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|ケーブル)/i.test(t))&&!explicitConsole;
+  const hasConsole=!knownAccessoryModel&&!diskSystem&&(explicitConsole||/(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\\d{3,5}/i.test(t));
+  const hasAccessory=diskSystem||knownAccessoryModel||accessoryOnly||/(?:controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード)/i.test(t);
   const productType=hasAccessory&&!hasConsole?'周辺機器':hasConsole?'ゲーム機本体':hasAccessory?'周辺機器'
     :/cartridge|カセット|ゲームソフト|game software|game disc|disc|ゲームディスク|software|umd|blu.?ray|game card|ゲームカード|vib[-\s]?ribbon|ビブリボン/i.test(t)?'ゲームソフト':'商品種類未確認';
   const bundle=/(?:\blot\b|\bbundle\b|\bcollection\b|\b\d+\s*(?:games?|items?|pieces?)\b|まとめ売り|セット|本体.*(?:games?|本)|ゲーム\d+本)/i.test(t)?'セット商品':'単品候補';
