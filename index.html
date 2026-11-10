@@ -792,7 +792,7 @@ data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}$('st
 const originalMap=window.map;
 const normalize=s=>String(s||'').normalize('NFKC').toLowerCase();
 function acceptCandidate(p,cat){
- const raw=String([p.name,p.title,p.displayName].filter(Boolean).join(' ')).normalize('NFKC');
+ const raw=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' ')).normalize('NFKC');
  const t=raw.toLowerCase();
  const has=(re)=>re.test(t);
  const unrelated=/(pokemon|ポケモン|fishing|釣具|camera|カメラ|gunpla|plastic model|playstation|攻略本|guidebook|magazine)/i;
@@ -814,7 +814,8 @@ function acceptCandidate(p,cat){
  }
  if(cat==='レトロゲーム'){
   if(has(/pokemon|ポケモン|fishing|釣具|camera|カメラ|gunpla|plastic model|攻略本|guidebook|magazine/))return false;
-  if(has(/choose\s+(?:a\s+|your\s+)?games?|pick\s+(?:a\s+|your\s+)?games?|select\s+(?:a\s+|your\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|\betc\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧/))return false;
+  if(has(/choose\\s+(?:(?:a|your|one of the|from the)\\s+)?games?|pick\\s+(?:a\\s+|your\\s+)?games?|select\\s+(?:a\\s+|your\\s+)?games?|games?\\s+to\\s+choose|choose\\s+from|various\\s+games?|assorted\\s+games?|game\\s+collection|games?\\s+collection|which\\s+game|select\\s+one|menu\\s+of\\s+games|\\betc\\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧|タイトルを選択|お好きなゲーム|複数タイトルから/))return false;
+  if(has(/\\b(?:for parts|parts only|repair only|spares? only|untested lot|junk lot|bulk lot|manual only|instruction manual|guide book|strategy guide|magazine)\\b|説明書のみ|攻略本|雑誌|修理用|部品取り|ジャンク品まとめ/))return false;
   const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
   const itemType=has(/game|software|cartridge|カセット|disc|disk|console|system|handheld|controller|gamepad|joystick|本体|ゲームソフト|ゲームディスク|周辺機器|コントローラー|ゲームパッド|vib[-\s]?ribbon|ビブリボン/);
   return platform&&itemType;
@@ -822,7 +823,8 @@ function acceptCandidate(p,cat){
  if(cat==='ガンプラ'){
   const maker=has(/gunpla|ガンプラ|gundam|ガンダム|bandai|バンダイ/);
   const model=has(/model kit|plastic model|プラモデル|組立|\b(?:hg|mg|rg|pg|eg|mgsd)\b|1\s*\/\s*(?:144|100|60|72|48)/);
-  return maker&&model&&!has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩|figure only/);
+  const accessoryOrPart=has(/\\b(?:tool|tools|nipper|cutter|paint|painting|airbrush|brush|decal|sticker|water.?slide|transfer.?decal|runner|spare parts?|replacement parts?|parts only|weapon set|weapon pack|display stand|action base|base stand|display base|instruction manual|assembly manual|manual only|conversion parts?)\\b|工具|ニッパー|塗料|塗装|エアブラシ|筆|デカール|シール|水転写|ランナー|交換部品|補修部品|パーツのみ|武器セット|武器パーツ|台座|スタンド|説明書|組立説明書|改造パーツ/);
+  return maker&&model&&!accessoryOrPart&&!has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩|figure only|ガンプラ以外|非売品ポスター/);
  }
  if(cat==='交換部品・消耗品'){
   const part=has(/line roller|spool|bail arm|drag knob|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
@@ -836,7 +838,16 @@ if(typeof originalMap==='function'){
   const result=originalMap(d,cat,cost);
   // Keep Japanese candidate names produced by the enrichment step.
   // The previous wrapper replaced every unverified candidate with the raw English eBay title.
-  return result.filter(p=>acceptCandidate(p,cat));
+  const filtered=result.filter(p=>acceptCandidate(p,cat));
+  // Remove exact duplicate listings after normalizing case, spacing and punctuation.
+  const seen=new Set();
+  return filtered.filter(p=>{
+   const identity=String([p.displayName,p.titleJa,p.nameJa,p.title,p.name].find(v=>v&&String(v).trim())||'')
+    .normalize('NFKC').toLowerCase().replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
+   if(!identity)return true;
+   if(seen.has(identity))return false;
+   seen.add(identity);return true;
+  });
  };
 }
 // Do not overwrite translated / official-search candidate names after enrichment.
