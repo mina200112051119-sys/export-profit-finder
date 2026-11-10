@@ -377,3 +377,5 @@ test('manual research form explains the exact data to enter and saves the checke
   assert.match(html, /販売価格の中央値（USD）/);
   assert.match(html, /manual-date/);
 });
+
+// Keep regression expectations aligned with the category-specific query set.
