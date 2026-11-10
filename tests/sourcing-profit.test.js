@@ -101,7 +101,7 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
 
 test('retro and Gunpla refresh use focused queries instead of long mixed keyword searches', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  for (const q of ['Nintendo Famicom console Japan','Super Famicom game cartridge Japan','Nintendo Game Boy game cartridge Japan','Nintendo 64 game cartridge Japan','Sega Saturn game disc Japan','Sega Dreamcast game disc Japan','Sony PlayStation PS1 PS2 game disc Japan','Bandai Gunpla HG 1/144 model kit','Bandai Gundam MG Master Grade 1/100 model kit','Bandai Gundam RG Real Grade 1/144 model kit']) assert.ok(html.includes(q), 'focused query exists: '+q);
+  for (const q of ['Nintendo Famicom HVC-001 HVC-101 console Japan','Super Famicom game cartridge Japan','Nintendo Game Boy Game Boy Advance Nintendo DS handheld console Japan','Nintendo 64 NUS console Japan','Sega Saturn HST console Japan','Sega Dreamcast HKT console Japan','Sony PlayStation PS1 PS2 SCPH console Japan','Bandai Gunpla HG 1/144 model kit','Bandai Gundam MG Master Grade 1/100 model kit','Bandai Gundam RG Real Grade 1/144 model kit']) assert.ok(html.includes(q), 'focused query exists: '+q);
   assert.match(html, /'交換部品・消耗品':\['Shimano genuine fishing reel spare parts/);
   assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
 });
@@ -280,7 +280,7 @@ test('replacement parts searches prioritize genuine model-specific spare compone
   assert.match(html, /Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob/);
   assert.match(html, /Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob/);
   assert.match(html, /Canon Nikon genuine camera replacement spare parts/);
-  assert.match(html, /Nintendo Sega genuine retro game console replacement parts/);
+  assert.match(html, /Nintendo Famicom Super Famicom Game Boy genuine controller gamepad keyboard HVC-007 HVC-022 disk system AC adapter power supply AV cable replacement parts Japan/);\n  assert.match(html, /Sega Saturn Dreamcast PlayStation genuine controller gamepad AC adapter power supply AV cable replacement parts Japan/);
   assert.match(html, /Bandai Gunpla genuine replacement parts/);
 });
 
