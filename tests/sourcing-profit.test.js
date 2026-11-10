@@ -350,7 +350,11 @@ test('candidate shortlist expands broad categories, caps display at 50, and remo
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
   assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
-  assert.ok(html.includes("return ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!=='高'))"));
+  assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
+  assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
+  assert.ok(html.includes("if(cat==='レトロゲーム')"));
+  assert.ok(html.includes('hardware.slice(0,25)'));
+  assert.ok(html.includes('software.slice(0,25)'));
 });
 
 test('deduplication keeps the listing with a saved sourcing cost instead of replacing it with a cheaper duplicate', () => {
