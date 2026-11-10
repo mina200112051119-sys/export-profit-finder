@@ -239,8 +239,8 @@ function categoryIdentityKey(p,cat){
   const raw=String([p.name,p.displayName,p.titleJa].filter(Boolean).join(' ')).normalize('NFKC').toLowerCase();
   const compact=raw.replace(/\b(?:japan|japanese|used|new|tested|working|excellent|good condition|free shipping|rare|authentic|region free|ntsc|pal)\b/g,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
   if(!compact)return '';
-  if(cat==='レトロゲーム'){const x=classifyRetroListing(p);return ['retro',x.platform,x.productType,x.bundle,x.model||compact].join('|');}
-  if(cat==='ガンプラ'){const x=classifyGunplaListing(p);return ['gunpla',x.grade,x.scale,x.state,x.bundle,x.model||compact].join('|');}
+  if(cat==='レトロゲーム'){const x=classifyRetroListing(p);return ['retro',x.platform,x.productType,x.model||compact].join('|');}
+  if(cat==='ガンプラ'){const x=classifyGunplaListing(p);return ['gunpla',x.grade,x.scale,x.model||compact].join('|');}
   if(cat==='交換部品・消耗品'){const x=classifyPartsDetail(p);return ['parts',x.family,x.kind,x.brand,x.modelCandidate||compact].join('|');}
   return compact;
 }
@@ -268,9 +268,11 @@ function classifyRetroListing(p){
     :/mega cd|sega cd|メガcd|セガcd/i.test(t)?'メガCD'
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
     :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
-  const productType=/controller|gamepad|joystick|コントローラー|ゲームパッド|ジョイスティック/i.test(t)?'周辺機器'
-    :/console|system|本体|handheld|携帯ゲーム機/i.test(t)?'ゲーム機本体'
-    :/cartridge|カセット|ゲームソフト|game software|game disc|disc|ゲームディスク|software|umd|blu.?ray|game card|ゲームカード|vib[-\s]?ribbon|ビブリボン/i.test(t)?'ゲームソフト':'商品種類未確認';
+  const hasConsole=/\\b(?:console|system|handheld)\\b|ゲーム機本体|本体|携帯ゲーム機/i.test(t);
+  const hasAccessory=/controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード/i.test(t);
+  const productType=hasConsole?'ゲーム機本体'
+    :hasAccessory?'周辺機器'
+    :/cartridge|カセット|ゲームソフト|game software|game disc|disc|ゲームディスク|software|umd|blu.?ray|game card|ゲームカード|vib[-\\s]?ribbon|ビブリボン/i.test(t)?'ゲームソフト':'商品種類未確認';
   const bundle=/(?:\blot\b|\bbundle\b|\bcollection\b|\b\d+\s*(?:games?|items?|pieces?)\b|まとめ売り|セット|本体.*(?:games?|本)|ゲーム\d+本)/i.test(t)?'セット商品':'単品候補';
   const model=(t.match(/\b(?:HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/i)||[])[0]||'';
   return {platform,productType,bundle,model};
@@ -286,10 +288,15 @@ function classifyGunplaListing(p){
     :/\bSD(?:CS|ガンダム)?\b/i.test(t)?'SD':'グレード未確認';
   const scale=(t.match(/\b1\s*\/\s*(?:144|100|60|72|48|550)\b/i)||[])[0]?.replace(/\s+/g,'')||'スケール未確認';
   const state=/(assembled|built|built-up|完成品|組立済|組み立て済|塗装済|painted)/i.test(t)?'完成品・組立済'
-    :/(unbuilt|未組立|未組み立て|sealed|factory sealed|ランナー未開封)/i.test(t)?'未組立・未開封の記載あり':'組立状態未確認';
-  const bundle=/(?:\blot\b|\bbundle\b|\bset of\b|\b\d+\s*(?:kits?|items?|pieces?)\b|まとめ売り|複数|セット)/i.test(t)?'複数・セット品':'単品候補';
-  const model=(t.match(/\b(?:RX-?\d{2,3}[A-Z-]*|MS-?\d{2,3}[A-Z-]*|XXXG-?\d{2,3}[A-Z-]*|MBF-?\d{2,3}[A-Z-]*)\b/i)||[])[0]||'';
-  return {grade,scale,state,bundle,model};
+    :/(unbuilt|未組立|未組み立て|sealed|factory sealed|ランナー未開封)/i.test(t)?'未組立・未開封の記載あり'
+    :/\\bnew\\b|新品|未使用/i.test(t)?'新品の記載あり・組立状態未確認':'組立状態未確認';
+  const itemType=/(weapon|battle weapons?|武器|ウェポン)/i.test(t)?'武器・改造パーツ'
+    :/(decal|sticker|水転写|デカール|シール)/i.test(t)?'デカール・シール'
+    :/(option parts?|改造パーツ|カスタムパーツ)/i.test(t)?'改造パーツ'
+    :/(\\bkit\\b|model kit|プラモデル|ガンプラ)/i.test(t)?'ガンプラ本体':'種類未確認';
+  const bundle=/(?:\\blot\\b|\\bbundle\\b|\\bset of\\b|\\b\\d+\\s*(?:kits?|items?|pieces?)\\b|まとめ売り|複数|セット)/i.test(t)?'複数・セット品':'単品候補';
+  const model=(t.match(/\\b(?:NRX-?\\d{4}|GF\\d{2}-\\d{3}[A-Z]{2,}|FA-?\\d{2,3}[A-Z]?(?:-\\d)?|RX-?\\d{2,3}[A-Z-]*|MS-?\\d{2,3}[A-Z-]*|XXXG-?\\d{2,3}[A-Z-]*|MBF-?\\d{2,3}[A-Z-]*)\\b/i)||[])[0]||'';
+  return {grade,scale,state,bundle,model,itemType};
 }
 function classifyPartsDetail(p){
   const t=String([p.name,p.displayName,p.titleJa].filter(Boolean).join(' ')).normalize('NFKC').toLowerCase();
@@ -572,7 +579,7 @@ function cleanProductDisplayName(p, translated, category){
     '交換部品・消耗品':[/スプール|ラインローラー|ドラグノブ|ノブ|電源アダプター|ACアダプター|充電器|バッテリー|ケーブル|キャップ|アイカップ|デカール|シール|交換部品|消耗品/i,'交換部品']
   };
   if(cat==='レトロゲーム'){const x=classifyRetroListing({...p,displayName:ja});const title=ja.replace(/\b(?:Nintendo|Sega|Sony|Famicom|Super Famicom|Game Boy|PlayStation|Dreamcast|Saturn|console|system|game|software|cartridge|disc|controller|Japan|Japanese|used|new|tested|bundle|lot)\b/gi,' ').replace(/\s+/g,' ').trim().slice(0,72);return [x.platform,x.productType,title||'商品名未確認',x.model?('型番 '+x.model):'',x.bundle].filter(Boolean).join('｜');}
-  if(cat==='ガンプラ'){const x=classifyGunplaListing({...p,displayName:ja});const title=ja.replace(/\b(?:Bandai|Gundam|Gunpla|HGUC?|MG|RG|PG|EG|RE\/100|plastic model kit|model kit|Japan|Japanese|unbuilt|assembled|built|new|used)\b/gi,' ').replace(/\b1\s*\/\s*(?:144|100|60|72|48|550)\b/gi,' ').replace(/\s+/g,' ').trim().slice(0,72);return ['バンダイ',x.grade,x.scale,'ガンプラ',title||'商品名未確認',x.state,x.bundle].join('｜');}
+  if(cat==='ガンプラ'){const x=classifyGunplaListing({...p,displayName:ja});const title=ja.replace(/\b(?:Bandai|Gundam|Gunpla|HGUC?|MG|RG|PG|EG|RE\/100|plastic model kit|model kit|Japan|Japanese|unbuilt|assembled|built|new|used)\b/gi,' ').replace(/\b1\s*\/\s*(?:144|100|60|72|48|550)\b/gi,' ').replace(/\s+/g,' ').trim().slice(0,72);return ['バンダイ',x.grade,x.scale,x.itemType,'ガンプラ',title||'商品名未確認',x.model?('型番 '+x.model):'',x.state,x.bundle].filter(Boolean).join('｜');}
   if(cat==='交換部品・消耗品'){const x=classifyPartsDetail({...p,displayName:ja});return [x.brand,x.kind,x.compatibility].join('｜');}
   if(cat==='釣具') return cleanFishingDisplayName(p,translated);
   if(cat==='カメラ' && code){
