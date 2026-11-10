@@ -839,7 +839,7 @@ function acceptCandidate(p,cat){
   const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
   const consoleItem=has(/\bconsole\b|\bhandheld\b|ゲーム機本体|本体|携帯ゲーム機|\b(?:HVC-?(?!007|022)\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/);
   const softwareItem=has(/video game|game software|game cartridge|game disc|game card|cartridge|カセット|disc|disk|ゲームソフト|ゲームディスク|ゲームカード|vib[-\s]?ribbon|ビブリボン/);
-  const peripheralOnly=has(/controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|disk system|disk drive|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル|ディスクシステム|ディスクドライブ|hvc-?007|hvc-?022/)&&!consoleItem&&!softwareItem;
+  const diskSystemPeripheral=has(/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/);\n  const peripheralOnly=has(/controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|disk system|disk drive|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル|ディスクシステム|ディスクドライブ|hvc-?007|hvc-?022/)&&!consoleItem&&(!softwareItem||diskSystemPeripheral);
   return platform&&(consoleItem||softwareItem)&&!peripheralOnly;
  }
  if(cat==='ガンプラ'){
