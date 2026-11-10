@@ -837,8 +837,8 @@ function acceptCandidate(p,cat){
   if(has(/choose\s+(?:(?:a|your|one of the|from the)\s+)?games?|pick\s+(?:a\s+|your\s+)?games?|select\s+(?:a\s+|your\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|which\s+game|select\s+one|menu\s+of\s+games|\betc\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧|タイトルを選択|お好きなゲーム|複数タイトルから/))return false;
   if(has(/\b(?:for parts|parts only|repair only|spares? only|untested lot|junk lot|bulk lot|manual only|instruction manual|guide book|strategy guide|magazine)\b|説明書のみ|攻略本|雑誌|修理用|部品取り|ジャンク品まとめ/))return false;
   const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
-  const consoleItem=has(/\\b(?:console|system|handheld)\\b|ゲーム機本体|本体|携帯ゲーム機|\\b(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\\d{3,5}\\b/);
-  const softwareItem=has(/game|software|cartridge|カセット|disc|disk|ゲームソフト|ゲームディスク|ゲームカード|vib[-\\s]?ribbon|ビブリボン/);
+  const consoleItem=has(/\b(?:console|system|handheld)\b|ゲーム機本体|本体|携帯ゲーム機|\b(?:HVC|SHVC|NUS|HST|HKT|SCPH|DOL|AGB|DMG)-?\\d{3,5}\b/);
+  const softwareItem=has(/game|software|cartridge|カセット|disc|disk|ゲームソフト|ゲームディスク|ゲームカード|vib[-\s]?ribbon|ビブリボン/);
   const peripheralOnly=has(/controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|disk system|disk drive|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル|ディスクシステム|ディスクドライブ|hvc-?007|hvc-?022/)&&!consoleItem&&!softwareItem;
   return platform&&(consoleItem||softwareItem)&&!peripheralOnly;
  }
