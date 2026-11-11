@@ -698,8 +698,10 @@ function cleanPokemonSupplyDisplayName(p, translated){
     .replace(/ポケモンセンター|pokemon\s*center|ポケモン関連サプライ用品/ig,' ')
     .replace(/デッキケース|デッキボックス|デッキスリーブ|カードスリーブ|スリーブ|プレイマット|バインダー|カードファイル|収納ボックス/ig,' ')
     .replace(/\s+/g,' ').trim();
+  if(place)remainder=remainder.replace(new RegExp(placeJa[place.toUpperCase()],'ig'),' ').replace(/\\s+/g,' ').trim();
   const details=unique.length?unique.join('・'):'用品種別未確認';
-  return [brand,details,remainder].filter(Boolean).join('｜');
+  const bundle=(unique.length>1||/\\b(?:bundle|lot|set of|combo|includes)\\b|まとめ売り|セット品/i.test(raw))?'セット品':'単品候補';
+  return [brand,details,bundle,remainder].filter(Boolean).join('｜');
 }
 function cleanPokemonDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
