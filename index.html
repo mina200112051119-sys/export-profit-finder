@@ -681,23 +681,23 @@ function cleanProductDisplayName(p, translated, category){
 }
 function cleanPokemonSupplyDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
-  const place=(raw.match(/POKEMON\\s*CENTER\\s*(FUKUOKA|HIROSHIMA|OSAKA|TOKYO|KYOTO|NAGOYA|SAPPORO|YOKOHAMA|TOHOKU|KANAZAWA|OKINAWA)/i)||[])[1];
+  const place=(raw.match(/POKEMON\s*CENTER\s*(FUKUOKA|HIROSHIMA|OSAKA|TOKYO|KYOTO|NAGOYA|SAPPORO|YOKOHAMA|TOHOKU|KANAZAWA|OKINAWA)/i)||[])[1];
   const placeJa={FUKUOKA:'フクオカ',HIROSHIMA:'ヒロシマ',OSAKA:'オーサカ',TOKYO:'トウキョー',KYOTO:'キョウト',NAGOYA:'ナゴヤ',SAPPORO:'サッポロ',YOKOHAMA:'ヨコハマ',TOHOKU:'トウホク',KANAZAWA:'カナザワ',OKINAWA:'オキナワ'};
-  const brand=/POKEMON\\s*CENTER\\s*JAPAN/i.test(raw)?'ポケモンセンター（日本）'
+  const brand=/POKEMON\s*CENTER\s*JAPAN/i.test(raw)?'ポケモンセンター（日本）'
     :place?'ポケモンセンター'+placeJa[place.toUpperCase()]
-    :/POKEMON\\s*CENTER/i.test(raw)?'ポケモンセンター':'ポケモン関連用品';
+    :/POKEMON\s*CENTER/i.test(raw)?'ポケモンセンター':'ポケモン関連用品';
   const types=[];
-  if(/deck\\s*(?:box|case)|デッキケース/i.test(raw))types.push('デッキケース');
+  if(/deck\s*(?:box|case)|デッキケース/i.test(raw))types.push('デッキケース');
   if(/sleeves?|スリーブ/i.test(raw))types.push('カードスリーブ');
-  if(/play\\s*mat|プレイマット/i.test(raw))types.push('プレイマット');
-  if(/binder|card\\s*file|album|バインダー|カードファイル|アルバム/i.test(raw))types.push('バインダー・カードファイル');
-  if(/storage\\s*(?:box|case)|収納ボックス/i.test(raw))types.push('収納用品');
+  if(/play\s*mat|プレイマット/i.test(raw))types.push('プレイマット');
+  if(/binder|card\s*file|album|バインダー|カードファイル|アルバム/i.test(raw))types.push('バインダー・カードファイル');
+  if(/storage\s*(?:box|case)|収納ボックス/i.test(raw))types.push('収納用品');
   const unique=[...new Set(types)];
   let remainder=String(translated||'').normalize('NFKC')
-    .replace(/ポケモン?センター?ジャパン|センタージャパン|ジャパンセンター|pokemon\\s*center\\s*japan/ig,' ')
-    .replace(/ポケモンセンター|pokemon\\s*center|ポケモン関連サプライ用品/ig,' ')
+    .replace(/ポケモン?センター?ジャパン|センタージャパン|ジャパンセンター|pokemon\s*center\s*japan/ig,' ')
+    .replace(/ポケモンセンター|pokemon\s*center|ポケモン関連サプライ用品/ig,' ')
     .replace(/デッキケース|デッキボックス|デッキスリーブ|カードスリーブ|スリーブ|プレイマット|バインダー|カードファイル|収納ボックス/ig,' ')
-    .replace(/\\s+/g,' ').trim();
+    .replace(/\s+/g,' ').trim();
   const details=unique.length?unique.join('・'):'用品種別未確認';
   return [brand,details,remainder].filter(Boolean).join('｜');
 }
