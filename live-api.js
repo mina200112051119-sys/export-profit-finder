@@ -29,20 +29,15 @@ async function displayListingName(item,cat){
  try{
   if(typeof window.officialNameCandidate==='function'){
    const candidate=await window.officialNameCandidate(p,cat);
-   if(candidate&&Number(candidate.score)>=60&&candidate.titleJa)return {name:candidate.titleJa,status:candidate.status||'名称候補（公式情報との一致確認が必要）'};
+   if(candidate&&Number(candidate.score)>=60&&candidate.titleJa&&/[ぁ-んァ-ヶ一-龯]/u.test(candidate.titleJa)){
+    return {name:candidate.titleJa,status:candidate.status||'名称候補（画像・型番の照合が必要）'};
+   }
   }
  }catch(e){}
- let translated=String(item.titleJa||'').trim();
- if(!translated||translated===item.title){
-  try{translated=typeof window.translateText==='function'?await window.translateText(item.title,'ja'):item.title}catch(e){translated=item.title}
- }
- let name=translated;
- try{
-  if(cat==='ポケモンカード'&&typeof window.cleanPokemonDisplayName==='function')name=window.cleanPokemonDisplayName(p,translated);
-  else if(cat==='ポケモン関連サプライ用品'&&typeof window.cleanPokemonSupplyDisplayName==='function')name=window.cleanPokemonSupplyDisplayName(p,translated);
-  else if(typeof window.cleanProductDisplayName==='function')name=window.cleanProductDisplayName(p,translated,cat);
- }catch(e){}
- return {name:name||translated||item.title,status:'名称未確認'};
+ const name=typeof window.buildUnverifiedJapaneseIdentity==='function'
+   ?window.buildUnverifiedJapaneseIdentity(p,cat)
+   :'商品名未確認｜eBay原文を確認';
+ return {name,status:'一致候補なし（正式名称未確認）'};
 }
 async function liveSearch(){
  const q=document.getElementById('q')?.value.trim()||document.getElementById('searchName')?.value.trim();
