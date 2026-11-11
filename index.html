@@ -355,7 +355,7 @@ function classifyGunplaListing(p){
   const modelPattern=/\b(?:NRX-?\d{4}|GF\d{2}-\d{3}[A-Z]{2,}|FA-?\d{2,3}[A-Z]?(?:-\d)?|RX-?\d{2,3}(?:-[A-Z0-9]+)?|MSM-?\d{2,3}[A-Z0-9-]*|MS-?\d{2,3}[A-Z0-9-]*|XXXG-?\d{2,3}[A-Z0-9-]*|MBF-?\d{2,3}[A-Z0-9-]*)\b/ig;
   const modelCodes=[...new Set((t.match(modelPattern)||[]).map(x=>x.toUpperCase()))];
   const knownNameMismatch=[
-    [/\\bMSM-?10\\b/i,/\\b(?:nu gundam|ν gundam|ニューガンダム)\\b/i],
+    [/\\bMSM-?10\\b/i,/\\b(?:nu gundam|new gundam|ν gundam|ニューガンダム)\\b/i],
     [/\\bRX-?93\\b/i,/\\b(?:zock|ゾック)\\b/i],
     [/\\bMS-?05\\b/i,/\\b(?:nu gundam|ニューガンダム|gouf|グフ)\\b/i],
     [/\\bMS-?07B\\b/i,/\\b(?:zaku|ザク)\\b/i],
