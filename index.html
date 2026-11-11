@@ -364,10 +364,9 @@ function classifyGunplaListing(p){
   ].some(([code,name])=>code.test(t)&&name.test(t));
   const modelConflict=modelCodes.length>1||knownNameMismatch;
   const model=modelCodes.length===1&&!modelConflict?modelCodes[0]:'';
-  const itemType=/(weapon|battle weapons?|武器|ウェポン)/i.test(t)?'武器・改造パーツ'
+  const itemType=/(weapon|battle weapons?|武器|ウェポン)/i.test(t)?'武器パーツ'
     :/(decal|sticker|水転写|デカール|シール)/i.test(t)?'デカール・シール'
     :/(option parts?|改造パーツ|カスタムパーツ)/i.test(t)?'改造パーツ'
-    :/(decal|sticker|water.?slide|transfer.?decal|デカール|シール|水転写)/i.test(t)?'デカール・シール'
     :/(runner parts?|runner|ランナー)/i.test(t)?'ランナー部品'
     :/(\bkit\b|model kit|プラモデル|ガンプラ|\b(?:RX-?\d{2,3}|MSM-?\d{2,3}|MS-?\d{2,3}|XXXG-?\d{2,3}|MBF-?\d{2,3})\b)/i.test(t)?'ガンプラ本体':'種類未確認';
   const bundle=/(?:\blot\b|\bbundle\b|\bset of\b|\b\d+\s*(?:kits?|items?|pieces?)\b|まとめ売り|複数|セット|with\s+\d+\s+controllers?|\d+\s+controllers?\s+(?:included|付き)|controller\s+included|コントローラー付属)/i.test(t)?'複数・セット品':'単品候補';
