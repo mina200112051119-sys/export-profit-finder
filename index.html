@@ -372,7 +372,7 @@ function classifyGunplaListing(p){
 }
 function classifyPartsDetail(p){
   const t=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' ')).normalize('NFKC').toLowerCase();
-  const brand=/shimano|シマノ/i.test(t)?'シマノ':/daiwa|ダイワ/i.test(t)?'ダイワ':/nikon|ニコン/i.test(t)?'Nikon':/canon|キヤノン|キャノン/i.test(t)?'Canon':/sony|ソニー/i.test(t)?'Sony':/olympus|オリンパス/i.test(t)?'Olympus':/nintendo|任天堂/i.test(t)?'任天堂':/sega|セガ/i.test(t)?'セガ':/bandai|バンダイ|gundam|gunpla/i.test(t)?'バンダイ':'メーカー未確認';
+  const brand=/shimano|シマノ/i.test(t)?'シマノ':/daiwa|ダイワ/i.test(t)?'ダイワ':/nikon|ニコン/i.test(t)?'Nikon':/canon|キヤノン|キャノン/i.test(t)?'Canon':/sony|ソニー/i.test(t)?'Sony':/olympus|オリンパス/i.test(t)?'Olympus':/nintendo|任天堂|HVC-?00[27]|HVC-?022/i.test(t)?'任天堂':/sega|セガ/i.test(t)?'セガ':/bandai|バンダイ|gundam|gunpla/i.test(t)?'バンダイ':'メーカー未確認';
   const family=/fishing|shimano|daiwa|釣具|リール|釣り/i.test(t)?'釣具'
     :/camera|canon|nikon|sony|olympus|lumix|カメラ|デジカメ/i.test(t)?'カメラ'
     :/nintendo|sega|playstation|saturn|dreamcast|famicom|ゲーム|ゲームボーイ|任天堂|セガ/i.test(t)?'レトロゲーム'
@@ -925,15 +925,15 @@ function acceptCandidate(p,cat){
     && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery\s+only|charger\s+only|adapter\s+only|tripod\s+only|filter\s+only|strap\s+only|bag\s+only|lens\s+only)\b|camera\s+(?:lens|bag|strap)\b|\b\d{2,3}\s*mm\b|まとめ売り|ジャンク|未テスト/);
  }
  if(cat==='レトロゲーム'){
-  if(has(/pokemon\s*card|ポケモンカード|pokemon\s*tcg|trading\s*card|攻略本|guidebook|magazine/))return false;
+  if(has(/pokemon\s*card|ポケモンカード|pokemon\s*tcg|trading\s*card|攻略本|guidebook|magazine|flash\s*cart|flashcart|everdrive|fxpak|sd2snes|game\s*copier|multi.?cart|reproduction\s*cart|repro\s*cart/))return false;
   if(has(/fishing|釣具|camera|カメラ|gunpla|plastic model/))return false;
-  if(has(/choose\s+(?:(?:a|your|one of the|from the)\s+)?games?|pick\s+(?:a\s+|your\s+)?games?|select\s+(?:a\s+|your\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|which\s+game|select\s+one|menu\s+of\s+games|\betc\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧|タイトルを選択|お好きなゲーム|複数タイトルから/))return false;
+  if(has(/choose\s+(?:(?:a|your|one of the|from the)\s+|\d+[-–]?\d*\s+)?games?|pick\s+(?:a\s+|your\s+|\d+[-–]?\d*\s+)?games?|select\s+(?:a\s+|your\s+|\d+[-–]?\d*\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|which\s+game|select\s+one|menu\s+of\s+games|\betc\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧|タイトルを選択|お好きなゲーム|複数タイトルから/))return false;
   if(has(/\b(?:for parts|parts only|repair only|spares? only|untested lot|junk lot|bulk lot|manual only|instruction manual|guide book|strategy guide|magazine)\b|説明書のみ|攻略本|雑誌|修理用|部品取り|ジャンク品まとめ/))return false;
   const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
   const consoleModel=has(/\b(?:HVC-?(?!002|007|022)\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/i);
   const accessoryModelOnly=has(/\bHVC-?(?:002|007|022)\b/i)&&!consoleModel;
   const consoleItem=consoleModel||(!accessoryModelOnly&&has(/\bconsole\b|\bhandheld\b|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機/));
-  const softwareItem=has(/video game|game software|game cartridge|game disc|game card|cartridge|カセット|disc|disk|ゲームソフト|ゲームディスク|ゲームカード|vib[-\s]?ribbon|ビブリボン/);
+  const softwareItem=has(/video game|game software|game cartridge|game disc|game card|cartridge|\bsoftware\b|カセット|disc|disk|ゲームソフト|ゲームディスク|ゲームカード|vib[-\s]?ribbon|ビブリボン/);
   const diskSystemPeripheral=has(/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/);
   const adapterOnly=has(/ac adapter|power adapter|power supply|adapter|電源アダプター|専用アダプター/)&&!has(/\bconsole\b|ゲーム機本体|本体のみ|本体セット|コンソール/);
   const peripheralOnly=(has(/controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル|ディスクシステム|ディスクドライブ|hvc-?002|hvc-?007|hvc-?022/)&&(!consoleItem||adapterOnly)&&(!softwareItem||diskSystemPeripheral))||adapterOnly;
@@ -948,7 +948,7 @@ function acceptCandidate(p,cat){
  }
  if(cat==='交換部品・消耗品'){
   const part=has(/line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|穂先|トップガイド|ガイドリング|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
-  const maker=has(/shimano|シマノ|daiwa|ダイワ|canon|キヤノン|nikon|ニコン|sony|ソニー|olympus|オリンパス|nintendo|任天堂|sega|セガ|bandai|バンダイ|gundam|gunpla/);
+  const maker=has(/shimano|シマノ|daiwa|ダイワ|canon|キヤノン|nikon|ニコン|sony|ソニー|olympus|オリンパス|nintendo|任天堂|sega|セガ|bandai|バンダイ|gundam|gunpla|HVC-?00[27]|HVC-?022/);
   return part&&maker&&!has(/pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ|universal fit|fits all|汎用品/);
  }
  return !unrelated.test(t);
