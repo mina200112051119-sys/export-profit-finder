@@ -270,10 +270,22 @@ function categoryIdentityKey(p,cat){
       : 'title:'+compact;
     return ['retro',x.platform,x.productType,identity].join('|');
   }
+  if(cat==='ポケモン関連サプライ用品'){
+    const place=(raw.match(/pokemoncenter(japan|fukuoka|hiroshima|osaka|tokyo|kyoto|nagoya|sapporo|yokohama|tohoku|kanazawa|okinawa)/i)||[])[1]||'';
+    const kinds=[
+      /deckbox|deckcase|デッキケース/.test(compact)?'deckcase':'',
+      /sleeve|スリーブ/.test(compact)?'sleeve':'',
+      /playmat|プレイマット/.test(compact)?'playmat':'',
+      /binder|cardfile|album|バインダー|カードファイル/.test(compact)?'binder':'',
+      /storagebox|収納ボックス/.test(compact)?'storage':''
+    ].filter(Boolean).join('+');
+    const descriptor=compact
+      .replace(/pokemon|pokemoncenter|pokemontcg|official|japan|japanese|exclusive|sealed|new|used|deckbox|deckcase|sleeves?|playmat|binder|cardfile|album|storagebox|cardaccessories|ポケモン|ポケモンセンター|公式|日本|限定|デッキケース|スリーブ|プレイマット|バインダー|カードファイル|収納用品/g,'');
+    return ['pokemon-supply',place,kinds,descriptor||compact].join('|');
+  }
   if(cat==='ガンプラ'){
     const x=classifyGunplaListing(p);
-    // Separate model kits from weapons/options/decals, and merge repeated listings
-    // only when a reliable model code is present.
+    // Keep kits, weapons and custom parts in one category while preserving their subtype.
     const identity=x.model?('model:'+x.model.toLowerCase()):('title:'+compact);
     return ['gunpla',x.grade,x.scale,x.itemType,x.bundle,identity].join('|');
   }
