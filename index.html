@@ -658,6 +658,29 @@ function cleanProductDisplayName(p, translated, category){
   value=value.replace(/^ポケモン(?:カード|ＴＣＧ|TCG)?\s*/i,'').trim();
   return value || '商品名未確認';
 }
+function cleanPokemonSupplyDisplayName(p, translated){
+  const raw=String(p.name||p.title||'').normalize('NFKC');
+  let value=cleanProductDisplayName(p,translated,'ポケモン関連サプライ用品');
+  // Preserve the proper Japanese brand wording from the original listing instead of trusting literal machine translation.
+  value=value.replace(/ポケモン\\s*センター\\s*ジャパン|センター\\s*ジャパン|pokemon\\s*center\\s*japan/ig,'ポケモンセンター（日本）');
+  value=value.replace(/pokemon\\s*center/ig,'ポケモンセンター').replace(/ポケモン\\s+センター/g,'ポケモンセンター');
+  const place=(raw.match(/POKEMON\\s*CENTER\\s*(FUKUOKA|HIROSHIMA|OSAKA|TOKYO|KYOTO|NAGOYA|SAPPORO|YOKOHAMA|TOHOKU|KANAZAWA|OKINAWA)/i)||[])[1];
+  const placeJa={FUKUOKA:'フクオカ',HIROSHIMA:'ヒロシマ',OSAKA:'オーサカ',TOKYO:'トウキョー',KYOTO:'キョウト',NAGOYA:'ナゴヤ',SAPPORO:'サッポロ',YOKOHAMA:'ヨコハマ',TOHOKU:'トウホク',KANAZAWA:'カナザワ',OKINAWA:'オキナワ'};
+  if(place)value=value.replace(/ポケモンセンター(?:（日本）)?/g,'ポケモンセンター'+placeJa[place.toUpperCase()]);
+  const types=[];
+  if(/deck\\s*(?:box|case)|デッキケース/i.test(raw))types.push('デッキケース');
+  if(/sleeves?|スリーブ/i.test(raw))types.push('カードスリーブ');
+  if(/play\\s*mat|プレイマット/i.test(raw))types.push('プレイマット');
+  if(/binder|card\\s*file|album|バインダー|カードファイル|アルバム/i.test(raw))types.push('バインダー・カードファイル');
+  if(/storage\\s*(?:box|case)|収納ボックス/i.test(raw))types.push('収納用品');
+  const unique=[...new Set(types)];
+  if(unique.length){
+    const prefix=/ポケモンセンター/.test(value)?value.match(/ポケモンセンター[^｜|]*/)?.[0]:'ポケモン公式用品';
+    const remainder=value.replace(/ポケモンセンター[^｜|]*/,'').replace(/^ポケモン公式用品/,'').trim();
+    value=[prefix,unique.join('・'),remainder].filter(Boolean).join('｜');
+  }
+  return value.replace(/\\s+/g,' ').replace(/(?:センタージャパン|ジャパンセンター)/g,'ポケモンセンター（日本）').trim()||'ポケモン関連サプライ（商品名未確認）';
+}
 function cleanPokemonDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
   // Curated exact match: Gurusha SAR from Snow Hazard, card SV2P 095/071.
@@ -697,6 +720,8 @@ async function enrichOfficialNames(items, categoryOverride){
     const effectiveCategory=categoryOverride||p.cat||p.category||'';
     if(effectiveCategory==='ポケモンカード'){
       displayName=isStrongCandidate?candidate.titleJa:cleanPokemonDisplayName(p,translated);
+    }else if(effectiveCategory==='ポケモン関連サプライ用品'){
+      displayName=isStrongCandidate?candidate.titleJa:cleanPokemonSupplyDisplayName(p,translated);
     }else{
       displayName=isStrongCandidate?cleanProductDisplayName(p,candidate.titleJa,effectiveCategory):cleanProductDisplayName(p,translated,effectiveCategory);
     }
