@@ -230,7 +230,7 @@ function dedupeCategoryProducts(rows,cat){
     if(hardExcludes[cat]?.test(raw))continue;
     if(cat==='カメラ'){
       const isLensOnly=/(?:\blens\s+only\b|\bcamera\s+lens\b|\b\d{2,3}\s*mm\b|レンズ単品)/i.test(raw)&&!/(?:digital\s+camera|compact\s+camera|camera\s+body|デジタルカメラ|コンパクトカメラ)/i.test(raw);
-      const modelTokens=raw.match(/(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{2,}|\b[A-Z]{2,5}-\d{2,5}[A-Z0-9-]*\b)/gi)||[];
+      const modelTokens=Array.from(new Set((raw.match(/(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{2,}|\b[A-Z]{2,5}-\d{2,5}[A-Z0-9-]*\b)/gi)||[]).map(x=>x.toLowerCase().replace(/\s+/g,''))));
       const multiBrand=(raw.match(/\b(?:canon|nikon|sony|fujifilm|olympus|panasonic|samsung)\b/gi)||[]).map(x=>x.toLowerCase()).filter((x,i,a)=>a.indexOf(x)===i);
       if(isLensOnly||(modelTokens.length>1&&!/(?:\blot\b|\bbundle\b|\bset\s+of\b|複数台|まとめ売り)/i.test(raw))||(multiBrand.length>1&&!/(?:\blot\b|\bbundle\b|\bset\s+of\b|複数台|まとめ売り)/i.test(raw)))continue;
     }
