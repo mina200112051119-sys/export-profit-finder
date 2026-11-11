@@ -6,7 +6,7 @@ const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'';
 const SEARCH_API=API_BASE+'/api/ebay-search';
 const CATEGORY_API=API_BASE+'/api/ebay-categories';
-const SEEDS=['Pokemon trading cards','Pokemon TCG accessories','fishing tackle','camera','retro video games','Gunpla plastic model kit'];
+const SEEDS=['Pokemon trading cards','Pokemon TCG accessories','fishing tackle','camera','retro video games','Gunpla plastic model kit','genuine replacement parts and consumables'];
 const feeFor=cat=>/camera|カメラ/i.test(cat)?0.136:/card|pokemon|tcg|ポケモンカード/i.test(cat)?0.1325:0.136;
 async function loadFx(){try{const r=await fetch(API_BASE+'/api/exchange-rate',{cache:'no-store'});if(!r.ok)throw Error('為替取得失敗');state.fx=await r.json();window.EXPORT_FX=state.fx.rate;return state.fx.rate;}catch(e){state.fx=null;return null;}}
 async function categorySuggestions(q){const r=await fetch(CATEGORY_API+'?q='+encodeURIComponent(q),{cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'カテゴリー取得に失敗しました');return d.suggestions||[];}
