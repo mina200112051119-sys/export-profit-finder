@@ -357,7 +357,7 @@ function classifyGunplaListing(p){
     :/(option parts?|改造パーツ|カスタムパーツ)/i.test(t)?'改造パーツ'
     :/(\bkit\b|model kit|プラモデル|ガンプラ)/i.test(t)?'ガンプラ本体':'種類未確認';
   const bundle=/(?:\blot\b|\bbundle\b|\bset of\b|\b\d+\s*(?:kits?|items?|pieces?)\b|まとめ売り|複数|セット|with\s+\d+\s+controllers?|\d+\s+controllers?\s+(?:included|付き)|controller\s+included|コントローラー付属)/i.test(t)?'複数・セット品':'単品候補';
-  const model=(t.match(/\b(?:NRX-?\d{4}|GF\d{2}-\d{3}[A-Z]{2,}|FA-?\d{2,3}[A-Z]?(?:-\d)?|RX-?\d{2,3}[A-Z-]*|MS-?\d{2,3}[A-Z-]*|XXXG-?\d{2,3}[A-Z-]*|MBF-?\d{2,3}[A-Z-]*)\b/i)||[])[0]||'';
+  const model=(t.match(/\b(?:NRX-?\d{4}|GF\d{2}-\d{3}[A-Z]{2,}|FA-?\d{2,3}[A-Z]?(?:-\d)?|RX-?\d{2,3}(?:-[A-Z0-9]+)?|MSM-?\d{2,3}[A-Z0-9-]*|MS-?\d{2,3}[A-Z0-9-]*|XXXG-?\d{2,3}[A-Z0-9-]*|MBF-?\d{2,3}[A-Z0-9-]*)\b/i)||[])[0]||'';
   return {grade,scale,state,bundle,model,itemType};
 }
 function classifyPartsDetail(p){
