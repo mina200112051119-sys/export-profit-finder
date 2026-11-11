@@ -382,6 +382,7 @@ function classifyPartsDetail(p){
   const kind=/(?:ac\s*adapter|power\s*adapter|電源アダプター|acアダプター)/i.test(t)&&/(?:av\s*cable|usb\s*cable|cable|cord|ケーブル)/i.test(t)?'電源アダプター・接続ケーブルセット'
     :/battery|バッテリー|電池/i.test(t)&&/charger|充電器/i.test(t)?'バッテリー・充電器セット'
     :/line roller|ラインローラー/i.test(t)?'ラインローラー'
+    :/super game boy|スーパーゲームボーイ/i.test(t)?'スーパーゲームボーイ（ゲーム機周辺機器）'
     :/rod tip|穂先/i.test(t)?'釣り竿の穂先'
     :/rod guide|guide ring|line guide|トップガイド|ガイドリング/i.test(t)?'釣り竿のガイド'
     :/spool|スプール/i.test(t)?'スプール'
