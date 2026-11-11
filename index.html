@@ -305,8 +305,8 @@ function categoryIdentityKey(p,cat){
 async function enrichSold(items){return items}
 function classifyRetroListing(p){
   const t=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' ')).normalize('NFKC');
-  const platform=/super famicom|スーパーファミコン|\bsfc\b|\bsnes\b/i.test(t)?'スーパーファミコン'
-    :/famicom|ファミコン|hvc-/i.test(t)?'ファミコン'
+  const platform=/super famicom|スーパーファミコン|\bsfc\b|\bsnes\b|SHVC-/i.test(t)?'スーパーファミコン'
+    :/famicom|ファミコン|(?:^|[^A-Z])HVC-/i.test(t)?'ファミコン'
     :/game boy advance|gba|ゲームボーイアドバンス/i.test(t)?'ゲームボーイアドバンス'
     :/game boy|gameboy|ゲームボーイ/i.test(t)?'ゲームボーイ'
     :/nintendo 64|\bn64\b|ニンテンドー64/i.test(t)?'Nintendo 64'
