@@ -552,6 +552,18 @@ async function officialNameCandidate(p, categoryOverride){
     curated={titleJa:'ビブリボン（Vib-Ribbon）｜PlayStation',score:100,status:'商品名整理済み（版・付属品は要確認）',diagnostic:{match:'game-title-platform'}};
   }else if(cat==='ガンプラ' && /MGSD/i.test(titleKey) && /KSHATRIYA/i.test(titleKey)){
     curated={titleJa:'MGSD クシャトリヤ｜機動戦士ガンダムUC',score:100,status:'メーカー公式商品名と一致確認済み（BANDAI SPIRITS）',diagnostic:{match:'bandai-official-product-name',officialUrl:'https://www.bandaispirits.co.jp/products/search/detail.php?grp_id=5325&prd_id=4573102743039000'}};
+  }else if(cat==='釣具' && /SHIMANO/i.test(titleKey) && /BB[-\s]?X\s*LARISSA/i.test(titleKey) && /C3000DXG/i.test(titleKey)){
+    curated={titleJa:'シマノ BB-X ラリッサ C3000DXG',score:100,status:'シマノ公式製品情報でシリーズ・型番を照合済み',diagnostic:{match:'shimano-bb-x-larissa-c3000dxg'}};
+  }else if(cat==='カメラ' && /OLYMPUS/i.test(titleKey) && /VH[-\s]?210/i.test(titleKey)){
+    curated={titleJa:'オリンパス VH-210 コンパクトデジタルカメラ',score:100,status:'メーカー製品情報で機種名・種類を照合済み',diagnostic:{match:'olympus-vh-210'}};
+  }else if(cat==='ガンプラ' && /\bHG\b/i.test(titleKey) && /MS[-\s]?05/i.test(titleKey) && /ZAKU\s*I|ZAKU\s*1/i.test(titleKey)){
+    curated={titleJa:'HG ザクI（MS-05）',score:100,status:'商品名・型番の一致候補（スケール・組立状態は出品情報で要確認）',diagnostic:{match:'hg-ms-05-zaku-i'}};
+  }else if(cat==='ガンプラ' && /\bHG\b/i.test(titleKey) && /NRX[-\s]?0013/i.test(titleKey) && /VIRSAGO/i.test(titleKey)){
+    curated={titleJa:'HG ガンダムヴァサーゴ（NRX-0013）',score:100,status:'商品名・型番の一致候補（スケール・組立状態は出品情報で要確認）',diagnostic:{match:'hg-nrx-0013-gundam-virsago'}};
+  }else if(cat==='ガンプラ' && /\bHG\b/i.test(titleKey) && /GF13[-\s]?050NSW/i.test(titleKey) && /NOBEL/i.test(titleKey)){
+    curated={titleJa:'HG ノーベルガンダム（GF13-050NSW）',score:100,status:'商品名・型番の一致候補（スケール・組立状態は出品情報で要確認）',diagnostic:{match:'hg-gf13-050nsw-nobel-gundam'}};
+  }else if(cat==='ガンプラ' && /\bHG\b/i.test(titleKey) && /RX[-\s]?78[-\s]?2/i.test(titleKey) && /G30TH/i.test(titleKey)){
+    curated={titleJa:'HG RX-78-2 ガンダム Ver.G30th',score:100,status:'商品名・型番の一致候補（スケール・組立状態は出品情報で要確認）',diagnostic:{match:'hg-rx-78-2-g30th'}};
   }
   if(curated){
     const result={category:cat,url:'',image:'',...curated,checkedAt:new Date().toISOString()};
@@ -613,7 +625,13 @@ async function officialNameCandidate(p, categoryOverride){
               if(Number(x.score)<60||nameText.length<2||!translatedText.includes(nameText))return false;
               if(!setHint&&!/\b(?:PSA|CGC|BGS|SGC)\b/i.test(rawTitle))return false;
             }
-          }else if(Number(x.score)<60||!hasJapaneseText(actualName))return false;
+          }else{
+            if(Number(x.score)<80||!hasJapaneseText(actualName))return false;
+            // A fuzzy official-page hit must never replace a different model number.
+            const modelTokens=rawTitle.match(/\b(?:VH[- ]?\d{2,4}|C\d{3,5}[A-Z]{0,4}|SCPH[- ]?\d{3,5}|HVC[- ]?\d{3}|SHVC[- ]?\d{3}|NUS[- ]?\d{3}|NRX[- ]?\d{4}|GF\d{2}[- ]?\d{3}[A-Z]{2,}|RX[- ]?\d{2,3}(?:[- ][A-Z0-9]+)?|MS[- ]?\d{2,3}[A-Z0-9-]*)\b/ig)||[];
+            const candidateIdentity=compact([x.title,x.cardName,x.number].filter(Boolean).join(' '));
+            if(modelTokens.length&&!modelTokens.every(token=>candidateIdentity.includes(compact(token))))return false;
+          }
           return true;
         }).sort((a,b)=>{
           const hasNumber=x=>{const t=String([x.number,x.title].join(' ')).normalize('NFKC');if(/\//.test(String(cardNo)))return (t.match(/\d{1,3}\s*\/\s*\d{1,3}/g)||[]).some(v=>compact(v)===compact(cardNo));const n=String(cardNo).match(/\d{1,3}/)?.[0]||'';return !!n&&new RegExp('(?:^|[^0-9])'+n+'(?:$|[^0-9])').test(t.replace(/\d{1,3}\s*\/\s*\d{1,3}/g,' '))};
