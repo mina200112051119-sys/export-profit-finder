@@ -861,7 +861,7 @@ function acceptCandidate(p,cat){
  }
  if(cat==='カメラ'){
   return has(/digital camera|camera body|compact camera|mirrorless|dslr|film camera|powershot|coolpix|finepix|cyber.?shot|lumix|μ[- ]?\d{3,4}|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ|フィルムカメラ/)
-    && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery|charger|adapter|tripod|filter|strap|bag)\b|まとめ売り|ジャンク|未テスト/);
+    && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery\s+only|charger\s+only|adapter\s+only|tripod\s+only|filter\s+only|strap\s+only|bag\s+only|lens\s+only)\b|camera\s+(?:lens|bag|strap)\b|\b\d{2,3}\s*mm\b|まとめ売り|ジャンク|未テスト/);
  }
  if(cat==='レトロゲーム'){
   if(has(/pokemon\s*card|ポケモンカード|pokemon\s*tcg|trading\s*card|攻略本|guidebook|magazine/))return false;
