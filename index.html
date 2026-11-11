@@ -265,10 +265,19 @@ function categoryIdentityKey(p,cat){
     const display=String(p.displayName||p.titleJa||p.nameJa||'').normalize('NFKC').toLowerCase().replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
     // Identical Japanese display names for the same model/type are one visible candidate,
     // even if eBay sellers add different bundle/condition wording to the source title.
-    const identity=x.model
-      ? 'model:'+x.model.toLowerCase()
-      : 'title:'+compact;
-    return ['retro',x.platform,x.productType,identity].join('|');
+    let identity;
+    if(x.model){
+      identity='model:'+x.model.toLowerCase();
+    }else if(x.productType==='ゲームソフト'){
+      const gameTitle=raw
+        .replace(/super famicom|スーパーファミコン|famicom|ファミコン|game boy advance|gba|game boy|gameboy|nintendo 64|n64|gamecube|game cube|wii u|wii|playstation 3|ps3|playstation 2|ps2|playstation|ps1|psp|playstation portable|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|pc engine|pcエンジン|turbografx/gi,' ')
+        .replace(/game software|video game|game cartridge|cartridge|game disc|game card|software|カセット|ゲームソフト|ゲームディスク|ゲームカード|ゲーム|ソフト|disc|disk|umd|tested|working|complete|boxed|manual|japanese|japan|ntsc|pal|used|new|動作確認済み|中古|日本語|国内版/gi,' ')
+        .replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
+      identity='game:'+gameTitle;
+    }else{
+      identity='title:'+compact;
+    }
+    return ['retro',x.platform,x.productType,x.bundle,identity].join('|');
   }
   if(cat==='ポケモン関連サプライ用品'){
     const place=(raw.match(/pokemoncenter(japan|fukuoka|hiroshima|osaka|tokyo|kyoto|nagoya|sapporo|yokohama|tohoku|kanazawa|okinawa)/i)||[])[1]||'';
