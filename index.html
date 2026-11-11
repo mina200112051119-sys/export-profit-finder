@@ -305,7 +305,7 @@ function categoryIdentityKey(p,cat){
 async function enrichSold(items){return items}
 function classifyRetroListing(p){
   const t=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' ')).normalize('NFKC');
-  const platform=/super famicom|スーパーファミコン|\bsfc\b/i.test(t)?'スーパーファミコン'
+  const platform=/super famicom|スーパーファミコン|\bsfc\b|\bsnes\b/i.test(t)?'スーパーファミコン'
     :/famicom|ファミコン|hvc-/i.test(t)?'ファミコン'
     :/game boy advance|gba|ゲームボーイアドバンス/i.test(t)?'ゲームボーイアドバンス'
     :/game boy|gameboy|ゲームボーイ/i.test(t)?'ゲームボーイ'
@@ -934,7 +934,7 @@ function acceptCandidate(p,cat){
   if(has(/fishing|釣具|camera|カメラ|gunpla|plastic model/))return false;
   if(has(/choose\s+(?:(?:a|your|one of the|from the)\s+|\d+[-–]?\d*\s+)?games?|pick\s+(?:a\s+|your\s+|\d+[-–]?\d*\s+)?games?|select\s+(?:a\s+|your\s+|\d+[-–]?\d*\s+)?games?|games?\s+to\s+choose|choose\s+from|various\s+games?|assorted\s+games?|game\s+collection|games?\s+collection|which\s+game|select\s+one|menu\s+of\s+games|\betc\b|ゲームを選んで|ゲームを選択|選んでください|選択してください|対応機種一覧|ゲーム一覧|検索結果一覧|タイトルを選択|お好きなゲーム|複数タイトルから/))return false;
   if(has(/\b(?:for parts|parts only|repair only|spares? only|untested lot|junk lot|bulk lot|manual only|instruction manual|guide book|strategy guide|magazine)\b|説明書のみ|攻略本|雑誌|修理用|部品取り|ジャンク品まとめ/))return false;
-  const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
+  const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|\bsnes\b|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
   const consoleModel=has(/\b(?:HVC-?(?!002|007|022)\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/i);
   const accessoryModelOnly=has(/\bHVC-?(?:002|007|022)\b/i)&&!consoleModel;
   const consoleItem=consoleModel||(!accessoryModelOnly&&has(/\bconsole\b|\bhandheld\b|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機/));
@@ -942,7 +942,7 @@ function acceptCandidate(p,cat){
   const diskSystemPeripheral=has(/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/);
   const adapterOnly=has(/ac adapter|power adapter|power supply|adapter|電源アダプター|専用アダプター/)&&!has(/\bconsole\b|ゲーム機本体|本体のみ|本体セット|コンソール/);
   const peripheralOnly=(has(/controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル|ディスクシステム|ディスクドライブ|hvc-?002|hvc-?007|hvc-?022/)&&(!consoleItem||adapterOnly)&&(!softwareItem||diskSystemPeripheral))||adapterOnly;
-  const genericSoftwareOnly=softwareItem&&!consoleItem&&!raw.replace(/super famicom|スーパーファミコン|famicom|ファミコン|\bsfc\b|\bsnes\b|game boy|gameboy|nintendo 64|playstation|sega|セガ|software|game|cartridge|カセット|ゲームソフト|日本|japan|japanese|used|new|tested|activision|konami|capcom|namco|taito|bandai|nintendo|square|enix/gi,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'').trim();
+  const genericSoftwareOnly=softwareItem&&!consoleItem&&!raw.replace(/super famicom|スーパーファミコン|famicom|ファミコン|\bsfc\b|\bsnes\b|game boy|gameboy|nintendo 64|playstation|sega|セガ|software|game|cartridge|カセット|ゲームソフト|日本|japan|japanese|used|new|tested|only|original|genuine|authentic|activision|konami|capcom|namco|taito|bandai|nintendo|square|enix/gi,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'').trim();
   return platform&&(consoleItem||softwareItem)&&!peripheralOnly&&!genericSoftwareOnly;
  }
  if(cat==='ガンプラ'){
