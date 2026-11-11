@@ -106,7 +106,7 @@ function scoreV2(raw,s={},universe=[]){
   const competitionScore=p.activeListingsTotal>0?clamp(100-Math.log10(p.activeListingsTotal+1)*25):35;
   // 送料比率は補助情報にとどめ、販売実績より重く扱わない。
   const shippingRatio=p.sell>0?p.ship/p.sell:1;
-  const shippingScore=clamp(100-shippingRatio*120);
+  const shippingScore=50; // 送料は商品発掘の順位を下げない。費用情報として表示し、仕入価格入力後の利益計算に使う。
   // 仕入れ候補でユーザーが入力した状態を優先して評価する。
   // 未入力の場合だけeBay側の商品状態を使う。
   const chosenCondition=p.sourcingCondition||p.condition||'';
@@ -139,7 +139,7 @@ function scoreV2(raw,s={},universe=[]){
     base.scores.fees*.06
   ));
   // 仕入価格も実売根拠もない段階では高評価を付けない。
-  if(!p.soldHistoryAvailable||num(p.soldHistoryCount)<=0)total=Math.min(total,44);
+  // 実売データが取得できないことを理由に候補順位を44点で打ち止めにしない。\n  // 実売件数は取得できないため「売れた証拠」とは扱わず、順位は現在の市場情報の比較に限定する。
   const risk=(!p.soldHistoryAvailable||num(p.soldHistoryCount)<=0)?'要確認':m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
   const recommendationReasons=[];
   if(m.currentProfit!=null) recommendationReasons.push('予想利益 '+(m.currentProfit>=0?'+':'')+Math.round(m.currentProfit).toLocaleString()+'円');
