@@ -346,6 +346,8 @@ function classifyPartsDetail(p){
     :/nintendo|sega|playstation|saturn|dreamcast|famicom|ゲーム|ゲームボーイ|任天堂|セガ/i.test(t)?'レトロゲーム'
     :/gunpla|gundam|bandai|ガンプラ|ガンダム|バンダイ/i.test(t)?'ガンプラ':'対象分野未確認';
   const kind=/line roller|ラインローラー/i.test(t)?'ラインローラー'
+    :/rod tip|穂先/i.test(t)?'釣り竿の穂先'
+    :/rod guide|guide ring|line guide|トップガイド|ガイドリング/i.test(t)?'釣り竿のガイド'
     :/spool|スプール/i.test(t)?'スプール'
     :/bail arm|ベール/i.test(t)?'ベール'
     :/drag knob|knob|ドラグノブ|ノブ/i.test(t)?'ドラグノブ'
@@ -854,7 +856,7 @@ function acceptCandidate(p,cat){
  }
  if(cat==='釣具'){
   return has(/fishing|shimano|daiwa|シマノ|ダイワ|リール|ロッド|釣竿|ルアー/)
-    && !has(/pokemon|camera|lens|gunpla|plastic model|\b(?:lot|bundle|parts?|spare|replacement|repair|untested|for parts|handle|knob)\b|まとめ売り|ジャンク/);
+    && !has(/pokemon|camera|lens|gunpla|plastic model|line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|穂先|トップガイド|ガイドリング|\b(?:lot|bundle|parts?|spare|replacement|repair|untested|for parts|handle|knob)\b|まとめ売り|ジャンク/);
  }
  if(cat==='カメラ'){
   return has(/digital camera|camera body|compact camera|mirrorless|dslr|film camera|powershot|coolpix|finepix|cyber.?shot|lumix|μ[- ]?\d{3,4}|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ|フィルムカメラ/)
@@ -882,7 +884,7 @@ function acceptCandidate(p,cat){
   return maker&&model&&!accessoryOrPart&&!has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩|figure only|ガンプラ以外|非売品ポスター/);
  }
  if(cat==='交換部品・消耗品'){
-  const part=has(/line roller|spool|bail arm|drag knob|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
+  const part=has(/line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|穂先|トップガイド|ガイドリング|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
   const maker=has(/shimano|シマノ|daiwa|ダイワ|canon|キヤノン|nikon|ニコン|sony|ソニー|olympus|オリンパス|nintendo|任天堂|sega|セガ|bandai|バンダイ|gundam|gunpla/);
   return part&&maker&&!has(/pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ|universal fit|fits all|汎用品/);
  }
