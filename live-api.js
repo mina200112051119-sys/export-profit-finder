@@ -39,6 +39,7 @@ async function displayListingName(item,cat){
  let name=translated;
  try{
   if(cat==='ポケモンカード'&&typeof window.cleanPokemonDisplayName==='function')name=window.cleanPokemonDisplayName(p,translated);
+  else if(cat==='ポケモン関連サプライ用品'&&typeof window.cleanPokemonSupplyDisplayName==='function')name=window.cleanPokemonSupplyDisplayName(p,translated);
   else if(typeof window.cleanProductDisplayName==='function')name=window.cleanProductDisplayName(p,translated,cat);
  }catch(e){}
  return {name:name||translated||item.title,status:'名称未確認'};
