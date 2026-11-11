@@ -942,7 +942,7 @@ function acceptCandidate(p,cat){
   const diskSystemPeripheral=has(/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/);
   const adapterOnly=has(/ac adapter|power adapter|power supply|adapter|電源アダプター|専用アダプター/)&&!has(/\bconsole\b|ゲーム機本体|本体のみ|本体セット|コンソール/);
   const peripheralOnly=(has(/controller|gamepad|joystick|keyboard|ac adapter|power adapter|power supply|av cable|usb cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|電源アダプター|ケーブル|ディスクシステム|ディスクドライブ|hvc-?002|hvc-?007|hvc-?022/)&&(!consoleItem||adapterOnly)&&(!softwareItem||diskSystemPeripheral))||adapterOnly;
-  const genericSoftwareOnly=softwareItem&&!consoleItem&&!raw.replace(/super famicom|スーパーファミコン|famicom|ファミコン|\\bsfc\\b|\\bsnes\\b|game boy|gameboy|nintendo 64|playstation|sega|セガ|software|game|cartridge|カセット|ゲームソフト|日本|japan|japanese|used|new|tested|activision|konami|capcom|namco|taito|bandai|nintendo|square|enix/gi,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'').trim();
+  const genericSoftwareOnly=softwareItem&&!consoleItem&&!raw.replace(/super famicom|スーパーファミコン|famicom|ファミコン|\bsfc\b|\bsnes\b|game boy|gameboy|nintendo 64|playstation|sega|セガ|software|game|cartridge|カセット|ゲームソフト|日本|japan|japanese|used|new|tested|activision|konami|capcom|namco|taito|bandai|nintendo|square|enix/gi,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'').trim();
   return platform&&(consoleItem||softwareItem)&&!peripheralOnly&&!genericSoftwareOnly;
  }
  if(cat==='ガンプラ'){
