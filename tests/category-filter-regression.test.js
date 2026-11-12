@@ -124,3 +124,14 @@ test('replacement parts: Bandai Gunpla option parts are identified as parts, not
   assert.equal(accept({title:'Bandai 1/144 HG Gundam Option Parts Set Gunpla 13 Battle Arm Arms'}, '交換部品・消耗品'), true);
   assert.equal(accept({title:'Bandai Gundam replacement parts'}, '交換部品・消耗品'), false);
 });
+
+
+test('camera fallback: Minolta X-370 is identified as a film camera with its model number', () => {
+  const buildStart = html.indexOf('function buildUnverifiedJapaneseIdentity(p,cat){');
+  const buildEnd = html.indexOf('\nwindow.buildUnverifiedJapaneseIdentity', buildStart);
+  assert.notEqual(buildStart, -1);
+  assert.notEqual(buildEnd, -1);
+  const buildContext = {};
+  vm.runInNewContext(html.slice(buildStart, buildEnd) + '\nglobalThis.buildIdentity = buildUnverifiedJapaneseIdentity;', buildContext);
+  assert.equal(buildContext.buildIdentity({title:'Minolta X-370 35mm Film SLR Camera Kit with 50mm OEM Lens'}, 'カメラ'), 'ミノルタ｜X-370｜フィルムカメラ｜正式名称未確認');
+});
