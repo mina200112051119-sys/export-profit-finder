@@ -310,6 +310,23 @@ test('Japanese product display names prioritize model numbers and concise produc
   assert.match(html, /function cleanProductDisplayName\(p, translated, category\)/);
 });
 
+test('camera and fishing model extraction does not mistake ordinary title words for model numbers', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const fishingStart = html.indexOf('function cleanFishingDisplayName(p, translated) {');
+  const fishingEnd = html.indexOf('\n}', fishingStart);
+  const cameraStart = html.indexOf('function cleanProductDisplayName(p, translated, category) {');
+  const cameraEnd = html.indexOf('\n}', cameraStart);
+  assert.ok(fishingStart >= 0 && fishingEnd > fishingStart);
+  assert.ok(cameraStart >= 0 && cameraEnd > cameraStart);
+  const cleanFishing = vm.runInNewContext('(' + html.slice(fishingStart, fishingEnd + 2) + ')');
+  const cleanCamera = vm.runInNewContext('(' + html.slice(cameraStart, cameraEnd + 2) + ')');
+  assert.equal(cleanFishing({name:'SHIMANO Surf Rod 23 Multi Marine M350'}, ''), 'シマノ M350 釣具');
+  assert.equal(cleanFishing({name:'DAIWA X IC 20 Baitcasting Reel'}, ''), 'ダイワ X IC 20 ベイトリール');
+  const cameraName = cleanCamera({name:'Sony NEX-6 Body Only 16.1MP Mirrorless Digital Camera'}, '', 'カメラ');
+  assert.match(cameraName, /NEX-6/);
+  assert.doesNotMatch(cameraName, /Only 16/);
+});
+
 test('fishing search separates Shimano and Daiwa and rejects mixed-brand listings', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /Shimano fishing reel spinning baitcasting Japan -Daiwa/);
