@@ -479,11 +479,14 @@ function saveRankingSnapshot(){
 }
 function shouldRunDailyRefresh(){
  try{
+  const attempted=Number(localStorage.getItem('exportDailyRefreshAttempt:v1')||0);
+  if(attempted&&Date.now()-attempted<DAILY_REFRESH_MS)return false;
   const saved=JSON.parse(localStorage.getItem(RANKING_SNAPSHOT_KEY)||'null');
   return !saved||!Array.isArray(saved.data)||!saved.data.length||Date.now()-Number(saved.savedAt||0)>=DAILY_REFRESH_MS;
  }catch(e){return true;}
 }
 async function refresh(){
+ try{localStorage.setItem('exportDailyRefreshAttempt:v1',String(Date.now()))}catch(e){}
  const b=$('refresh');
  if(activeRefreshController){activeRefreshController.abort();return;}
  const controller=new AbortController();activeRefreshController=controller;
@@ -1031,7 +1034,7 @@ function detail(id){const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)re
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
-data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}const hasSavedRanking=restoreRankingSnapshot();if(!hasSavedRanking){$('status').textContent='保存済みランキングはありません。「今すぐ更新・再計算」でeBay検索を開始できます。';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}if(shouldRunDailyRefresh()&&!hasSavedRanking){/* 初回だけ手動更新を案内。ページを開くたびの自動検索はしない */}</script><script src="./cost-fix.js"></script>
+data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}const hasSavedRanking=restoreRankingSnapshot();if(!hasSavedRanking){$('status').textContent='保存済みランキングはありません。「今すぐ更新・再計算」でeBay検索を開始できます。';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}if(shouldRunDailyRefresh()){Promise.resolve().then(()=>refresh());}</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
 
