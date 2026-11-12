@@ -790,7 +790,7 @@ function buildUnverifiedJapaneseIdentity(p, categoryOverride){
   const brandMap=[
     [/\bSHIMANO\b/i,'シマノ'],[/\bDAIWA\b/i,'ダイワ'],[/\bOLYMPUS\b/i,'オリンパス'],
     [/\bSAMSUNG\b/i,'サムスン'],[/\bNIKON\b/i,'ニコン'],[/\bCANON\b/i,'キヤノン'],
-    [/\bSONY\b/i,'ソニー'],[/\bFUJIFILM\b/i,'富士フイルム'],[/\bPANASONIC\b/i,'パナソニック'],
+    [/\bSONY\b/i,'ソニー'],[/\bFUJIFILM\b/i,'富士フイルム'],[/\bPANASONIC\b/i,'パナソニック'],[/\bMINOLTA\b/i,'ミノルタ'],[/\bPENTAX\b/i,'ペンタックス'],[/\bKODAK\b/i,'コダック'],
     [/\bBANDAI(?: SPIRITS)?\b/i,'バンダイ'],[/\bNINTENDO\b/i,'任天堂'],[/\bSEGA\b/i,'セガ'],
     [/\bULTRA\s*PRO\b/i,'ウルトラプロ']
   ];
@@ -822,7 +822,8 @@ function buildUnverifiedJapaneseIdentity(p, categoryOverride){
   }
   if(cat==='カメラ'){
     const model=(raw.match(/(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{2,}|\b[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*\b|(?:μ|µ)[- ]?\d{3,4})/i)||[])[0]||'';
-    return [brand||'メーカー未確認',model||'型番未確認','デジタルカメラ','正式名称未確認'].join('｜');
+    const cameraType=/film|slr|一眼レフ|フィルム/i.test(raw)?'フィルムカメラ':'デジタルカメラ';
+    return [brand||'メーカー未確認',model||'型番未確認',cameraType,'正式名称未確認'].join('｜');
   }
   if(cat==='レトロゲーム'){
     const x=classifyRetroListing(p);
