@@ -160,12 +160,19 @@ function currentProduct() {
 
 const SEARCH_NAME_KEY = 'domesticSearchName:v1:';
 
+function cleanDomesticSearchName(value) {
+  return String(value || '')
+    .replace(/[｜|]/g, ' ')
+    .replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要/g, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
+}
 function getDomesticSearchName(p) {
   try {
     const saved = localStorage.getItem(SEARCH_NAME_KEY + String(p.id));
-    if (saved && saved.trim()) return saved.trim();
+    if (saved && saved.trim()) return cleanDomesticSearchName(saved);
   } catch {}
-  return String(p.domesticSearchName || p.displayName || p.name || '').trim();
+  return cleanDomesticSearchName(p.domesticSearchName || p.displayName || p.name || '');
 }
 
 function saveDomesticSearchName(p, value) {
@@ -263,7 +270,7 @@ function render(p) {
     if (!searchLinks) return;
     searchLinks.innerHTML = sourcesForProduct(p).map(([label, source]) => {
       const href = searchUrl(p, source, query);
-      return '<a class="tab" style="text-decoration:none;text-align:center" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(label) + 'で検索</a>';
+      return '<a class="tab" style="text-decoration:none;text-align:center" href="' + esc(href) + '" target="' + (source === 'mercari' ? 'mercariSearch' : '_blank') + '" rel="noopener">' + esc(label) + 'で検索</a>';
     }).join('');
   }
   if (searchNameInput) {
