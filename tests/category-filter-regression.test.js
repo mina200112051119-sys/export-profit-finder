@@ -104,3 +104,23 @@ test('replacement parts: Daiwa drag-parts kits and Dreamcast power supplies are 
 test('Gunpla: an explicit MG model kit is not rejected for incidental action-figure wording', () => {
   assert.equal(accept({title:'BANDAI MG Master Grade 1/100 GUNDAM 0080 MS-18E Kampfer Action Figure Model Kit'}, 'ガンプラ'), true);
 });
+
+
+test('Pokémon supplies: damage-counter cases, player coins, and dice are retained', () => {
+  assert.equal(accept({title:'Pokemon Card Game Damage Counter Case + Counters & Coin Set Japan'}, 'ポケモン関連サプライ用品'), true);
+});
+
+test('camera: a 35mm film SLR camera kit with an included lens is retained', () => {
+  assert.equal(accept({title:'Minolta X-370 35mm Film SLR Camera Kit with 50mm OEM Lens, Tested and Working'}, 'カメラ'), true);
+});
+
+test('Gunpla: painted model kits remain candidates, but paint-only products are rejected', () => {
+  assert.equal(accept({title:'Bandai HG 1/144 Gundam Base Limited MS-06C-6 Zaku II Type C-6 Painting Model'}, 'ガンプラ'), true);
+  assert.equal(accept({title:'BANDAI MG Master Grade 1/100 Infinite Justice Gundam Model Kit Painted'}, 'ガンプラ'), true);
+  assert.equal(accept({title:'Bandai Gundam paint set for model kits'}, 'ガンプラ'), false);
+});
+
+test('replacement parts: Bandai Gunpla option parts are identified as parts, not complete kits', () => {
+  assert.equal(accept({title:'Bandai 1/144 HG Gundam Option Parts Set Gunpla 13 Battle Arm Arms'}, '交換部品・消耗品'), true);
+  assert.equal(accept({title:'Bandai Gundam replacement parts'}, '交換部品・消耗品'), false);
+});
