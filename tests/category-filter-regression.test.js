@@ -148,7 +148,7 @@ test('deduplication identity is stable when a duplicate listing has no translate
   assert.notEqual(keyStart, -1);
   assert.ok(keyEnd > keyStart);
   const keyContext = {};
-  vm.runInNewContext(html.slice(keyStart, keyEnd) + '\\nglobalThis.identityKey = categoryIdentityKey;', keyContext);
+  vm.runInNewContext(html.slice(keyStart, keyEnd) + ';globalThis.identityKey = categoryIdentityKey;', keyContext);
   const title = 'Pokemon Center TOHOKU Deck Box and Sleeves [US Seller]';
   const withTranslation = {name:title,title,displayName:title,titleJa:title};
   const withoutTranslation = {name:title,title,displayName:title};
