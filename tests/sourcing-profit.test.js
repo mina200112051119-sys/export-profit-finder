@@ -185,7 +185,7 @@ test('detail sourcing links prefer saved Japanese domestic search name', () => {
   const source = fs.readFileSync('index.html', 'utf8');
   assert.match(source, /function domesticSearchQuery\(p\)/);
   assert.match(source, /localStorage\.getItem\('domesticSearchName:v1:'\+String\(p\.id\)\)/);
-  assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\)\)/);
+  assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\),p\.cat\)/);
   assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
 });
 
@@ -353,8 +353,8 @@ test('candidate shortlist expands broad categories, caps display at 50, and remo
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
   assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
-  assert.ok(html.includes('hardware.slice(0,25)'));
-  assert.ok(html.includes('software.slice(0,25)'));
+  assert.ok(html.includes('for(let i=0;i<25;i++)'));
+  assert.ok(html.includes('if(hardware[i])first.push(hardware[i]);if(software[i])first.push(software[i]);'));
 });
 
 test('deduplication keeps the listing with a saved sourcing cost instead of replacing it with a cheaper duplicate', () => {
