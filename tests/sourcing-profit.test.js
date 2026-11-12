@@ -312,9 +312,9 @@ test('Japanese product display names prioritize model numbers and concise produc
 
 test('camera and fishing model extraction does not mistake ordinary title words for model numbers', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  const fishingStart = html.indexOf('function cleanFishingDisplayName(p, translated) {');
+  const fishingStart = html.indexOf('function cleanFishingDisplayName(p, translated){');
   const fishingEnd = html.indexOf('\n}', fishingStart);
-  const cameraStart = html.indexOf('function cleanProductDisplayName(p, translated, category) {');
+  const cameraStart = html.indexOf('function cleanProductDisplayName(p, translated, category){');
   const cameraEnd = html.indexOf('\n}', cameraStart);
   assert.ok(fishingStart >= 0 && fishingEnd > fishingStart);
   assert.ok(cameraStart >= 0 && cameraEnd > cameraStart);
