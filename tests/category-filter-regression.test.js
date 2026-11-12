@@ -85,3 +85,22 @@ test('retro: same model and same Japanese display name deduplicate despite selle
     identityContext.categoryIdentityKey(two, 'レトロゲーム')
   );
 });
+
+
+test('Pokémon supplies: official card collection files are retained', () => {
+  assert.equal(accept({title:'Pokemon Center Card Game Collection File Pro Pikachu Japan'}, 'ポケモン関連サプライ用品'), true);
+});
+
+test('camera: a camera kit with an included lens is retained, while a lens-only listing is rejected', () => {
+  assert.equal(accept({title:'Sony Alpha NEX-6 Mirrorless Camera w/ 16-50mm Lens 16.1MP Black - Tested'}, 'カメラ'), true);
+  assert.equal(accept({title:'Sony 16-50mm camera lens only'}, 'カメラ'), false);
+});
+
+test('replacement parts: Daiwa drag-parts kits and Dreamcast power supplies are retained', () => {
+  assert.equal(accept({title:'For Daiwa Fishing Reel Drag Parts Kit with Clicker and Sprocket Washers'}, '交換部品・消耗品'), true);
+  assert.equal(accept({title:'Sega Dreamcast OEM Power Supply Unit PSU VA1'}, '交換部品・消耗品'), true);
+});
+
+test('Gunpla: an explicit MG model kit is not rejected for incidental action-figure wording', () => {
+  assert.equal(accept({title:'BANDAI MG Master Grade 1/100 GUNDAM 0080 MS-18E Kampfer Action Figure Model Kit'}, 'ガンプラ'), true);
+});
