@@ -868,7 +868,7 @@ async function enrichOfficialNames(items, categoryOverride){
   }
 }
 async function translateText(text,to='ja'){try{const from=to==='ja'&&/[A-Za-z]{2,}/u.test(String(text||''))?'en':'auto';const r=await fetch(API_BASE+'/api/translate?text='+encodeURIComponent(text)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
-async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];await enrichOfficialNames(enriched,cat);const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" style="margin-top:8px">詳細分析を見る</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
+async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];await enrichOfficialNames(enriched,cat);const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" type="button" style="margin-top:8px" data-product-id="'+esc(p.id)+'" onclick="event.stopPropagation();detail(encodeURIComponent(this.dataset.productId))">利益計算・仕入先を確認</button><button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="event.stopPropagation();toggleFavorite(this.dataset.favoriteId)">'+(isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
 function photo(e){const file=e.target.files?.[0];if(!file)return;const ok=['image/jpeg','image/png','image/webp'];if(!ok.includes(file.type)){photoDataUrl='';$('photoMsg').style.display='block';$('photoMsg').textContent='JPEG・PNG・WebPを選択してください。';$('photoSearch').style.display='none';return}const reader=new FileReader();reader.onload=()=>{photoDataUrl=String(reader.result||'');$('preview').src=photoDataUrl;$('preview').style.display='block';$('photoSearch').style.display='block';$('photoMsg').style.display='block';$('photoMsg').textContent='写真を確認しました。「写真からeBay候補を探す」を押してください。'};reader.readAsDataURL(file)}
 function photoPriceLabel(amount,currency){
   const value=Number(amount||0),cur=String(currency||'USD').toUpperCase();
@@ -908,9 +908,23 @@ async function searchByPhoto(){
   if(!window.photoCandidates.length){$('photoMsg').textContent='選択カテゴリーに合う候補がありません。カテゴリーを確認してください。';return}
   await Promise.all(window.photoCandidates.map(x=>photoDisplayName(x,photoCategory)));
   $('photoMsg').textContent='候補が見つかりました。商品名と写真を確認して、近い商品を選んでください。';
-  $('photoResults').innerHTML=window.photoCandidates.map((x,i)=>'<div class="photo-card" onclick="selectPhotoCandidate('+i+')">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'')+'<h3>'+esc(x.titleJa||x.title)+'</h3><div><b>eBay価格 '+photoPriceLabel(x.price,x.currency)+'</b></div><div>送料 '+photoPriceLabel(x.shipping,x.currency)+'</div><small>'+esc(x.officialNameStatus||'名称未確認')+'｜'+esc(x.condition||'状態不明')+'</small><button class="primary" style="margin-top:8px">この候補を選ぶ</button></div>').join('');
+  $('photoResults').innerHTML=window.photoCandidates.map((x,i)=>'<div class="photo-card" onclick="selectPhotoCandidate('+i+')">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'')+'<h3>'+esc(x.titleJa||x.title)+'</h3><div><b>eBay価格 '+photoPriceLabel(x.price,x.currency)+'</b></div><div>送料 '+photoPriceLabel(x.shipping,x.currency)+'</div><small>'+esc(x.officialNameStatus||'名称未確認')+'｜'+esc(x.condition||'状態不明')+'</small><button class="primary" type="button" style="margin-top:8px" onclick="event.stopPropagation();selectPhotoCandidate('+i+')">候補を確認して利益計算へ</button><button class="secondary" type="button" data-favorite-id="'+esc(x.itemId||x.url||x.title)+'" onclick="event.stopPropagation();savePhotoCandidateFavorite('+i+')">'+(isFavorite(x.itemId||x.url||x.title)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('');
  }catch(e){$('photoMsg').textContent='画像検索に失敗しました。eBay API設定または画像形式を確認してください。'}
  finally{$('photoSearch').disabled=false}
+}
+function photoCandidateProduct(x){
+ const cat=x?.category||document.getElementById('cat').value;
+ const rows=map({items:[{itemId:x.itemId,title:x.title,titleJa:x.titleJa,price:x.price,shipping:x.shipping,image:x.image,url:x.url,condition:x.condition}],total:1},cat,0);
+ return rows[0]||null;
+}
+function savePhotoCandidateFavorite(i){
+ const x=window.photoCandidates?.[i];if(!x)return false;
+ const p=photoCandidateProduct(x);if(!p)return false;
+ const exists=data.some(row=>String(row.id)===String(p.id));
+ if(!exists)data.unshift(p);
+ const saved=toggleFavorite(p.id);
+ const msg=$('photoMsg');if(msg)msg.textContent=saved?'写真検索の商品をマイリストに保存しました。商品詳細から利益計算と仕入先の保存もできます。':'マイリストから削除しました。';
+ return saved;
 }
 async function selectPhotoCandidate(i){
  const x=window.photoCandidates?.[i];if(!x)return;
@@ -923,19 +937,23 @@ async function selectPhotoCandidate(i){
 async function confirmPhotoCandidate(){
  const x=window.__selectedPhotoCandidate;if(!x)return;
  const title=String(x.title||'').trim();if(!title)return;
- $('photoMsg').textContent='選択した商品のeBay情報を再取得し、詳細分析を作成中…';
+ $('photoMsg').textContent='写真で選んだ出品そのものを使って、詳細分析を作成中…';
  try{
-  const cat=document.getElementById('cat'),chosenCategory=x.category||cat.value;
-  cat.value=chosenCategory;$('q').value=title;
-  const d=await ebay(title),items=map(d,chosenCategory,0);
-  if(!items.length){$('photoMsg').textContent='選択した商品の再検索結果がありませんでした。商品検索から再確認してください。';return}
-  await enrichOfficialNames(items,chosenCategory);
-  const enriched=await enrichSold(items);
-  data=[...enriched,...data.filter(old=>!enriched.some(p=>String(p.id)===String(old.id)))];
-  const selected=enriched[0];window.__detailProduct=selected;
-  $('photoMsg').textContent='商品情報を取得しました。詳細を確認してください。';
-  detail(encodeURIComponent(selected.id));
- }catch(e){$('photoMsg').textContent='商品情報の再取得に失敗しました。eBay検索をもう一度お試しください。'}
+  const chosenCategory=x.category||document.getElementById('cat').value;
+  const selected=photoCandidateProduct({...x,category:chosenCategory});
+  if(!selected){$('photoMsg').textContent='選択した候補を商品情報に変換できませんでした。別の候補を選んでください。';return}
+  const existing=data.find(p=>String(p.id)===String(selected.id));
+  if(existing){
+    Object.assign(existing,selected);
+    window.__detailProduct=existing;
+  }else{
+    data.unshift(selected);
+    window.__detailProduct=selected;
+  }
+  await enrichOfficialNames([window.__detailProduct],chosenCategory);
+  $('photoMsg').textContent='写真で選んだ出品の情報を使います。利益計算・マイリスト・仕入先保存を利用できます。';
+  detail(encodeURIComponent(window.__detailProduct.id));
+ }catch(e){$('photoMsg').textContent='詳細分析を作成できませんでした。別の候補を選んでもう一度お試しください。'}
 }
 function domesticSearchQuery(p){
   try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim()}catch(e){}
