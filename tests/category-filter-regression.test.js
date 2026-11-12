@@ -28,8 +28,9 @@ test('Gunpla: keeps a named HG kit', () => {
 test('Gunpla: rejects tools', () => {
   assert.equal(accept({title:'Bandai HG Gundam nipper tool'}, 'ガンプラ'), false);
 });
-test('Gunpla: rejects decals and replacement parts', () => {
-  assert.equal(accept({title:'Bandai HG Gundam water slide decal replacement parts'}, 'ガンプラ'), false);
+test('Gunpla: keeps decals as classified modification parts but rejects generic replacement parts', () => {
+  assert.equal(accept({title:'Bandai HG Gundam water slide decal replacement parts'}, 'ガンプラ'), true);
+  assert.equal(accept({title:'Bandai Gundam replacement parts'}, 'ガンプラ'), false);
 });
 
 const retroStart = html.indexOf('function classifyRetroListing(p){');
