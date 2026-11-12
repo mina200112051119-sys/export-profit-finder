@@ -256,7 +256,7 @@ function dedupeCategoryProducts(rows,cat){
   return out;
 }
 function categoryIdentityKey(p,cat){
-  const raw=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' ')).normalize('NFKC').toLowerCase();
+  const raw=String(p.title||p.name||p.displayName||p.titleJa||p.nameJa||'').normalize('NFKC').toLowerCase();
   const compact=raw.replace(/\b(?:japan|japanese|used|new|tested|working|excellent|good condition|free shipping|rare|authentic|region free|ntsc|pal)\b/g,' ').replace(/[^a-z0-9一-龯ぁ-んァ-ヶ]/g,'');
   if(!compact)return '';
   if(cat==='レトロゲーム'){
