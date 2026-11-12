@@ -939,7 +939,7 @@ async function selectPhotoCandidate(i){
  const title=await photoDisplayName(x,x.category||document.getElementById('cat').value);
  $('photoMsg').style.display='block';
  $('photoMsg').innerHTML='<b>候補を確認</b><br>写真だけで商品を確定しません。内容を確認して「この商品で分析する」を押してください。';
- $('photoResults').innerHTML='<div class="card" style="grid-column:1/-1"><h3>選択した候補</h3>'+(x.image?'<img class="detail-image" src="'+esc(x.image)+'" alt="">':'')+'<div class="row"><span>商品名</span><b>'+esc(title)+'</b></div><div class="row"><span>名称の確認</span><b>'+esc(x.officialNameStatus||'名称未確認')+'</b></div><div class="row"><span>eBay表示価格</span><b>'+photoPriceLabel(x.price,x.currency)+'</b></div><div class="row"><span>送料</span><b>'+photoPriceLabel(x.shipping,x.currency)+'</b></div><div class="row"><span>状態</span><b>'+esc(x.condition||'状態不明')+'</b></div><div class="notice">写真の商品と一致するか確認してください。一致しない場合は別候補を選び直してください。</div><button class="primary" type="button" onclick="confirmPhotoCandidate()">この商品で分析する</button>'+(x.url?'<a class="secondary" style="display:block;text-decoration:none;text-align:center;margin-top:8px" href="'+esc(x.url)+'" target="_blank" rel="noopener">eBayの商品ページで確認</a>':'')+'</div>';
+ $('photoResults').innerHTML='<div class="card" style="grid-column:1/-1"><h3>選択した候補</h3>'+(x.image?'<img class="detail-image" src="'+esc(x.image)+'" alt="">':'')+'<div class="row"><span>商品名</span><b>'+esc(title)+'</b></div><div class="row"><span>名称の確認</span><b>'+esc(x.officialNameStatus||'名称未確認')+'</b></div><div class="row"><span>eBay表示価格</span><b>'+photoPriceLabel(x.price,x.currency)+'</b></div><div class="row"><span>送料</span><b>'+(x.shippingKnown===false||x.shipping==null?'送料未取得':photoPriceLabel(x.shipping,x.currency))+'</b></div><div class="row"><span>状態</span><b>'+esc(x.condition||'状態不明')+'</b></div><div class="notice">写真の商品と一致するか確認してください。一致しない場合は別候補を選び直してください。</div><button class="primary" type="button" onclick="confirmPhotoCandidate()">この商品で分析する</button>'+(x.url?'<a class="secondary" style="display:block;text-decoration:none;text-align:center;margin-top:8px" href="'+esc(x.url)+'" target="_blank" rel="noopener">eBayの商品ページで確認</a>':'')+'</div>';
 }
 async function confirmPhotoCandidate(){
  const x=window.__selectedPhotoCandidate;if(!x)return;
@@ -963,7 +963,7 @@ async function confirmPhotoCandidate(){
  }catch(e){$('photoMsg').textContent='詳細分析を作成できませんでした。別の候補を選んでもう一度お試しください。'}
 }
 function domesticSearchQuery(p){
-  try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim()}catch(e){}
+  try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim().replace(/[｜|]/g,' ').replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要/g,' ').replace(/\s+/g,' ').trim()}catch(e){}
   const raw=String(p.name||p.title||'').normalize('NFKC');
   const ja=String(p.displayName||p.titleJa||'').normalize('NFKC').trim();
   if((p.cat||p.category)==='ポケモンカード'){
