@@ -550,7 +550,11 @@ async function officialNameCandidate(p, categoryOverride){
   // Multi-item lots are explicitly labeled as lots, not misrepresented as one official SKU.
   const titleKey=raw.normalize('NFKC');
   let curated=null;
-  if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /8\s*\/\s*53/.test(titleKey) && /WOTC|WIZARDS|PROMO/i.test(titleKey)){
+  if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /011\s*\/\s*025/.test(titleKey) && /CELEBRATIONS?/i.test(titleKey)){
+      curated={titleJa:'ミュウ｜Celebrations｜011/025｜ホロ',score:100,status:'カード名・番号・収録シリーズの一致候補（画像・状態は要確認）',diagnostic:{match:'mew-celebrations-011-025'}};
+    }else if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /4\s*\/\s*17/.test(titleKey) && /POP\s*SERIES\s*4/i.test(titleKey)){
+      curated={titleJa:'ミュウ｜POP Series 4｜4/17｜ホロ',score:100,status:'カード名・番号・収録シリーズの一致候補（画像・状態は要確認）',diagnostic:{match:'mew-pop-series-4-4-17'}};
+    }else if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /8\s*\/\s*53/.test(titleKey) && /WOTC|WIZARDS|PROMO/i.test(titleKey)){
     curated={titleJa:'ミュウ｜Wizards Black Star Promos｜8/53｜プロモ',score:100,status:'カード名・番号の一致候補（収録元は要確認）',diagnostic:{match:'exact-name-number-promo'}};
   }else if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /(?:OLD\s*MAID|BABANUKI|ババ抜き|ババヌキ)/i.test(titleKey) && /(?:RED\s*BACK|RED\s*BACKED|赤い?裏面)/i.test(titleKey)){
     curated={titleJa:'ミュウ｜2019年 ポケモンセンター限定 ババ抜きカード（赤い裏面）',score:100,status:'商品名整理済み（2019年ポケモンセンターのババ抜きカード。画像との一致は要確認）',diagnostic:{match:'mew-old-maid-babanuki-red-back-2019'}};
