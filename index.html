@@ -230,7 +230,7 @@ function dedupeCategoryProducts(rows,cat){
     const raw=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' '));
     if(hardExcludes[cat]?.test(raw))continue;
     if(cat==='カメラ'){
-      const isLensOnly=/(?:\blens\s+only\b|\bcamera\s+lens\b|\b\d{2,3}\s*mm\b|レンズ単品)/i.test(raw)&&!/(?:digital\s+camera|compact\s+camera|camera\s+body|デジタルカメラ|コンパクトカメラ)/i.test(raw);
+      const isLensOnly=/(?:\blens\s+only\b|\bcamera\s+lens\b|\b\d{2,3}\s*mm\b|レンズ単品)/i.test(raw)&&!/(?:digital\s+camera|compact\s+camera|camera\s+body|mirrorless|dslr|film\s+camera|\bslr\b|camera\s+kit|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ|フィルムカメラ)/i.test(raw);
       const modelTokens=Array.from(new Set((raw.match(/(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{2,}|\b[A-Z]{2,5}-\d{2,5}[A-Z0-9-]*\b)/gi)||[]).map(x=>x.toLowerCase().replace(/\s+/g,''))));
       const multiBrand=(raw.match(/\b(?:canon|nikon|sony|fujifilm|olympus|panasonic|samsung)\b/gi)||[]).map(x=>x.toLowerCase()).filter((x,i,a)=>a.indexOf(x)===i);
       if(isLensOnly||(modelTokens.length>1&&!/(?:\blot\b|\bbundle\b|\bset\s+of\b|複数台|まとめ売り)/i.test(raw))||(multiBrand.length>1&&!/(?:\blot\b|\bbundle\b|\bset\s+of\b|複数台|まとめ売り)/i.test(raw)))continue;
@@ -997,7 +997,7 @@ function acceptCandidate(p,cat){
   return cardEvidence&&(hasCardNumber||hasNamedCard)&&!genericOnly&&!has(/fishing|camera|lens|flash|gunpla|plastic model|playstation|nintendo switch console|controller|mystery|random|assorted|bulk lot|lot of|bundle|yu.?gi.?oh|magic the gathering|guidebook|book set|collection book|e.?series.*\b\d+\s*(?:cards?|sets?)\b|\b\d+\s*cards?\s+set/);
  }
  if(cat==='ポケモン関連サプライ用品'){
-  return has(/pokemon|pok[eé]mon|ポケモン/) && has(/deck.?box|deck.?case|sleeve|playmat|binder|card.?file|storage|album|デッキケース|スリーブ|プレイマット|バインダー|カードファイル|収納/)
+  return has(/pokemon|pok[eé]mon|ポケモン/) && has(/deck.?box|deck.?case|sleeve|playmat|binder|card.?file|collection.?file|clear.?file|file folder|storage|album|デッキケース|スリーブ|プレイマット|バインダー|カードファイル|収納/)
     && !has(/fishing|camera|lens|gunpla|plastic model|plush|stuffed toy|ぬいぐるみ|figure|フィギュア|single card|trading card lot/);
  }
  if(cat==='釣具'){
@@ -1006,7 +1006,7 @@ function acceptCandidate(p,cat){
  }
  if(cat==='カメラ'){
   return has(/digital camera|camera body|compact camera|mirrorless|dslr|film camera|powershot|coolpix|finepix|cyber.?shot|lumix|μ[- ]?\d{3,4}|デジタルカメラ|コンパクトカメラ|ミラーレス|一眼レフ|フィルムカメラ/)
-    && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery\s+only|charger\s+only|adapter\s+only|tripod\s+only|filter\s+only|strap\s+only|bag\s+only|lens\s+only)\b|camera\s+(?:lens|bag|strap)\b|\b\d{2,3}\s*mm\b|まとめ売り|ジャンク|未テスト/);
+    && !has(/pokemon|fishing|reel|gunpla|plastic model|\b(?:lot|bundle|parts?|repair|untested|for parts|flash|speedlight|battery\s+only|charger\s+only|adapter\s+only|tripod\s+only|filter\s+only|strap\s+only|bag\s+only|lens\s+only)\b|camera\s+(?:lens|bag|strap)\b|まとめ売り|ジャンク|未テスト/);
  }
  if(cat==='レトロゲーム'){
   if(has(/pokemon\s*card|ポケモンカード|pokemon\s*tcg|trading\s*card|攻略本|guidebook|magazine|flash\s*cart|flashcart|everdrive|fxpak|sd2snes|game\s*copier|multi.?cart|reproduction\s*cart|repro\s*cart/))return false;
@@ -1029,10 +1029,10 @@ function acceptCandidate(p,cat){
   const model=has(/model kit|plastic model|プラモデル|組立|\b(?:hg|mg|rg|pg|eg|mgsd)\b|1\s*\/\s*(?:144|100|60|72|48)/);
   const weaponOrMod=has(/weapon|battle weapons?|weapon set|weapon pack|option parts?|conversion parts?|custom parts?|decal|sticker|water.?slide|transfer.?decal|runner parts?|武器|ウェポン|オプションパーツ|改造パーツ|カスタムパーツ|デカール|シール|水転写|ランナー/);
   const unrelatedAccessory=has(/\b(?:tool|tools|nipper|cutter|paint|painting|airbrush|brush|display stand|action base|base stand|display base|instruction manual|assembly manual|manual only)\b|工具|ニッパー|塗料|塗装|エアブラシ|筆|台座|スタンド|説明書|組立説明書/);
-  return maker&&(model||weaponOrMod)&&!unrelatedAccessory&&!has(/pokemon|fishing|camera|playstation|nintendo|action figure|完成品フィギュア|ガシャポン|食玩|figure only|ガンプラ以外|非売品ポスター/);
+  return maker&&(model||weaponOrMod)&&!unrelatedAccessory&&!has(/pokemon|fishing|camera|playstation|nintendo|完成品フィギュア|ガシャポン|食玩|figure only|ガンプラ以外|非売品ポスター/)&&(!has(/action figure/)||has(/model kit|plastic model|プラモデル/));
  }
  if(cat==='交換部品・消耗品'){
-  const part=has(/bearing|bearings|ベアリング|line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|穂先|トップガイド|ガイドリング|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
+  const part=has(/bearing|bearings|ベアリング|drag parts?|sprocket washers?|power supply|power unit|psu|line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|穂先|トップガイド|ガイドリング|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|電源ユニット|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
   const maker=has(/shimano|シマノ|daiwa|ダイワ|canon|キヤノン|nikon|ニコン|sony|ソニー|olympus|オリンパス|nintendo|任天堂|sega|セガ|hvc-?00[27]|hvc-?022/);
   return part&&maker&&!has(/pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ|universal fit|fits all|汎用品/);
  }
