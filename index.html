@@ -812,7 +812,8 @@ function buildUnverifiedJapaneseIdentity(p, categoryOverride){
     const placeJa={FUKUOKA:'フクオカ',HIROSHIMA:'ヒロシマ',OSAKA:'オーサカ',TOKYO:'トウキョー',KYOTO:'キョウト',NAGOYA:'ナゴヤ',SAPPORO:'サッポロ',YOKOHAMA:'ヨコハマ',TOHOKU:'トウホク',KANAZAWA:'カナザワ',OKINAWA:'オキナワ'};
     const center= /POKEMON\s*CENTER/i.test(raw)?'ポケモンセンター'+(place?' '+placeJa[place]:''):'ポケモン関連用品';
     const pokemonNames=[[/PIKACHU|ピカチュウ/i,'ピカチュウ'],[/EEVEE|イーブイ/i,'イーブイ'],[/CHARIZARD|リザードン/i,'リザードン'],[/MEWTWO|ミュウツー/i,'ミュウツー'],[/MEW|ミュウ/i,'ミュウ'],[/SNORLAX|カビゴン/i,'カビゴン'],[/GENGAR|ゲンガー/i,'ゲンガー'],[/LUCARIO|ルカリオ/i,'ルカリオ'],[/PIPLUP|ポッチャマ/i,'ポッチャマ'],[/SPRIGATITO|ニャオハ/i,'ニャオハ'],[/QUAXLY|クワッス/i,'クワッス'],[/FUECOCO|ホゲータ/i,'ホゲータ'],[/MIMIKYU|ミミッキュ/i,'ミミッキュ'],[/GARDEVOIR|サーナイト/i,'サーナイト'],[/RAYQUAZA|レックウザ/i,'レックウザ']];
-    const pokemon=(pokemonNames.find(([re])=>re.test(raw))||[])[1]||'';
+    const supplyTitle=raw+' '+String(p.displayName||p.titleJa||p.nameJa||'');
+    const pokemon=(pokemonNames.find(([re])=>re.test(supplyTitle))||[])[1]||'';
     const kinds=[];
     if(/deck\s*(?:box|case)/i.test(raw))kinds.push('デッキケース');
     if(/sleeves?/i.test(raw))kinds.push('カードスリーブ');
@@ -963,7 +964,7 @@ async function confirmPhotoCandidate(){
  }catch(e){$('photoMsg').textContent='詳細分析を作成できませんでした。別の候補を選んでもう一度お試しください。'}
 }
 function domesticSearchQuery(p){
-  try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim().replace(/[｜|]/g,' ').replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要/g,' ').replace(/\s+/g,' ').trim()}catch(e){}
+  try{const saved=localStorage.getItem('domesticSearchName:v1:'+String(p.id));if(saved&&saved.trim())return saved.trim().replace(/[｜|]/g,' ').replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要|単品候補|セット品|セット内容確認が必要|商品名未確認|タイトル未確認|機種未確認/g,' ').replace(/\s+/g,' ').trim()}catch(e){}
   const raw=String(p.name||p.title||'').normalize('NFKC');
   const ja=String(p.displayName||p.titleJa||'').normalize('NFKC').trim();
   if((p.cat||p.category)==='ポケモンカード'){
@@ -993,7 +994,7 @@ function domesticSearchQuery(p){
     const rawNumber=(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||(raw.match(/\b(\d{1,3})\s*\/\s*\d{1,3}\b/)||[])[1]||'';
     return ['ポケモンカード',rawNumber,set].filter(Boolean).join(' ');
   }
-  const statusWords=['正式名称未確認','正式商品名未確認','型番候補あり','型番未確認','カード名未確認','カード番号未確認','用品種別未確認','商品名の一致未確認','対応機種未確認','原文確認が必要'];
+  const statusWords=['正式名称未確認','正式商品名未確認','型番候補あり','型番未確認','カード名未確認','カード番号未確認','用品種別未確認','商品名の一致未確認','対応機種未確認','原文確認が必要','単品候補','セット品','セット内容確認が必要','商品名未確認','タイトル未確認','機種未確認'];
   const clean=String(ja||raw).replace(/[｜|]/g,' ').replace(new RegExp(statusWords.join('|'),'g'),' ').replace(/\s+/g,' ').trim();
   return clean||raw;
 }
