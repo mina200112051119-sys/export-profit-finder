@@ -135,3 +135,17 @@ test('camera fallback: Minolta X-370 is identified as a film camera with its mod
   vm.runInNewContext(html.slice(buildStart, buildEnd) + '\nglobalThis.buildIdentity = buildUnverifiedJapaneseIdentity;', buildContext);
   assert.equal(buildContext.buildIdentity({title:'Minolta X-370 35mm Film SLR Camera Kit with 50mm OEM Lens'}, 'カメラ'), 'ミノルタ｜X-370｜フィルムカメラ｜正式名称未確認');
 });
+
+
+test('deduplication identity is stable when a duplicate listing has no translated title', () => {
+  const keyStart = html.indexOf('function categoryIdentityKey(p,cat){');
+  const keyEnd = html.indexOf('\\nasync function enrichSold', keyStart);
+  assert.notEqual(keyStart, -1);
+  assert.notEqual(keyEnd, -1);
+  const keyContext = {};
+  vm.runInNewContext(html.slice(keyStart, keyEnd) + '\\nglobalThis.identityKey = categoryIdentityKey;', keyContext);
+  const title = 'Pokemon Center TOHOKU Deck Box and Sleeves [US Seller]';
+  const withTranslation = {name:title,title,displayName:title,titleJa:title};
+  const withoutTranslation = {name:title,title,displayName:title};
+  assert.equal(keyContext.identityKey(withTranslation, 'ポケモン関連サプライ用品'), keyContext.identityKey(withoutTranslation, 'ポケモン関連サプライ用品'));
+});
