@@ -52,7 +52,7 @@ test('favorites: removing one item leaves other saved items intact', () => {
 });
 
 test('favorites: cloud storage includes favorites and schedules their saves', () => {
-  assert.match(html, /return \{sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames,manualEvidence,favorites\}/);
+  assert.match(html, /return \{sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames,manualEvidence,favorites,settings:/);
   assert.match(html, /d\.data\.favorites/);
   assert.match(html, /favoriteProducts:v1/);
 });
