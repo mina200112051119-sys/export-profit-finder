@@ -45,6 +45,7 @@ function median(values) {
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=180');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
@@ -78,7 +79,8 @@ module.exports = async (req, res) => {
       title: item.title,
       price: Number(item.price?.value || 0),
       currency: item.price?.currency || 'USD',
-      shipping: Number(item.shippingOptions?.[0]?.shippingCost?.value || 0),
+      shipping: item.shippingOptions?.[0]?.shippingCost?.value != null ? Number(item.shippingOptions[0].shippingCost.value) : (String(item.shippingOptions?.[0]?.shippingCostType || '').toUpperCase() === 'FREE' ? 0 : null),
+      shippingKnown: item.shippingOptions?.[0]?.shippingCost?.value != null || String(item.shippingOptions?.[0]?.shippingCostType || '').toUpperCase() === 'FREE',
       image: item.image?.imageUrl || '',
       url: item.itemWebUrl || '',
       condition: item.condition || '',
