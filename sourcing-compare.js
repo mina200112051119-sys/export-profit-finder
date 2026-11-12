@@ -163,7 +163,7 @@ const SEARCH_NAME_KEY = 'domesticSearchName:v1:';
 function cleanDomesticSearchName(value) {
   return String(value || '')
     .replace(/[｜|]/g, ' ')
-    .replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要/g, ' ')
+    .replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要|単品候補|セット品|セット内容確認が必要|商品名未確認|タイトル未確認|機種未確認/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
