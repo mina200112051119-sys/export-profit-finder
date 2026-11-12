@@ -455,6 +455,34 @@ function defaultSearchQueriesForCategory(c){const queries={
 };return queries[c]||[c]}
 function defaultSearchQueryForCategory(c){return defaultSearchQueriesForCategory(c)[0]}
 let activeRefreshController=null;
+const RANKING_SNAPSHOT_KEY='exportRankingSnapshot:v1';
+const DAILY_REFRESH_MS=24*60*60*1000;
+function restoreRankingSnapshot(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(RANKING_SNAPSHOT_KEY)||'null');
+  if(!saved||!Array.isArray(saved.data)||!saved.data.length)return false;
+  data=mergeManualEvidence(saved.data.map(p=>RankingEngine.normalizeProduct(p)));
+  if(Number.isFinite(Number(saved.fxRate)))fxRate=Number(saved.fxRate);
+  if(saved.fxDate)fxDate=saved.fxDate;
+  if(saved.updated)updated=saved.updated;
+  if(saved.categorySearchStats&&typeof saved.categorySearchStats==='object')categorySearchStats=saved.categorySearchStats;
+  render();
+  const age=Math.max(0,Date.now()-Number(saved.savedAt||0));
+  $('status').innerHTML='<b>保存済みデータを表示中</b><br>前回更新：'+esc(updated||'日時不明')+'<br>ページを開いただけではeBay検索を行いません。'+(age>=DAILY_REFRESH_MS?'<br>24時間以上経過しているため、1日1回の自動更新対象です。':'');
+  return true;
+ }catch(e){return false;}
+}
+function saveRankingSnapshot(){
+ try{
+  localStorage.setItem(RANKING_SNAPSHOT_KEY,JSON.stringify({data,fxRate,fxDate,updated,categorySearchStats,savedAt:Date.now()}));
+ }catch(e){console.warn('ランキングデータの保存に失敗しました',e);}
+}
+function shouldRunDailyRefresh(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(RANKING_SNAPSHOT_KEY)||'null');
+  return !saved||!Array.isArray(saved.data)||!saved.data.length||Date.now()-Number(saved.savedAt||0)>=DAILY_REFRESH_MS;
+ }catch(e){return true;}
+}
 async function refresh(){
  const b=$('refresh');
  if(activeRefreshController){activeRefreshController.abort();return;}
@@ -493,7 +521,7 @@ async function refresh(){
    try{const mapped=map(merged,c);searchStats[c]={requestedQueries:defaultSearchQueriesForCategory(c).length,successfulQueries:rows.length,searchResultTotal:merged.total,rawUniqueItems:mergedItems.length,matchedItems:mapped.length};live.push(...mapped);}catch(e){errors.push(c+'：候補の整理に失敗しました '+(e?.message||String(e)));}
   }
   categorySearchStats=searchStats;
-  data=mergeManualEvidence(live);updated=new Date().toLocaleString('ja-JP');
+  data=mergeManualEvidence(live);updated=new Date().toLocaleString('ja-JP');saveRankingSnapshot();
   try{render();}catch(e){$('status').textContent='ランキング作成エラー：'+(e?.message||String(e));return;}
   const summary='更新日時：'+esc(updated)+'<br>取得商品数：'+live.length+'件<br>検索 '+(tasks.length-errors.length)+'/'+tasks.length+'件成功。現在の出品価格・送料・為替を使用しています。';
   $('status').innerHTML=(errors.length?'<b>更新完了（一部検索できず）</b>':'<b>更新完了</b>')+'<br>'+summary+(errors.length?'<br>取得エラー：'+errors.map(esc).join('<br>'):'')+'<br>商品価格・送料は別々に表示し、仕入れ価格入力後に利益を判定します。';
@@ -1003,7 +1031,7 @@ function detail(id){const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)re
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
-data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}$('status').textContent='実データを読み込み中…';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}</script><script src="./cost-fix.js"></script>
+data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}const hasSavedRanking=restoreRankingSnapshot();if(!hasSavedRanking){$('status').textContent='保存済みランキングはありません。「今すぐ更新・再計算」でeBay検索を開始できます。';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}if(shouldRunDailyRefresh()&&!hasSavedRanking){/* 初回だけ手動更新を案内。ページを開くたびの自動検索はしない */}</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
 
