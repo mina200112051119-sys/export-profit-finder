@@ -7,6 +7,11 @@ const SOURCES = [
   ['スニダン','snkrdunk','https://snkrdunk.com/search?keyword='],
   ['ヤフオク','yahooAuctions','https://auctions.yahoo.co.jp/search/search?p=']
 ];
+function sourcesForProduct(p) {
+  const category = String(p?.cat || p?.category || '');
+  const pokemonCategory = /ポケモンカード|ポケモン関連サプライ用品/.test(category);
+  return SOURCES.filter(([, source]) => source !== 'snkrdunk' || pokemonCategory);
+}
 
 const OFFICIAL_CATALOGS = {
   'ポケモンカード': [
@@ -220,7 +225,7 @@ function render(p) {
       <h3>② 確認した出品を登録</h3>
       <label>仕入先</label>
       <select id="sc-source">
-        ${SOURCES.map(([label,source]) => `<option value="${source}">${label}</option>`).join('')}
+        ${sourcesForProduct(p).map(([label,source]) => `<option value="${source}">${label}</option>`).join('')}
         <option value="physicalStore">その他（実店舗）</option>
       </select>
       <div id="sc-physical-fields" style="display:none;margin-top:8px">
@@ -256,7 +261,7 @@ function render(p) {
   function drawSearchLinks() {
     const query = String(searchNameInput?.value || '').trim();
     if (!searchLinks) return;
-    searchLinks.innerHTML = SOURCES.map(([label, source]) => {
+    searchLinks.innerHTML = sourcesForProduct(p).map(([label, source]) => {
       const href = searchUrl(p, source, query);
       return '<a class="tab" style="text-decoration:none;text-align:center" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(label) + 'で検索</a>';
     }).join('');
