@@ -139,9 +139,14 @@ test('camera fallback: Minolta X-370 is identified as a film camera with its mod
 
 test('deduplication identity is stable when a duplicate listing has no translated title', () => {
   const keyStart = html.indexOf('function categoryIdentityKey(p,cat){');
-  const keyEnd = html.indexOf('\\nasync function enrichSold', keyStart);
+  let keyEnd = html.indexOf('{', keyStart);
+  let depth = 0;
+  for (; keyEnd < html.length; keyEnd++) {
+    if (html[keyEnd] === '{') depth++;
+    else if (html[keyEnd] === '}' && --depth === 0) { keyEnd++; break; }
+  }
   assert.notEqual(keyStart, -1);
-  assert.notEqual(keyEnd, -1);
+  assert.ok(keyEnd > keyStart);
   const keyContext = {};
   vm.runInNewContext(html.slice(keyStart, keyEnd) + '\\nglobalThis.identityKey = categoryIdentityKey;', keyContext);
   const title = 'Pokemon Center TOHOKU Deck Box and Sleeves [US Seller]';
