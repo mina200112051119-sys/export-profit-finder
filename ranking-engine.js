@@ -138,6 +138,8 @@ function scoreV2(raw,s={},universe=[]){
     completenessScore*.08+
     50*.06 /* 仕入価格入力前は手数料・送料による順位変動をさせない */
   ));
+  // 実売データがない商品・販売件数0件の商品は、購入おすすめの点数を付けず確認待ちにする。
+  if(!p.soldHistoryAvailable||num(p.soldHistoryCount)<=0) total=Math.min(total,44);
   // 仕入価格も実売根拠もない段階では高評価を付けない。
   // 実売データが取得できないことを理由に候補順位を44点で打ち止めにしない。\n  // 実売件数は取得できないため「売れた証拠」とは扱わず、順位は現在の市場情報の比較に限定する。
   const risk=(!p.soldHistoryAvailable||num(p.soldHistoryCount)<=0)?'要確認':m.worst90==null?(p.cost>0?'要確認':'要仕入価格'):m.worst90<0?'高':m.worst90<p.cost*.1?'中':'低';
