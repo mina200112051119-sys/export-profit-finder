@@ -1029,7 +1029,8 @@ function acceptCandidate(p,cat){
   const model=has(/model kit|plastic model|プラモデル|組立|painting model|painted model|\b(?:hg|mg|rg|pg|eg|mgsd)\b|1\s*\/\s*(?:144|100|60|72|48)/);
   const weaponOrMod=has(/weapon|battle weapons?|weapon set|weapon pack|option parts?|conversion parts?|custom parts?|decal|sticker|water.?slide|transfer.?decal|runner parts?|武器|ウェポン|オプションパーツ|改造パーツ|カスタムパーツ|デカール|シール|水転写|ランナー/);
   const unrelatedAccessory=has(/\b(?:tool|tools|nipper|cutter|airbrush|brush|display stand|action base|base stand|display base|instruction manual|assembly manual|manual only)\b|工具|ニッパー|エアブラシ|筆|台座|スタンド|説明書|組立説明書/);
-  const paintOnly=has(/paint|painting|塗料|塗装/)&&!has(/painting model|painted|塗装済み/);\n  return maker&&(model||weaponOrMod)&&!unrelatedAccessory&&!paintOnly&&!has(/pokemon|fishing|camera|playstation|nintendo|完成品フィギュア|ガシャポン|食玩|figure only|ガンプラ以外|非売品ポスター/)&&(!has(/action figure/)||has(/model kit|plastic model|プラモデル/));
+  const paintOnly=has(/paint|painting|塗料|塗装/)&&!has(/painting model|painted|塗装済み/);
+  return maker&&(model||weaponOrMod)&&!unrelatedAccessory&&!paintOnly&&!has(/pokemon|fishing|camera|playstation|nintendo|完成品フィギュア|ガシャポン|食玩|figure only|ガンプラ以外|非売品ポスター/)&&(!has(/action figure/)||has(/model kit|plastic model|プラモデル/));
  }
  if(cat==='交換部品・消耗品'){
   const part=has(/bearing|bearings|ベアリング|drag parts?|sprocket washers?|power supply|power unit|psu|line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|穂先|トップガイド|ガイドリング|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|電源ユニット|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
