@@ -82,7 +82,7 @@ function yen(v){return v==null?'—':Math.round(Number(v||0)).toLocaleString()+'
 function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
 function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:INT,domesticShipping:+$('domestic').value||0,packaging:+$('pack').value||0,otherCost:+$('other').value||0,conversionFeeRate:+$('conv').value||0}}
 function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
-function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value))}
+function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value));Promise.resolve(saveCloudStorage()).catch(()=>{})}
 const CLOUD_STORAGE_API=API_BASE+'/api/translate?action=storage';
 function getExportUserId(){
   let id=localStorage.getItem('exportUserId:v1');
@@ -109,7 +109,7 @@ function cloudStorageData(){
       else if(k.startsWith(prefixes.searchName)){const v=localStorage.getItem(k);if(v)domesticSearchNames[k.slice(prefixes.searchName.length)]=v;}
     }catch(e){}
   }
-  return {sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames,manualEvidence,favorites};
+  return {sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames,manualEvidence,favorites,settings:{domestic:localStorage.getItem('domestic')??'0',pack:localStorage.getItem('pack')??'0',other:localStorage.getItem('other')??'0',conv:localStorage.getItem('conv')??'0'}};
 }
 async function checkCloudStorage(){
   const el=$('cloud-status');
@@ -138,6 +138,7 @@ async function loadCloudStorage(){
     if(!d.configured){if(el)el.textContent='☁️ クラウド保存：未設定';return;}
     if(el)el.textContent='☁️ クラウド保存：接続済み（端末ごとにデータ分離）';
     if(!d.data)return;
+    if(d.data.settings&&typeof d.data.settings==='object'){['domestic','pack','other','conv'].forEach(id=>{if(d.data.settings[id]!=null){const value=String(d.data.settings[id]);localStorage.setItem(id,value);if($(id))$(id).value=value;}});}
     Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
