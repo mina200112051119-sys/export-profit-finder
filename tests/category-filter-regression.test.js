@@ -127,7 +127,7 @@ test('replacement parts: Bandai Gunpla option parts are identified as parts, not
 
 
 test('camera fallback: Minolta X-370 is identified as a film camera with its model number', () => {
-  const buildStart = html.indexOf('function buildUnverifiedJapaneseIdentity(p,cat){');
+  const buildStart = html.indexOf('function buildUnverifiedJapaneseIdentity(p, categoryOverride){');
   const buildEnd = html.indexOf('\nwindow.buildUnverifiedJapaneseIdentity', buildStart);
   assert.notEqual(buildStart, -1);
   assert.notEqual(buildEnd, -1);
