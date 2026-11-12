@@ -680,7 +680,10 @@ function cleanFishingDisplayName(p, translated){
   const modelPatterns=[
     /\b(?:STELLA|STRADIC|TWIN\s*POWER|VANQUISH|NASCI|ULTEGRA|SEDONA|SOARE|COMPLEX|ANTARES|METANIUM|CURADO|SLX)\b(?:\s*[A-Z0-9-]+)?/i,
     /\b(?:EXIST|CERTATE|LUVIAS|CALDIA|FUEGO|LEGALIS|TATULA|STEEZ|ZILLION|LEXA|BG|SALTIGA|EMERALDAS)\b(?:\s*[A-Z0-9-]+)?/i,
-    /\b[A-Z]{1,4}[- ]?\d{2,5}[A-Z0-9-]*\b/i
+    /\bTOURNAMENT\s+X\s*\d{3,5}[A-Z0-9-]*\b/i,
+    /\bX\s*IC\s*\d{2}\b/i,
+    /\b[A-Z]{1,3}-\d{2,5}[A-Z0-9-]*\b/i,
+    /\b[A-Z]{1,3}\d{2,5}[A-Z0-9-]*\b/i
   ];
   const model=(modelPatterns.map(re=>raw.match(re)?.[0]).find(Boolean)||'').replace(/\s+/g,' ').trim();
   const type=/spinning\s*reel|スピニングリール/i.test(raw+' '+ja)?'スピニングリール'
@@ -697,7 +700,7 @@ function cleanProductDisplayName(p, translated, category){
   const ja=String(translated||p.displayName||p.titleJa||raw).normalize('NFKC');
   const cat=category||p.cat||p.category||'';
   const model=String(p.modelNumber||p.mpn||p.productCode||'').normalize('NFKC').trim();
-  const modelFromRaw=(raw.match(/\b(?:COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|[A-Z]{1,5}[- ]?\d{2,5}[A-Z0-9-]*|[A-Z]{2,5}\d{2,5}[A-Z0-9-]*)\b|(?:μ|µ)[- ]?\d{3,4}/i)||[])[0]||'';
+  const modelFromRaw=(raw.match(/\b(?:NEX[- ]?\d{1,2}|COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|POWERSHOT\s*[A-Z0-9-]{3,}|[A-Z]{1,5}-\d{1,5}[A-Z0-9-]*|[A-Z]{1,3}\d{2,5}[A-Z0-9-]*)\b|(?:μ|µ)[- ]?\d{3,4}/i)||[])[0]||'';
   const code=model||modelFromRaw;
   const brand=(raw.match(/\b(Samsung|Nikon|Canon|Sony|Olympus|Fujifilm|Panasonic|Nintendo|Sega|Bandai|Shimano|Daiwa|Ultra\s*Pro)\b/i)||[])[0]||'';
   const typeRules={
