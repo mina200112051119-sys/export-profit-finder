@@ -164,7 +164,7 @@ function cleanDomesticSearchName(value) {
   return String(value || '')
     .replace(/[｜|]/g, ' ')
     .replace(/正式名称未確認|正式商品名未確認|型番候補あり|型番未確認|カード名未確認|カード番号未確認|用品種別未確認|商品名の一致未確認|対応機種未確認|原文確認が必要/g, ' ')
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 function getDomesticSearchName(p) {
