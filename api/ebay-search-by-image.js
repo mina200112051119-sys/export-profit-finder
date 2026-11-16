@@ -27,6 +27,7 @@ async function getAppToken() {
 function normalize(items) {
   return (items || []).map(item => ({
     itemId: item.itemId || '',
+    watchCount: Number.isFinite(Number(item.watchCount)) ? Number(item.watchCount) : null,
     title: item.title || '',
     price: Number(item.price?.value || 0),
     currency: item.price?.currency || 'USD',
