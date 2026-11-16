@@ -438,9 +438,10 @@ function pokemonCardRarityPriority(p){const raw=String([p.name,p.title,p.display
 function rank(cat=null){const eligible=data.filter(p=>p.sell>0&&(!cat||p.cat===cat)&&(p.cat!=='ポケモンカード'||p.sell*fxRate>=1000));const unique=cat?dedupeCategoryProducts(eligible,cat):eligible;const ranked=RankingEngine.rank(unique,baseSettings(),cat);if(cat==='ポケモンカード')ranked.sort((a,b)=>pokemonCardRarityPriority(b)-pokemonCardRarityPriority(a)||b.totalScore-a.totalScore||b.sell-a.sell);const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!=='高'));if(cat==='レトロゲーム'){const hardware=safe.filter(p=>classifyRetroListing(p).productType==='ゲーム機本体');const software=safe.filter(p=>classifyRetroListing(p).productType==='ゲームソフト');const other=safe.filter(p=>!['ゲーム機本体','ゲームソフト'].includes(classifyRetroListing(p).productType));const first=[];for(let i=0;i<25;i++){if(hardware[i])first.push(hardware[i]);if(software[i])first.push(software[i]);}first.push(...other);const used=new Set(first.map(p=>String(p.id)));return [...first,...safe.filter(p=>!used.has(String(p.id)))].slice(0,50)}return safe}
 function rankWithoutPositiveSales(cat=null){return []}
 
-function compactProductCard({id,name,image,price,shipping,condition,openAction,favoriteLabel}){
+function compactProductCard({id,name,image,price,shipping,condition,openAction,favoriteLabel,favoriteAction}){
  const imageHtml=image?'<img src="'+esc(image)+'" alt="" style="width:100%;height:150px;object-fit:contain;background:#f8fafc;border-radius:10px;margin-bottom:8px">':'';
- return '<div class="search-card">'+imageHtml+'<b>'+esc(name||'商品名未確認')+'</b><div class="row"><span>eBay価格</span><b>'+price+'</b></div><div class="row"><span>送料</span><b>'+shipping+'</b></div><small class="muted">'+esc(condition||'状態未確認')+'</small><button class="primary" type="button" style="margin-top:8px" onclick="'+openAction+'">商品詳細・利益計算</button><button class="secondary" type="button" data-favorite-id="'+esc(id)+'" onclick="toggleFavorite(this.dataset.favoriteId)">'+favoriteLabel+'</button></div>';
+ const favoriteButton=favoriteAction?'<button class="secondary" type="button" onclick="'+favoriteAction+'">'+favoriteLabel+'</button>':'<button class="secondary" type="button" data-favorite-id="'+esc(id)+'" onclick="toggleFavorite(this.dataset.favoriteId)">'+favoriteLabel+'</button>';
+ return '<div class="search-card">'+imageHtml+'<b>'+esc(name||'商品名未確認')+'</b><div class="row"><span>eBay価格</span><b>'+price+'</b></div><div class="row"><span>送料</span><b>'+shipping+'</b></div><small class="muted">'+esc(condition||'状態未確認')+'</small><button class="primary" type="button" style="margin-top:8px" onclick="'+openAction+'">商品詳細・利益計算</button>'+favoriteButton+'</div>';
 }
 function renderList(list,title,reviewList=[]){
  const ranked=list.slice(0,50);
@@ -984,6 +985,7 @@ async function searchByPhoto(){
    shipping:x.shippingKnown===false||x.shipping==null?'送料未取得':photoPriceLabel(x.shipping,x.currency),
    condition:x.condition||'状態未確認',
    openAction:'selectPhotoCandidate('+i+')',
+   favoriteAction:'savePhotoCandidateFavorite('+i+')',
    favoriteLabel:'☆ マイリストに追加'
   })).join('')
  }catch(e){$('photoMsg').textContent='画像検索に失敗しました。eBay API設定または画像形式を確認してください。'}
