@@ -85,6 +85,7 @@ module.exports = async (req, res) => {
       url: item.itemWebUrl || '',
       condition: item.condition || '',
       itemId: item.itemId || '',
+      watchCount: Number.isFinite(Number(item.watchCount)) ? Number(item.watchCount) : null,
       categoryId: item.leafCategoryIds?.[0] || '',
       categories: item.categories || []
     })).filter(x => x.price > 0);
