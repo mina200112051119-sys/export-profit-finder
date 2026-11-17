@@ -974,7 +974,7 @@ async function photoDisplayName(x,cat){
     try{translated=await translateText(x.title,'ja')}catch(e){translated=x.title}
   }
   try{
-    x.titleJa=cat==='ポケモンカード'?buildUnverifiedJapaneseIdentity({...p,titleJa:translated},cat):buildUnverifiedJapaneseIdentity({...p,titleJa:translated},cat);
+    x.titleJa=buildUnverifiedJapaneseIdentity({...p,titleJa:translated},cat);
   }catch(e){x.titleJa=translated||x.title}
   x.officialNameStatus='名称未確認';
   return x.titleJa||x.title;
