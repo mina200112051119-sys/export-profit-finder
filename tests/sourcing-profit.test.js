@@ -189,6 +189,7 @@ test('Pokémon card fallback uses Japanese Pokémon names instead of literal mac
   assert.ok(html.includes('メタモン'));
   assert.ok(html.includes('MEW'));
   assert.ok(html.includes("return [pokemonName,number?'カード番号 '+number:'',set].filter(Boolean).join('｜');"));
+  assert.match(html, /const displayName=cat==='ポケモンカード'\?buildUnverifiedJapaneseIdentity/);
 });
 
 test('detail sourcing links prefer saved Japanese domestic search name', () => {
