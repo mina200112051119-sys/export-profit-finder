@@ -864,7 +864,7 @@ function buildUnverifiedJapaneseIdentity(p, categoryOverride){
       [/\bGRENINJA\b/i,'ゲッコウガ'],[/\bLAPRAS\b/i,'ラプラス'],[/\bMIMIKYU\b/i,'ミミッキュ']
     ];
     const pokemonName=(pokemonNames.find(([re])=>re.test(raw))||[])[1]||'ポケモン名未確認';
-    const number=fraction||(raw.match(/#\\s*(\\d{1,3})\\b/)||[])[1]||'';
+    const number=fraction||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
     return [pokemonName,number?'カード番号 '+number:'',set].filter(Boolean).join('｜');
   }
   if(cat==='ポケモン関連サプライ用品'){
