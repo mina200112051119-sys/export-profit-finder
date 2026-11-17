@@ -185,6 +185,7 @@ test('Pokémon card fallback uses Japanese Pokémon names instead of literal mac
   const html = fs.readFileSync('index.html', 'utf8');
   assert.ok(html.includes('DITTO'));
   assert.ok(html.includes(String.raw`[/\bDITTO\b/i,'メタモン']`));
+  assert.ok(html.includes(String.raw`raw.match(/#\s*(\d{1,3})\b/)`));
   assert.ok(html.includes('メタモン'));
   assert.ok(html.includes('MEW'));
   assert.ok(html.includes("return [pokemonName,number?'カード番号 '+number:'',set].filter(Boolean).join('｜');"));
