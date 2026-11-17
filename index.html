@@ -852,8 +852,20 @@ function buildUnverifiedJapaneseIdentity(p, categoryOverride){
   const setRules=[[/SV2A|\b151\b/i,'ポケモンカード151'],[/SV8A|TERASTAL FESTIVAL/i,'テラスタルフェスex'],[/M2A|MEGA DREAM/i,'MEGAドリームex'],[/TEAM\s*ROCKET/i,'ロケット団'],[/JUNGLE/i,'ジャングル'],[/FOSSIL/i,'化石の秘密'],[/WOTC|WIZARDS.*PROMO/i,'Wizards Black Star Promos']];
   const set=(setRules.find(([re])=>re.test(raw))||[])[1]||'';
   if(cat==='ポケモンカード'){
-    const number=fraction||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
-    return ['ポケモンカード',number?'カード番号 '+number:'',set].filter(Boolean).join('｜');
+    // Use a small, explicit Pokémon-name dictionary instead of trusting literal machine translations
+    // (for example, "Ditto" must be メタモン, not 同上). Unknown names stay unconfirmed.
+    const pokemonNames=[
+      [/\\bDITTO\\b/i,'メタモン'],[/\\bMEW\\b/i,'ミュウ'],[/\\bMEWTWO\\b/i,'ミュウツー'],
+      [/\\bPIKACHU\\b/i,'ピカチュウ'],[/\\bCHARIZARD\\b/i,'リザードン'],[/\\bBLASTOISE\\b/i,'カメックス'],
+      [/\\bVENUSAUR\\b/i,'フシギバナ'],[/\\bGENGAR\\b/i,'ゲンガー'],[/\\bSNORLAX\\b/i,'カビゴン'],
+      [/\\bDRAGONITE\\b/i,'カイリュー'],[/\\bEEVEE\\b/i,'イーブイ'],[/\\bLUCARIO\\b/i,'ルカリオ'],
+      [/\\bGARDEVOIR\\b/i,'サーナイト'],[/\\bRAYQUAZA\\b/i,'レックウザ'],[/\\bGROUDON\\b/i,'グラードン'],
+      [/\\bKYOGRE\\b/i,'カイオーガ'],[/\\bMACHAMP\\b/i,'カイリキー'],[/\\bURSHIFU\\b/i,'ウーラオス'],
+      [/\\bGRENINJA\\b/i,'ゲッコウガ'],[/\\bLAPRAS\\b/i,'ラプラス'],[/\\bMIMIKYU\\b/i,'ミミッキュ']
+    ];
+    const pokemonName=(pokemonNames.find(([re])=>re.test(raw))||[])[1]||'ポケモン名未確認';
+    const number=fraction||(raw.match(/#\\s*(\\d{1,3})\\b/)||[])[1]||'';
+    return [pokemonName,number?'カード番号 '+number:'',set].filter(Boolean).join('｜');
   }
   if(cat==='ポケモン関連サプライ用品'){
     const place=(raw.match(/POKEMON\s*CENTER\s*(FUKUOKA|HIROSHIMA|OSAKA|TOKYO|KYOTO|NAGOYA|SAPPORO|YOKOHAMA|TOHOKU|KANAZAWA|OKINAWA)/i)||[])[1];
