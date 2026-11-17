@@ -206,7 +206,7 @@ function clearSourcingOverride(id){
   try{localStorage.removeItem('selectedSourcingCost:v1:'+String(id));return true}catch(e){return false}
 }
 function map(d,cat,cost=0){
-  const rows=(d.items||[]).map(x=>{const ov=sourcingOverride(x.itemId);return RankingEngine.normalizeProduct({id:x.itemId,name:x.title,displayName:x.titleJa||x.title,cat,cost:ov?Number(ov.itemPrice ?? ov.cost):cost,sourcingShippingJpy:ov?Number(ov.shippingJpy||0):0,sourcingSource:ov?.source||'',sourcingCondition:ov?.condition||'',sourcingCheckedAt:ov?.checkedAt||'',sell:x.price,ship:x.shipping,shippingKnown:x.shippingKnown!==false&&x.shipping!=null,image:x.image,url:x.url,condition:x.condition,activeListingsTotal:0,searchResultTotal:Number(d.total||0),source:'eBay現在出品（販売済み価格ではありません）'})});
+  const rows=(d.items||[]).map(x=>{const ov=sourcingOverride(x.itemId);const displayName=cat==='ポケモンカード'?buildUnverifiedJapaneseIdentity({name:x.title,titleJa:x.titleJa,cat},cat):(x.titleJa||x.title);return RankingEngine.normalizeProduct({id:x.itemId,name:x.title,displayName,cat,cost:ov?Number(ov.itemPrice ?? ov.cost):cost,sourcingShippingJpy:ov?Number(ov.shippingJpy||0):0,sourcingSource:ov?.source||'',sourcingCondition:ov?.condition||'',sourcingCheckedAt:ov?.checkedAt||'',sell:x.price,ship:x.shipping,shippingKnown:x.shippingKnown!==false&&x.shipping!=null,image:x.image,url:x.url,condition:x.condition,activeListingsTotal:0,searchResultTotal:Number(d.total||0),source:'eBay現在出品（販売済み価格ではありません）'})});
   return dedupeCategoryProducts(rows,cat);
 }
 function dedupeCategoryProducts(rows,cat){
