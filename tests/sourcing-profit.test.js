@@ -414,3 +414,27 @@ test('manual research form explains the exact data to enter and saves the checke
 });
 
 // Keep regression expectations aligned with the category-specific query set.
+
+
+test('product search and live category results use the same compact card actions as ranking and photo search', () => {
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(live, /async function liveSearch\(\)/);
+  assert.match(live, /RankingEngine\.normalizeProduct\(/);
+  assert.match(live, /compactProductCard\(/);
+  assert.match(live, /openAction:"detail\('/);
+  assert.match(live, /favoriteLabel:'☆ マイリストに追加'/);
+  assert.match(live, /商品詳細から利益計算と仕入先の保存ができます/);
+  assert.match(live, /eBayライブカテゴリー検索：/);
+  assert.doesNotMatch(live, /総合評価（このツール独自の100点評価）|データ信頼度|30\/60\/90日後シナリオ|<span class="row">総合点/);
+});
+
+test('ordinary product detail hides internal diagnostics and detailed fee breakdown', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const start = html.indexOf('function detail(id)');
+  const end = html.indexOf('function toggleRiskDetail()', start);
+  assert.ok(start >= 0 && end > start);
+  const detail = html.slice(start, end);
+  assert.doesNotMatch(detail, /照合の診断|情報源エラーの詳細|経費（自動計算）/);
+  assert.match(detail, /経費合計（仕入代金を除く）/);
+  assert.match(detail, /国内検索用の名前/);
+});
