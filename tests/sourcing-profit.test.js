@@ -366,7 +366,7 @@ test('candidate shortlist expands broad categories, caps display at 50, and remo
   assert.match(html, /Pokemon Center Japan card album collection file official goods Pokemon character design/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
-  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
+  assert.match(html, /function renderList\(list,title,reviewList=\[\]\)\{\s*const ranked=list\.slice\(0,50\)/);
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
   assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
