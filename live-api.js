@@ -90,34 +90,31 @@ async function liveSearch(){
   const fx=await loadFx();if(!fx)throw Error('為替レートを取得できませんでした');
   const r=await fetch(SEARCH_API+'?q='+encodeURIComponent(q)+'&limit=50',{cache:'no-store'}),data=await r.json();
   if(!r.ok)throw Error(data.error||'eBay検索に失敗しました');
-  const items=(data.items||[]).slice(0,20);
+  const items=(data.items||[]).slice(0,50);
   if(!items.length){box.innerHTML='<div class="notice">eBayで現在の出品候補が見つかりませんでした。検索語を少し変えてください。</div>';return;}
-  const named=await Promise.all(items.map(async item=>({...item,display:(await displayListingName(item,cat))})));
+  const mapped=typeof window.map==='function'?window.map({items,total:data.total},cat,0):[];
+  if(!mapped.length){box.innerHTML='<div class="notice">検索結果はありましたが、このカテゴリーの商品条件に合う候補はありませんでした。検索語を変えてください。</div>';return;}
   const appData=window.__exportApp?.getData?.();
-  const cards=named.map(p=>{
-   const id='live-search:'+String(p.itemId||p.url||p.title);
-   const currency=String(p.currency||'USD').toUpperCase();
-   const amount=(v)=>currency==='JPY'?Number(v||0)/Number(fx||150):Number(v||0);
-   const product=RankingEngine.normalizeProduct({
-    id,name:p.title,displayName:p.display.name,cat:cat||'商品検索',cost:0,
-    sell:amount(p.price),ship:amount(p.shipping),shippingKnown:p.shippingKnown!==false&&p.shipping!=null,
-    image:p.image,url:p.url,condition:p.condition||'状態未確認',
-    source:'eBay現在出品（販売済み価格ではありません）'
-   });
+  const rawById=new Map(items.map(x=>[String(x.itemId),x]));
+  const named=await Promise.all(mapped.slice(0,20).map(async product=>{
+   const raw=rawById.get(String(product.id))||{title:product.name,titleJa:product.displayName,itemId:product.id,price:product.sell,shipping:product.ship,image:product.image,url:product.url,condition:product.condition};
+   const display=await displayListingName(raw,cat);
+   product.displayName=display.name||product.displayName||product.name;
+   product.officialNameStatus=display.status||product.officialNameStatus||'名称未確認';
    if(Array.isArray(appData)){
-    const prior=appData.findIndex(x=>String(x.id)===id);
+    const prior=appData.findIndex(x=>String(x.id)===String(product.id));
     if(prior>=0)appData[prior]=product;else appData.unshift(product);
    }
-   return compactProductCard({
-    id,name:p.display.name,image:p.image,
-    price:yenLabel(p.price,p.currency,fx),
-    shipping:p.shippingKnown===false||p.shipping==null?'送料未取得':yenLabel(p.shipping,p.currency,fx),
-    condition:p.condition||'状態未確認',
-    openAction:"detail('"+encodeURIComponent(id)+"')",
-    favoriteLabel:'☆ マイリストに追加'
-   });
-  }).join('');
-  box.innerHTML='<div class="search-grid">'+cards+'</div><div class="warning" style="grid-column:1/-1">※表示価格はeBayの現在の出品価格です。売れた価格ではありません。商品詳細から利益計算と仕入先の保存ができます。</div>';
+   return {product,raw};
+  }));
+  box.innerHTML='<div class="search-grid">'+named.map(({product,raw})=>compactProductCard({
+   id:product.id,name:product.displayName||product.name,image:product.image,
+   price:yenLabel(raw.price,raw.currency,fx),
+   shipping:raw.shippingKnown===false||raw.shipping==null?'送料未取得':yenLabel(raw.shipping,raw.currency,fx),
+   condition:productListingStatus(product),
+   openAction:"detail('"+encodeURIComponent(product.id)+"')",
+   favoriteLabel:'☆ マイリストに追加'
+  })).join('')+'</div><div class="warning" style="grid-column:1/-1">※eBayの現在出品価格です。売れた価格ではありません。商品詳細から利益計算・仕入先の保存ができます。</div>';
  }catch(e){box.innerHTML='<div class="warning">最新データを取得できませんでした。'+esc(e.message)+'<br>eBayの認証情報がVercelに設定されているか確認してください。</div>';}
 }
 window.searchProduct=liveSearch;window.search=liveSearch;window.runLiveCategoryRanking=runCategoryRanking;window.searchLiveCategory=searchCategorySuggestions;
