@@ -360,6 +360,8 @@ test('listing title model candidates are not mislabeled as entirely unverified',
 test('retro game, Gunpla, and replacement-part listings receive separate identity details', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /function classifyRetroListing\(p\)/);
+  assert.ok(html.includes('HVC-002|HVC-007|HVC-012|HVC-022|SHVC-027'), 'Famicom Robot HVC-012 is classified as a peripheral');
+  assert.ok(html.includes('HVC-?(?!002|007|012|022)'), 'HVC-012 is excluded from console model matching');
   assert.match(html, /function classifyGunplaListing\(p\)/);
   assert.match(html, /function classifyPartsDetail\(p\)/);
   assert.match(html, /function categoryIdentityKey\(p,cat\)/);
