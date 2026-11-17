@@ -423,7 +423,7 @@ test('product search and live category results use the same compact card actions
   assert.match(live, /compactProductCard\(/);
   assert.match(live, /openAction:"detail\('/);
   assert.match(live, /favoriteLabel:'☆ マイリストに追加'/);
-  assert.match(live, /商品詳細から利益計算と仕入先の保存ができます/);
+  assert.match(live, /商品詳細から利益計算・仕入先の保存ができます/);
   assert.match(live, /eBayライブカテゴリー検索：/);
   assert.doesNotMatch(live, /総合評価（このツール独自の100点評価）|データ信頼度|30\/60\/90日後シナリオ|<span class="row">総合点/);
 });
