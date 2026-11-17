@@ -181,6 +181,13 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 });
 
 
+test('Pokémon card fallback uses Japanese Pokémon names instead of literal machine translation', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, [/\\\\bDITTO\\\\b/i,'メタモン'].join(''));
+  assert.match(html, [/\\\\bMEW\\\\b/i,'ミュウ'].join(''));
+  assert.match(html, /return \\[pokemonName,number\?'カード番号 '\+number:'',set\\]\\.filter\\(Boolean\\)\\.join\\('｜'\\)/);
+});
+
 test('detail sourcing links prefer saved Japanese domestic search name', () => {
   const source = fs.readFileSync('index.html', 'utf8');
   assert.match(source, /function domesticSearchQuery\(p\)/);
