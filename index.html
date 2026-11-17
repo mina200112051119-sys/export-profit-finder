@@ -206,7 +206,7 @@ function clearSourcingOverride(id){
   try{localStorage.removeItem('selectedSourcingCost:v1:'+String(id));return true}catch(e){return false}
 }
 function map(d,cat,cost=0){
-  const rows=(d.items||[]).map(x=>{const ov=sourcingOverride(x.itemId);return RankingEngine.normalizeProduct({id:x.itemId,name:x.title,displayName:x.titleJa||x.title,cat,cost:ov?Number(ov.itemPrice ?? ov.cost):cost,sourcingShippingJpy:ov?Number(ov.shippingJpy||0):0,sourcingSource:ov?.source||'',sourcingCondition:ov?.condition||'',sourcingCheckedAt:ov?.checkedAt||'',sell:x.price,ship:x.shipping,shippingKnown:x.shippingKnown!==false&&x.shipping!=null,image:x.image,url:x.url,condition:x.condition,activeListingsTotal:0,searchResultTotal:Number(d.total||0),source:'eBay現在出品（販売済み価格ではありません）'})});
+  const rows=(d.items||[]).map(x=>{const ov=sourcingOverride(x.itemId);const displayName=cat==='ポケモンカード'?buildUnverifiedJapaneseIdentity({name:x.title,titleJa:x.titleJa,cat},cat):(x.titleJa||x.title);return RankingEngine.normalizeProduct({id:x.itemId,name:x.title,displayName,cat,cost:ov?Number(ov.itemPrice ?? ov.cost):cost,sourcingShippingJpy:ov?Number(ov.shippingJpy||0):0,sourcingSource:ov?.source||'',sourcingCondition:ov?.condition||'',sourcingCheckedAt:ov?.checkedAt||'',sell:x.price,ship:x.shipping,shippingKnown:x.shippingKnown!==false&&x.shipping!=null,image:x.image,url:x.url,condition:x.condition,activeListingsTotal:0,searchResultTotal:Number(d.total||0),source:'eBay現在出品（販売済み価格ではありません）'})});
   return dedupeCategoryProducts(rows,cat);
 }
 function dedupeCategoryProducts(rows,cat){
@@ -328,11 +328,11 @@ function classifyRetroListing(p){
     :/mega drive|メガドライブ/i.test(t)?'メガドライブ'
     :/pc engine|pcエンジン|turbografx/i.test(t)?'PCエンジン':'機種未確認';
   const diskSystem=/(?:disk system|disk drive|ディスクシステム|ディスクドライブ|HVC-022)/i.test(t);
-  const knownAccessoryModel=/(?:HVC-002|HVC-007|HVC-022|SHVC-027)/i.test(t);
+  const knownAccessoryModel=/(?:HVC-002|HVC-007|HVC-012|HVC-022|SHVC-027)/i.test(t);
   const adapterItem=/(?:AC\s+adapter|power\s+adapter|power\s+supply|adapter|電源アダプター|専用アダプター|ACアダプター|電源ユニット)/i.test(t);
   const explicitConsole=/(?:console|system|handheld|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機)/i.test(t)&&!diskSystem&&!knownAccessoryModel;
   const accessoryOnly=(knownAccessoryModel||diskSystem||adapterItem||/(?:super game boy|スーパーゲームボーイ|controller|gamepad|joystick|keyboard|AV cable|USB cable|コントローラー|ゲームパッド|ジョイスティック|キーボード|ケーブル)/i.test(t))&&!explicitConsole;
-  const consoleModel=/(?:HVC-?(?!002|007|022)\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})/i.test(t);
+  const consoleModel=/(?:HVC-?(?!002|007|012|022)\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})/i.test(t);
   const hasConsole=!diskSystem&&(!knownAccessoryModel||consoleModel)&&(consoleModel||explicitConsole);
   const hasAccessory=diskSystem||knownAccessoryModel||accessoryOnly||/(?:controller|gamepad|joystick|keyboard|コントローラー|ゲームパッド|ジョイスティック|キーボード)/i.test(t);
   const productType=hasAccessory&&!hasConsole?'周辺機器':hasConsole?'ゲーム機本体':hasAccessory?'周辺機器'
@@ -437,7 +437,24 @@ function productListingStatus(p){
 function pokemonCardRarityPriority(p){const raw=String([p.name,p.title,p.displayName,p.titleJa].filter(Boolean).join(' '));return /\bSAR\b|スペシャルアートレア/i.test(raw)?4:/\b(?:UR|SR|HR)\b|ウルトラレア|スーパーレア|ハイパーレア/i.test(raw)?3:/\b(?:CSR|CHR)\b|キャラクタースーパーレア|キャラクターレア/i.test(raw)?2:/\bAR\b|アートレア|\bPROMO\b|プロモ/i.test(raw)?1:0}
 function rank(cat=null){const eligible=data.filter(p=>p.sell>0&&(!cat||p.cat===cat)&&(p.cat!=='ポケモンカード'||p.sell*fxRate>=1000));const unique=cat?dedupeCategoryProducts(eligible,cat):eligible;const ranked=RankingEngine.rank(unique,baseSettings(),cat);if(cat==='ポケモンカード')ranked.sort((a,b)=>pokemonCardRarityPriority(b)-pokemonCardRarityPriority(a)||b.totalScore-a.totalScore||b.sell-a.sell);const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!=='高'));if(cat==='レトロゲーム'){const hardware=safe.filter(p=>classifyRetroListing(p).productType==='ゲーム機本体');const software=safe.filter(p=>classifyRetroListing(p).productType==='ゲームソフト');const other=safe.filter(p=>!['ゲーム機本体','ゲームソフト'].includes(classifyRetroListing(p).productType));const first=[];for(let i=0;i<25;i++){if(hardware[i])first.push(hardware[i]);if(software[i])first.push(software[i]);}first.push(...other);const used=new Set(first.map(p=>String(p.id)));return [...first,...safe.filter(p=>!used.has(String(p.id)))].slice(0,50)}return safe}
 function rankWithoutPositiveSales(cat=null){return []}
-function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50).map((p,i)=>{const c=p.costs;return '<div class="card product" data-product-id="'+esc(p.id)+'" tabindex="0" onclick="detail(\''+encodeURIComponent(p.id)+'\')"><div style="display:flex;justify-content:space-between"><b>#'+(i+1)+'</b><span class="stars">'+p.stars+'</span></div><h3>'+esc(p.displayName||p.name)+'</h3><div class="muted" style="font-size:12px;margin:3px 0 8px">'+esc(productListingStatus(p))+'</div><div class="row"><span>現在のeBay価格（円換算・送料別）</span><b>'+yen(p.sell*fxRate)+'</b></div><div class="row"><span>eBay送料（円換算）</span><b>'+(p.shippingKnown===false?'送料未取得':yen(p.ship*fxRate))+'</b></div><div class="row"><span>候補スコア</span><b class="score">'+p.totalScore+'点</b></div><div class="row"><span>基本情報の充実度</span><b>'+(p.dataCompleteness?.level||'要確認')+'（'+(p.dataCompleteness?.score??'—')+'点）</b></div><div class="row"><span>予想利益</span><b class="ranking-profit '+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit))+'</b></div><div class="row"><span>データの種類</span><b>現在の出品情報のみ</b></div><div class="row"><span>リスク目安</span><b class="'+riskClass(p.risk)+'">'+p.risk+'</b></div><div class="muted">※販売済み価格・販売件数は使用していません。候補スコアは出品価格、利益見込み、手数料、価格下落シナリオ等による比較用です。</div><button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="event.stopPropagation();toggleFavorite(this.dataset.favoriteId)">'+(isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button><button class="secondary" type="button" onclick="event.stopPropagation();detail(\''+encodeURIComponent(p.id)+'\')">利益・仕入れ判断の詳細</button></div>'}).join('');$('ranking').innerHTML='<h2>'+esc(title)+'</h2><p class="muted">過去90日販売実績を使わない候補一覧です。現在のeBay出品価格・送料を比較し、最大50件を表示します。仕入れ価格を入力した商品は、利益が0円以下またはリスクが高い場合は候補一覧から除外します。仕入れ価格未入力の商品は利益を判定できません。現在の出品情報だけでは売れ行きは確認できないため、販売実績は別途確認してください。</p>'+(ranked||'<div class="notice">条件に合う候補がまだありません。カテゴリー検索または商品名・型番検索で探してください。商品価格が低い商品も候補に含めています。送料は別に確認してください。</div>')}function finalJudgment(r,c,p){if(!p.soldHistoryAvailable||Number(p.soldHistoryCount||0)<=0)return '販売実績未確認・判断保留';if(!p.cost||p.cost<=0)return '要仕入価格確認';if(c.profit!=null&&c.profit<0)return 'おすすめしない';if(['ジャンク','傷あり'].includes(p.sourcingCondition))return '慎重（商品の状態を要確認）';if(p.sourcingCondition==='状態不明')return '要確認（状態情報不足）';if(r.risk==='高'||r.totalScore<45)return '慎重';if(r.totalScore<65||r.risk==='中')return '要確認';if(c.profit!=null&&c.profit>=0&&r.risk!=='高')return '仕入れ候補';return '要確認'}
+
+function compactProductCard({id,name,image,price,shipping,condition,openAction,favoriteLabel,favoriteAction}){
+ const imageHtml=image?'<img src="'+esc(image)+'" alt="" style="width:100%;height:150px;object-fit:contain;background:#f8fafc;border-radius:10px;margin-bottom:8px">':'';
+ const favoriteButton=favoriteAction?'<button class="secondary" type="button" onclick="'+favoriteAction+'">'+favoriteLabel+'</button>':'<button class="secondary" type="button" data-favorite-id="'+esc(id)+'" onclick="toggleFavorite(this.dataset.favoriteId)">'+favoriteLabel+'</button>';
+ return '<div class="search-card">'+imageHtml+'<b>'+esc(name||'商品名未確認')+'</b><div class="row"><span>eBay価格</span><b>'+price+'</b></div><div class="row"><span>送料</span><b>'+shipping+'</b></div><small class="muted">'+esc(condition||'状態未確認')+'</small><button class="primary" type="button" style="margin-top:8px" onclick="'+openAction+'">商品詳細・利益計算</button>'+favoriteButton+'</div>';
+}
+function renderList(list,title,reviewList=[]){
+ const ranked=list.slice(0,50);
+ const cards=ranked.map(p=>compactProductCard({
+  id:p.id,name:p.displayName||p.name,image:p.image,price:yen(p.sell*fxRate),
+  shipping:p.shippingKnown===false?'送料未取得':yen(p.ship*fxRate),
+  condition:productListingStatus(p),
+  openAction:"detail('"+encodeURIComponent(p.id)+"')",
+  favoriteLabel:isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加'
+ })).join('');
+ $('ranking').innerHTML='<h2>'+esc(title)+'</h2><p class="muted">eBayの現在の出品価格と送料を表示しています。売れた価格や販売件数ではありません。仕入れ価格や商品の状態は、詳細画面で確認できます。</p>'+(cards?'<div class="search-grid">'+cards+'</div>':'<div class="notice">条件に合う候補がありません。カテゴリーまたは商品名・型番を変えて検索してください。</div>');
+}
+function finalJudgment(r,c,p){if(!p.soldHistoryAvailable||Number(p.soldHistoryCount||0)<=0)return '販売実績未確認・判断保留';if(!p.cost||p.cost<=0)return '要仕入価格確認';if(c.profit!=null&&c.profit<0)return 'おすすめしない';if(['ジャンク','傷あり'].includes(p.sourcingCondition))return '慎重（商品の状態を要確認）';if(p.sourcingCondition==='状態不明')return '要確認（状態情報不足）';if(r.risk==='高'||r.totalScore<45)return '慎重';if(r.totalScore<65||r.risk==='中')return '要確認';if(c.profit!=null&&c.profit>=0&&r.risk!=='高')return '仕入れ候補';return '要確認'}
 function judgmentReason(r,c,p){const a=[];if(!p.soldHistoryAvailable||Number(p.soldHistoryCount||0)<=0)a.push('過去90日の販売実績が未確認');a.push('総合点 '+r.totalScore+'点');if(c.profit!=null)a.push('現在利益 '+(c.profit>=0?'+':'')+yen(c.profit));a.push('出品情報ベースの参考評価 '+Math.round(r.scores?.sellability||0)+'点');a.push('リスク '+r.risk);a.push('基本情報の充実度 '+(r.dataCompleteness?.level||'要確認'));return a.join('／')}
 function riskClass(r){return r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow'}
 function renderCats(){$('cats').innerHTML=RankingEngine.CATEGORIES.map(c=>{const all=data.filter(p=>p.cat===c&&p.sell>0).length,st=categorySearchStats[c],totalText=st?(Number(st.searchResultTotal)>0?Number(st.searchResultTotal).toLocaleString()+'件':(Number(st.rawUniqueItems)>0?'未取得':'0件')):'',extra=st?'｜検索成功 '+st.successfulQueries+'/'+st.requestedQueries+'件・取得 '+Number(st.rawUniqueItems||0)+'件→分類 '+Number(st.matchedItems||0)+'件・検索結果合計 '+totalText+'（検索語ごとの合算・重複あり）':'｜検索状況は更新後に表示';return '<button class="cat" onclick="category(\''+c.replaceAll("'","\\'")+'\')"><b>'+c+'</b><small>現在出品候補 '+all+'件'+extra+'</small></button>'}).join('')}
@@ -835,8 +852,20 @@ function buildUnverifiedJapaneseIdentity(p, categoryOverride){
   const setRules=[[/SV2A|\b151\b/i,'ポケモンカード151'],[/SV8A|TERASTAL FESTIVAL/i,'テラスタルフェスex'],[/M2A|MEGA DREAM/i,'MEGAドリームex'],[/TEAM\s*ROCKET/i,'ロケット団'],[/JUNGLE/i,'ジャングル'],[/FOSSIL/i,'化石の秘密'],[/WOTC|WIZARDS.*PROMO/i,'Wizards Black Star Promos']];
   const set=(setRules.find(([re])=>re.test(raw))||[])[1]||'';
   if(cat==='ポケモンカード'){
+    // Use a small, explicit Pokémon-name dictionary instead of trusting literal machine translations
+    // (for example, "Ditto" must be メタモン, not 同上). Unknown names stay unconfirmed.
+    const pokemonNames=[
+      [/\bDITTO\b/i,'メタモン'],[/\bMEW\b/i,'ミュウ'],[/\bMEWTWO\b/i,'ミュウツー'],
+      [/\bPIKACHU\b/i,'ピカチュウ'],[/\bCHARIZARD\b/i,'リザードン'],[/\bBLASTOISE\b/i,'カメックス'],
+      [/\bVENUSAUR\b/i,'フシギバナ'],[/\bGENGAR\b/i,'ゲンガー'],[/\bSNORLAX\b/i,'カビゴン'],
+      [/\bDRAGONITE\b/i,'カイリュー'],[/\bEEVEE\b/i,'イーブイ'],[/\bLUCARIO\b/i,'ルカリオ'],
+      [/\bGARDEVOIR\b/i,'サーナイト'],[/\bRAYQUAZA\b/i,'レックウザ'],[/\bGROUDON\b/i,'グラードン'],
+      [/\bKYOGRE\b/i,'カイオーガ'],[/\bMACHAMP\b/i,'カイリキー'],[/\bURSHIFU\b/i,'ウーラオス'],
+      [/\bGRENINJA\b/i,'ゲッコウガ'],[/\bLAPRAS\b/i,'ラプラス'],[/\bMIMIKYU\b/i,'ミミッキュ']
+    ];
+    const pokemonName=(pokemonNames.find(([re])=>re.test(raw))||[])[1]||'ポケモン名未確認';
     const number=fraction||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
-    return ['ポケモンカード',number?'カード番号 '+number:'',set].filter(Boolean).join('｜');
+    return [pokemonName,number?'カード番号 '+number:'',set].filter(Boolean).join('｜');
   }
   if(cat==='ポケモン関連サプライ用品'){
     const place=(raw.match(/POKEMON\s*CENTER\s*(FUKUOKA|HIROSHIMA|OSAKA|TOKYO|KYOTO|NAGOYA|SAPPORO|YOKOHAMA|TOHOKU|KANAZAWA|OKINAWA)/i)||[])[1];
@@ -907,7 +936,22 @@ async function enrichOfficialNames(items, categoryOverride){
   }
 }
 async function translateText(text,to='ja'){try{const from=to==='ja'&&/[A-Za-z]{2,}/u.test(String(text||''))?'en':'auto';const r=await fetch(API_BASE+'/api/translate?text='+encodeURIComponent(text)+'&from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to),{cache:'no-store'});const d=await r.json();return r.ok&&d.translated?d.translated:text}catch(e){return text}}
-async function search(){const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;$('results').innerHTML='<div class="notice">検索語を確認してeBayを検索中…</div>';try{const d=await ebay(q);const items=map(d,cat,0);const enriched=items;data=[...enriched,...data.filter(old=>!enriched.some(p=>p.id===old.id))];await enrichOfficialNames(enriched,cat);const titles=enriched.slice(0,12).map(p=>p.displayName||p.name);$('results').innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+(d.translatedQuery&&d.translatedQuery!==q?'<br><b>eBay検索語</b>：'+esc(d.translatedQuery):'')+'<br><span class="muted">現在出品価格・送料を円換算して表示します。これは販売済み価格ではありません。候補をクリックすると利益詳細を確認できます。</span></div>'+enriched.slice(0,12).map((p,i)=>'<div class="search-card" onclick="detail(\''+encodeURIComponent(p.id)+'\')">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<b>'+esc(titles[i])+'</b><div>'+yen(p.sell*fxRate)+' +送料 '+yen(p.ship*fxRate)+'</div><small>'+esc(p.condition||'状態不明')+'｜'+(p.soldHistoryAvailable?'過去90日販売 '+p.soldHistoryCount+'件':'販売実績データなし')+'</small><button class="primary" type="button" style="margin-top:8px" data-product-id="'+esc(p.id)+'" onclick="event.stopPropagation();detail(encodeURIComponent(this.dataset.productId))">利益計算・仕入先を確認</button><button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="event.stopPropagation();toggleFavorite(this.dataset.favoriteId)">'+(isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('')||'<div class="notice">候補がありません。</div>'}catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。eBay設定を確認してください。</div>'}}
+async function search(){
+ const q=$('q').value.trim(),cat=$('cat').value;if(!q)return;
+ $('results').innerHTML='<div class="notice">eBayを検索中…</div>';
+ try{
+  const d=await ebay(q),items=map(d,cat,0);
+  data=[...items,...data.filter(old=>!items.some(p=>p.id===old.id))];
+  await enrichOfficialNames(items,cat);
+  $('results').innerHTML='<div class="notice">検索語：'+esc(q)+'<br><span class="muted">現在の出品価格と送料です。販売済み価格ではありません。</span></div><div class="search-grid">'+items.slice(0,12).map(p=>compactProductCard({
+   id:p.id,name:p.displayName||p.name,image:p.image,price:yen(p.sell*fxRate),
+   shipping:p.shippingKnown===false?'送料未取得':yen(p.ship*fxRate),
+   condition:p.condition||'状態未確認',
+   openAction:"detail('"+encodeURIComponent(p.id)+"')",
+   favoriteLabel:isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加'
+  })).join('')+'</div>';
+ }catch(e){$('results').innerHTML='<div class="notice">検索できませんでした。時間をおいて再度お試しください。</div>'}
+}
 function photo(e){const file=e.target.files?.[0];if(!file)return;const ok=['image/jpeg','image/png','image/webp'];if(!ok.includes(file.type)){photoDataUrl='';$('photoMsg').style.display='block';$('photoMsg').textContent='JPEG・PNG・WebPを選択してください。';$('photoSearch').style.display='none';return}const reader=new FileReader();reader.onload=()=>{photoDataUrl=String(reader.result||'');$('preview').src=photoDataUrl;$('preview').style.display='block';$('photoSearch').style.display='block';$('photoMsg').style.display='block';$('photoMsg').textContent='写真を確認しました。「写真からeBay候補を探す」を押してください。'};reader.readAsDataURL(file)}
 function photoPriceLabel(amount,currency){
   const value=Number(amount||0),cur=String(currency||'USD').toUpperCase();
@@ -930,7 +974,7 @@ async function photoDisplayName(x,cat){
     try{translated=await translateText(x.title,'ja')}catch(e){translated=x.title}
   }
   try{
-    x.titleJa=cat==='ポケモンカード'?cleanPokemonDisplayName(p,translated):cleanProductDisplayName(p,translated,cat);
+    x.titleJa=buildUnverifiedJapaneseIdentity({...p,titleJa:translated},cat);
   }catch(e){x.titleJa=translated||x.title}
   x.officialNameStatus='名称未確認';
   return x.titleJa||x.title;
@@ -947,7 +991,15 @@ async function searchByPhoto(){
   if(!window.photoCandidates.length){$('photoMsg').textContent='選択カテゴリーに合う候補がありません。カテゴリーを確認してください。';return}
   await Promise.all(window.photoCandidates.map(x=>photoDisplayName(x,photoCategory)));
   $('photoMsg').textContent='候補が見つかりました。商品名と写真を確認して、近い商品を選んでください。';
-  $('photoResults').innerHTML=window.photoCandidates.map((x,i)=>'<div class="photo-card" onclick="selectPhotoCandidate('+i+')">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'')+'<h3>'+esc(x.titleJa||x.title)+'</h3><div><b>eBay価格 '+photoPriceLabel(x.price,x.currency)+'</b></div><div>送料 '+photoPriceLabel(x.shipping,x.currency)+'</div><small>'+esc(x.officialNameStatus||'名称未確認')+'｜'+esc(x.condition||'状態不明')+'</small><button class="primary" type="button" style="margin-top:8px" onclick="event.stopPropagation();selectPhotoCandidate('+i+')">候補を確認して利益計算へ</button><button class="secondary" type="button" data-favorite-id="'+esc(x.itemId||x.url||x.title)+'" onclick="event.stopPropagation();savePhotoCandidateFavorite('+i+')">'+(isFavorite(x.itemId||x.url||x.title)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('');
+  $('photoResults').innerHTML='<div class="photo-grid">'+window.photoCandidates.map((x,i)=>compactProductCard({
+   id:x.itemId||x.url||x.title,name:x.titleJa||x.title,image:x.image,
+   price:photoPriceLabel(x.price,x.currency),
+   shipping:x.shippingKnown===false||x.shipping==null?'送料未取得':photoPriceLabel(x.shipping,x.currency),
+   condition:x.condition||'状態未確認',
+   openAction:'selectPhotoCandidate('+i+')',
+   favoriteAction:'savePhotoCandidateFavorite('+i+',this)',
+   favoriteLabel:'☆ マイリストに追加'
+  })).join('')+'</div>'
  }catch(e){$('photoMsg').textContent='画像検索に失敗しました。eBay API設定または画像形式を確認してください。'}
  finally{$('photoSearch').disabled=false}
 }
@@ -956,12 +1008,13 @@ function photoCandidateProduct(x){
  const rows=map({items:[{itemId:x.itemId,title:x.title,titleJa:x.titleJa,price:x.price,shipping:x.shipping,image:x.image,url:x.url,condition:x.condition}],total:1},cat,0);
  return rows[0]||null;
 }
-function savePhotoCandidateFavorite(i){
+function savePhotoCandidateFavorite(i,button){
  const x=window.photoCandidates?.[i];if(!x)return false;
  const p=photoCandidateProduct(x);if(!p)return false;
  const exists=data.some(row=>String(row.id)===String(p.id));
  if(!exists)data.unshift(p);
  const saved=toggleFavorite(p.id);
+ if(button)button.textContent=saved?'★ マイリストから削除':'☆ マイリストに追加';
  const msg=$('photoMsg');if(msg)msg.textContent=saved?'写真検索の商品をマイリストに保存しました。商品詳細から利益計算と仕入先の保存もできます。':'マイリストから削除しました。';
  return saved;
 }
@@ -1030,7 +1083,7 @@ function domesticSearchQuery(p){
   return clean||raw;
 }
 function sourceSearchUrls(name,category){const q=encodeURIComponent(name),links=[['メルカリ','https://jp.mercari.com/search?keyword='+q],['ヤフオク','https://auctions.yahoo.co.jp/search/search?p='+q]];if(/ポケモンカード|ポケモン関連サプライ用品/.test(String(category||'')))links.splice(1,0,['スニダン','https://snkrdunk.com/search?keyword='+q]);return links}
-function detail(id){const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)return;window.__detailProduct=p;const s=settings(p),r=RankingEngine.scoreV2(p,s,data),c=r.costs,m=r.riskMetrics||{};const links=sourceSearchUrls(domesticSearchQuery(p),p.cat);const partsInfo=p.cat==='交換部品・消耗品'?classifyPartsDetail(p):null;const retroInfo=p.cat==='レトロゲーム'?classifyRetroListing(p):null;const gunplaInfo=p.cat==='ガンプラ'?classifyGunplaListing(p):null;$('title').textContent=p.displayName||p.name;$('body').innerHTML='<button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="toggleFavorite(this.dataset.favoriteId)">'+(isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button>'+(retroInfo?'<h3>レトロゲームの商品分類</h3><div class="notice"><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div><div class="row"><span>本体型番候補</span><b>'+esc(retroInfo.model||'商品名からは未確認')+'</b></div><p class="muted">出品タイトルから拾った候補です。画像と説明で必ず確認してください。</p></div>':'')+(gunplaInfo?'<h3>ガンプラの商品分類</h3><div class="notice"><div class="row"><span>グレード</span><b>'+esc(gunplaInfo.grade)+'</b></div><div class="row"><span>縮尺</span><b>'+esc(gunplaInfo.scale)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(gunplaInfo.itemType)+'</b></div><div class="row"><span>組立状態</span><b>'+esc(gunplaInfo.state)+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(gunplaInfo.bundle)+'</b></div><div class="row"><span>機体番号候補</span><b>'+esc(gunplaInfo.model||'出品タイトルからは未確認')+'</b></div><p class="muted">出品タイトルから拾った候補です。画像と説明で必ず確認してください。</p></div>':'')+(partsInfo?'<h3>部品・消耗品の詳細</h3><div class="notice"><div class="row"><span>部品の種類</span><b>'+esc(partsInfo.kind)+'</b></div><div class="row"><span>対象分野</span><b>'+esc(partsInfo.family)+'</b></div><div class="row"><span>メーカー候補</span><b>'+esc(partsInfo.brand)+'</b></div><div class="row"><span>対応機種・型番の手がかり</span><b>'+esc(partsInfo.model)+'</b></div><div class="row"><span>対応機種の確認</span><b>'+esc(partsInfo.compatibility)+'</b></div><p class="muted">商品名から自動で拾った候補です。対応機種との一致や純正品・互換品の別は、画像と説明で必ず確認してください。</p></div>':'')+(p.image?'<img class="detail-image" src="'+esc(p.image)+'" alt="">':'')+'<div class="row"><span>総合評価</span><b>'+r.totalScore+'点</b></div><h3>総合評価・最終判断</h3><div class="notice"><div class="row"><span>最終判断</span><b>'+finalJudgment(r,c,p)+'</b></div><div class="muted">判断根拠：'+esc(judgmentReason(r,c,p))+'</div></div><div class="row"><span>想定利益</span><b class="'+(c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div><div class="row"><span>損益分岐点</span><b>'+(m.breakEven==null?'不明':yen(m.breakEven))+'</b></div><h3>売れ残り・値下げリスク</h3><div class="notice"><div class="row"><span>リスク</span><b class="'+riskClass(r.risk)+'">'+esc(r.risk)+'</b></div><div class="row"><span>現在の想定利益</span><b>'+(m.currentProfit==null?'不明':yen(m.currentProfit))+'</b></div><div class="row"><span>90日後想定利益</span><b>'+(m.profit90==null?'不明':yen(m.profit90))+'</b></div><button class="secondary" type="button" onclick="toggleRiskDetail()">30・60・90日後の詳細を見る</button></div><div id="risk-detail" style="display:none;margin-top:10px"><table class="risk-table"><tr><th>期間</th><th>想定販売価格</th><th>想定利益</th><th>リスク</th></tr>'+(m.scenarios||[]).map(x=>'<tr><td>'+x.days+'日</td><td>'+(function(){const v=Number(x.sale||0),base=Number(p.sell||0);return yen((base>0&&v<base*0.5?base*(x.days===30?0.98:x.days===60?0.96:0.94):v)*fxRate)})()+'</td><td>'+(x.profit==null?'不明':yen(x.profit))+'</td><td>'+esc(x.risk||'要確認')+'</td></tr>').join('')+'</table><p class="muted">30・60・90日後の価格・利益は、現在の市場データから一定の値下げを仮定した試算です。将来価格を保証するものではありません。</p></div><div class="row"><span>検索語全体の参考件数（この商品の出品数ではありません）</span><b>'+(Number(p.searchResultTotal)>10000?'多数（1万件超）':(p.searchResultTotal??'不明'))+'</b></div><div class="row"><span>販売根拠（過去90日）</span><b>'+(p.soldHistoryAvailable?(p.soldHistoryCount+'件'+(p.evidenceType==='manual-product-research'?'（手動確認）':'（API取得）')):'未確認')+'</b></div><h3>経費（自動計算）</h3><div class="row"><span>eBay販売手数料</span><b>'+yen(c.finalValueFeeJpy)+'</b></div><div class="row"><span>国際手数料</span><b>'+yen(c.internationalFeeJpy)+'</b></div><div class="row"><span>固定手数料（'+c.fixedFeeUsd+' USD）</span><b>'+yen(c.fixedFeeJpy)+'</b></div><div class="row"><span>購入者負担送料（売上に加算・経費ではありません）</span><b>'+(c.shippingKnown===false?'送料未取得':yen(c.shipJpy))+'</b></div><div class="row"><span>海外発送送料（日本から購入者へ・出品者負担）</span><b>'+yen(c.domesticShippingJpy)+'</b></div><div class="row"><span>仕入先からの送料</span><b>'+yen(c.sourcingShippingJpy)+'</b></div><div class="row"><span>梱包費</span><b>'+yen(c.packagingJpy)+'</b></div><div class="row"><span>その他経費</span><b>'+yen(c.otherCostJpy)+'</b></div><div class="row"><span>eBay為替換算手数料</span><b>'+yen(c.conversionFeeJpy)+'</b></div><div class="row"><span><b>経費合計（仕入代金を除く）</b></span><b>'+yen(c.totalCosts-(p.cost||0))+'</b></div><h3>基本情報の充実度</h3><div class="notice"><div class="row"><span>取得できた基本情報</span><b>'+esc(r.dataCompleteness?.level||'要確認')+'（'+(r.dataCompleteness?.score??'—')+'点）</b></div><div>確認できた基本情報：'+esc((r.dataCompleteness?.available||[]).join('・')||'なし')+'</div><div>未取得の基本情報：'+esc((r.dataCompleteness?.missing||[]).join('・')||'なし')+'</div><p class="muted">この点数は、下記の基本情報9項目がどれだけ取得できたかを評価しています。過去90日の実売データ・価格履歴・商品単位の競合出品数は、この点数に含まれません。これらは現在の接続では取得できていません。検索結果件数を商品単位の出品数として扱わず、未取得データを実績として表示しません。</p></div><h3>仕入れ価格の根拠・比較</h3><div id="source-panel" class="card" style="margin-top:8px"><div class="notice">仕入れ候補を読み込み中…</div></div><h3>根拠・注意</h3><div class="notice">'+esc(r.sellabilityBasis||'')+'</div><p class="muted">'+esc((r.flags||[]).join('／'))+'</p>'+(p.url?'<a href="'+esc(p.url)+'" target="_blank" rel="noopener">eBay出品を見る</a>':'')+'<h3>商品名・型番の確認</h3><div class="notice"><div class="row"><span>日本語表示名</span><b>'+esc(p.displayName||p.titleJa||p.name||'未確認')+'</b></div><div class="row"><span>名称の確認状況</span><b>'+esc(p.officialNameStatus||'正式名称・型番は未確認')+'</b></div><div class="row"><span>照合の診断</span><span>'+esc((p.officialNameDiagnostic&&p.officialNameDiagnostic.sourceStatus)||'未取得')+'／候補 '+esc(p.officialNameDiagnostic?.candidateCount??'不明')+'件</span></div><div class="muted">'+esc((p.officialNameDiagnostic?.sourceErrors||[]).join('；')||'情報源エラーの詳細なし')+'</div><div class="row"><span>元のeBay商品名</span><span>'+esc(p.name||p.title||'不明')+'</span></div><div class="row"><span>型番・商品コード</span><span>'+esc(p.modelNumber||p.mpn||p.productCode||gunplaInfo?.model||retroInfo?.model||'商品タイトル内で未確認')+'</span></div><p class="muted">日本語表示名は自動翻訳または名称候補の場合があります。「公式情報の名称候補」と表示されている場合も、正式名称や同一商品の一致は保証されません。型番・仕様・画像を照合してから仕入れ先を選んでください。</p>'+(p.officialNameSource?'<div><a href="'+esc(p.officialNameSource)+'" target="_blank" rel="noopener">名称候補の公式情報を確認</a></div>':'<div class="muted">照合できた公式情報リンクはありません。</div>')+'<div class="row"><span>国内仕入れ先の検索語</span><b>'+esc(domesticSearchQuery(p))+'</b></div>'+sourceSearchUrls(domesticSearchQuery(p),p.cat).map(x=>'<div><a href="'+esc(x[1])+'" target="'+(x[0]==='メルカリ'?'mercariSearch':'_blank')+'" rel="noopener">'+esc(x[0])+'でこの検索語を探す</a></div>').join('')+'</div>';$('modal').classList.add('open');return true}
+function detail(id){const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)return;window.__detailProduct=p;const s=settings(p),r=RankingEngine.scoreV2(p,s,data),c=r.costs,m=r.riskMetrics||{};const links=sourceSearchUrls(domesticSearchQuery(p),p.cat);const partsInfo=p.cat==='交換部品・消耗品'?classifyPartsDetail(p):null;const retroInfo=p.cat==='レトロゲーム'?classifyRetroListing(p):null;const gunplaInfo=p.cat==='ガンプラ'?classifyGunplaListing(p):null;$('title').textContent=p.displayName||p.name;$('body').innerHTML='<button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="toggleFavorite(this.dataset.favoriteId)">'+(isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button>'+(retroInfo?'<h3>レトロゲームの商品分類</h3><div class="notice"><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div><div class="row"><span>本体型番候補</span><b>'+esc(retroInfo.model||'商品名からは未確認')+'</b></div><p class="muted">出品タイトルから拾った候補です。画像と説明で必ず確認してください。</p></div>':'')+(gunplaInfo?'<h3>ガンプラの商品分類</h3><div class="notice"><div class="row"><span>グレード</span><b>'+esc(gunplaInfo.grade)+'</b></div><div class="row"><span>縮尺</span><b>'+esc(gunplaInfo.scale)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(gunplaInfo.itemType)+'</b></div><div class="row"><span>組立状態</span><b>'+esc(gunplaInfo.state)+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(gunplaInfo.bundle)+'</b></div><div class="row"><span>機体番号候補</span><b>'+esc(gunplaInfo.model||'出品タイトルからは未確認')+'</b></div><p class="muted">出品タイトルから拾った候補です。画像と説明で必ず確認してください。</p></div>':'')+(partsInfo?'<h3>部品・消耗品の詳細</h3><div class="notice"><div class="row"><span>部品の種類</span><b>'+esc(partsInfo.kind)+'</b></div><div class="row"><span>対象分野</span><b>'+esc(partsInfo.family)+'</b></div><div class="row"><span>メーカー候補</span><b>'+esc(partsInfo.brand)+'</b></div><div class="row"><span>対応機種・型番の手がかり</span><b>'+esc(partsInfo.model)+'</b></div><div class="row"><span>対応機種の確認</span><b>'+esc(partsInfo.compatibility)+'</b></div><p class="muted">商品名から自動で拾った候補です。対応機種との一致や純正品・互換品の別は、画像と説明で必ず確認してください。</p></div>':'')+(p.image?'<img class="detail-image" src="'+esc(p.image)+'" alt="">':'')+'<div class="row"><span>現在のeBay価格（円換算・送料別）</span><b>'+yen(p.sell*fxRate)+'</b></div><div class="row"><span>eBay送料（円換算）</span><b>'+(p.shippingKnown===false?'送料未取得':yen(p.ship*fxRate))+'</b></div><div class="row"><span>商品状態</span><b>'+esc(p.condition||'未確認')+'</b></div><div class="row"><span>想定利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div><div class="row"><span>損益分岐点</span><b>'+(m.breakEven==null?'仕入価格と送料を入力後に表示':yen(m.breakEven))+'</b></div><div class="row"><span><b>経費合計（仕入代金を除く）</b></span><b>'+yen(c.totalCosts-(p.cost||0))+'</b></div><h3>仕入れ価格の根拠・比較</h3><div id="source-panel" class="card" style="margin-top:8px"><div class="notice">仕入れ候補を読み込み中…</div></div>'+(p.url?'<a href="'+esc(p.url)+'" target="_blank" rel="noopener">eBay出品を見る</a>':'')+'<h3>商品名・型番</h3><div class="notice"><div class="row"><span>日本語表示名</span><b>'+esc(p.displayName||p.titleJa||p.name||'商品名未確認')+'</b></div><div class="row"><span>確認状況</span><b>'+esc(p.officialNameStatus||'正式名称・型番は未確認')+'</b></div><div class="row"><span>型番・商品コード</span><span>'+esc(p.modelNumber||p.mpn||p.productCode||gunplaInfo?.model||retroInfo?.model||'商品タイトル内で未確認')+'</span></div><div class="row"><span>国内検索用の名前</span><b>'+esc(domesticSearchQuery(p)||'商品名を確認してください')+'</b></div><div class="row"><span>元のeBay商品名</span><span>'+esc(p.name||p.title||'不明')+'</span></div></div>';$('modal').classList.add('open');return true}
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
@@ -1054,14 +1107,16 @@ function acceptCandidate(p,cat){
   const hasCardNumber=has(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||has(/\b(?:sv\d{2,3}|s\d{2,3}|sm\d{2,3}|xy\d{2,3})\b/i);
   const hasNamedCard=has(/\b(?:pikachu|charizard|mewtwo|mew|eevee|umbreon|espeon|gengar|lucario|rayquaza|garchomp|machamp|blastoise|venusaur|snorlax|dragonite|lugia|ho-oh|arceus|greninja|urshifu|dark machamp)\b/i);
   const genericOnly=has(/japanese pokemon cards?|pokemon card holo|ポケモンカードホロ|日本のポケモンカード/)&&!hasCardNumber&&!hasNamedCard;
-  return cardEvidence&&(hasCardNumber||hasNamedCard)&&!genericOnly&&!has(/fishing|camera|lens|flash|gunpla|plastic model|playstation|nintendo switch console|controller|mystery|random|assorted|bulk lot|lot of|bundle|yu.?gi.?oh|magic the gathering|guidebook|book set|collection book|e.?series.*\b\d+\s*(?:cards?|sets?)\b|\b\d+\s*cards?\s+set/);
+  return cardEvidence&&(hasCardNumber||hasNamedCard)&&!genericOnly&&!has(/fishing|camera|lens|flash|gunpla|plastic model|playstation|nintendo switch console|controller|mystery|random|assorted|bulk lot|lot of|bundle|yu.?gi.?oh|magic the gathering|guidebook|book set|collection book|e.?series.*\b\d+\s*(?:cards?|sets?)\b|\b\d+\s*cards?\s+set|\byou\s+pick\b|\bpick\s+your\b|\bchoose\s+your\b|\bselect\s+your\b/);
  }
  if(cat==='ポケモン関連サプライ用品'){
   return has(/pokemon|pok[eé]mon|ポケモン/) && has(/deck.?box|deck.?case|sleeve|playmat|binder|card.?file|collection.?file|clear.?file|file folder|damage.?counter|counter.?case|players? coin|coin.?case|dice|storage|album|デッキケース|ダメージカウンター|ダメカン|コイン|ダイス|サイコロ|スリーブ|プレイマット|バインダー|カードファイル|収納/)
     && !has(/fishing|camera|lens|gunpla|plastic model|plush|stuffed toy|ぬいぐるみ|figure|フィギュア|single card|trading card lot/);
  }
  if(cat==='釣具'){
+  const brands=[/shimano|シマノ/i,/daiwa|ダイワ/i,/abu garcia/i,/penn/i,/okuma/i,/quantum/i,/abu/i].filter(re=>re.test(raw));
   return has(/fishing|shimano|daiwa|シマノ|ダイワ|リール|ロッド|釣竿|ルアー/)
+    && brands.length<=1
     && !has(/pokemon|camera|lens|gunpla|plastic model|line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|穂先|トップガイド|ガイドリング|\b(?:lot|bundle|parts?|spare|replacement|repair|untested|for parts|handle|knob)\b|まとめ売り|ジャンク/);
  }
  if(cat==='カメラ'){
@@ -1075,7 +1130,7 @@ function acceptCandidate(p,cat){
   if(has(/\b(?:for parts|parts only|repair only|spares? only|untested lot|junk lot|bulk lot|manual only|instruction manual|guide book|strategy guide|magazine)\b|説明書のみ|攻略本|雑誌|修理用|部品取り|ジャンク品まとめ/))return false;
   const platform=has(/famicom|ファミコン|super famicom|スーパーファミコン|\bsnes\b|game ?boy|ゲームボーイ|nintendo 64|\bn64\b|gamecube|game cube|ゲームキューブ|\bwii\b|wii u|\bps[123]\b|ps vita|playstation vita|\bvita\b|playstation|psp|playstation portable|sega|セガ|saturn|サターン|dreamcast|ドリームキャスト|mega drive|メガドライブ|mega cd|sega cd|メガcd|セガcd|pc engine|pcエンジン|turbografx|3do/);
   const consoleModel=has(/\b(?:HVC-?(?!002|007|022)\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|SCPH-?\d{3,5}|DOL-?\d{3}|AGB-?\d{3}|DMG-?\d{3})\b/i);
-  const accessoryModelOnly=has(/\bHVC-?(?:002|007|022)\b/i)&&!consoleModel;
+  const accessoryModelOnly=has(/\bHVC-?(?:002|007|012|022)\b/i)&&!consoleModel;
   const consoleItem=consoleModel||(!accessoryModelOnly&&has(/\bconsole\b|\bhandheld\b|ゲーム機本体|本体のみ|本体セット|コンソール|携帯ゲーム機/));
   const softwareItem=has(/video game|game software|game cartridge|game disc|game card|cartridge|\bsoftware\b|カセット|disc|disk|ゲームソフト|ゲームディスク|ゲームカード|vib[-\s]?ribbon|ビブリボン/);
   const diskSystemPeripheral=has(/disk system|disk drive|ディスクシステム|ディスクドライブ|hvc-?022/);
@@ -1095,7 +1150,7 @@ function acceptCandidate(p,cat){
  if(cat==='交換部品・消耗品'){
   const part=has(/bearing|bearings|ベアリング|drag parts?|sprocket washers?|power supply|power unit|psu|line roller|spool|bail arm|drag knob|rod tip|rod guide|guide ring|line guide|controller|gamepad|joystick|keyboard|disk system|disk drive|battery door|battery|charger|ac adapter|power adapter|cable|cord|handle|eyecup|lens hood|lens cap|body cap|decal|sticker|runner part|weapon set|weapon pack|option parts?|conversion parts?|改造パーツ|武器セット|武器パーツ|オプションパーツ|カスタムパーツ|refill|consumable|ラインローラー|スプール|ベール|ドラグノブ|穂先|トップガイド|ガイドリング|コントローラー|ゲームパッド|ジョイスティック|キーボード|ディスクシステム|ディスクドライブ|hvc-?002|ハンドル|電池カバー|バッテリー|充電器|電源アダプター|電源ユニット|ケーブル|アイカップ|レンズフード|レンズキャップ|デカール|ランナー部品|詰め替え|消耗品/);
   const maker=has(/shimano|シマノ|daiwa|ダイワ|canon|キヤノン|nikon|ニコン|sony|ソニー|olympus|オリンパス|nintendo|任天堂|sega|セガ|bandai|バンダイ|hvc-?00[27]|hvc-?022/);
-  return part&&maker&&!has(/pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ|universal fit|fits all|汎用品/);
+  return part&&maker&&!has(/pokemon card|ポケモンカード|complete gunpla kit|ガンプラ本体|fishing rod|釣り竿|camera body only|カメラ本体のみ|universal fit|fits all|汎用品|multi.?listing|choose\s+(?:your\s+)?(?:part|model|type)|select\s+(?:your\s+)?(?:part|model|type)|various parts|assorted parts|options? available/);
  }
  return !unrelated.test(t);
 }

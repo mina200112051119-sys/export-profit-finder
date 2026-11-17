@@ -181,6 +181,18 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 });
 
 
+test('Pokémon card fallback uses Japanese Pokémon names instead of literal machine translation', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.ok(html.includes('DITTO'));
+  assert.ok(html.includes(String.raw`[/\bDITTO\b/i,'メタモン']`));
+  assert.ok(html.includes(String.raw`raw.match(/#\s*(\d{1,3})\b/)`));
+  assert.ok(html.includes('メタモン'));
+  assert.ok(html.includes('MEW'));
+  assert.ok(html.includes("return [pokemonName,number?'カード番号 '+number:'',set].filter(Boolean).join('｜');"));
+  assert.match(html, /const displayName=cat==='ポケモンカード'\?buildUnverifiedJapaneseIdentity/);
+  assert.ok(html.includes('x.titleJa=buildUnverifiedJapaneseIdentity({...p,titleJa:translated},cat);'));
+});
+
 test('detail sourcing links prefer saved Japanese domestic search name', () => {
   const source = fs.readFileSync('index.html', 'utf8');
   assert.match(source, /function domesticSearchQuery\(p\)/);
@@ -348,6 +360,8 @@ test('listing title model candidates are not mislabeled as entirely unverified',
 test('retro game, Gunpla, and replacement-part listings receive separate identity details', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /function classifyRetroListing\(p\)/);
+  assert.ok(html.includes('HVC-002|HVC-007|HVC-012|HVC-022|SHVC-027'), 'Famicom Robot HVC-012 is classified as a peripheral');
+  assert.ok(html.includes('HVC-?(?!002|007|012|022)'), 'HVC-012 is excluded from console model matching');
   assert.match(html, /function classifyGunplaListing\(p\)/);
   assert.match(html, /function classifyPartsDetail\(p\)/);
   assert.match(html, /function categoryIdentityKey\(p,cat\)/);
@@ -362,11 +376,11 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
 
 test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /Japanese Pokemon TCG graded PSA CGC Japanese cards/);
-  assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
+  assert.match(html, /Japanese Pokemon graded PSA CGC BGS SAR Japanese card single -lot -bulk/);
+  assert.match(html, /Pokemon Center Japan card album collection file official goods Pokemon character design/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
-  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
+  assert.match(html, /function renderList\(list,title,reviewList=\[\]\)\{\s*const ranked=list\.slice\(0,50\)/);
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
   assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
@@ -400,3 +414,27 @@ test('manual research form explains the exact data to enter and saves the checke
 });
 
 // Keep regression expectations aligned with the category-specific query set.
+
+
+test('product search and live category results use the same compact card actions as ranking and photo search', () => {
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(live, /async function liveSearch\(\)/);
+  assert.match(live, /RankingEngine\.normalizeProduct\(/);
+  assert.match(live, /compactProductCard\(/);
+  assert.match(live, /openAction:"detail\('/);
+  assert.match(live, /favoriteLabel:'☆ マイリストに追加'/);
+  assert.match(live, /商品詳細から利益計算・仕入先の保存ができます/);
+  assert.match(live, /eBayライブカテゴリー検索：/);
+  assert.doesNotMatch(live, /総合評価（このツール独自の100点評価）|データ信頼度|30\/60\/90日後シナリオ|<span class="row">総合点/);
+});
+
+test('ordinary product detail hides internal diagnostics and detailed fee breakdown', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const start = html.indexOf('function detail(id)');
+  const end = html.indexOf('function toggleRiskDetail()', start);
+  assert.ok(start >= 0 && end > start);
+  const detail = html.slice(start, end);
+  assert.doesNotMatch(detail, /照合の診断|情報源エラーの詳細|経費（自動計算）/);
+  assert.match(detail, /経費合計（仕入代金を除く）/);
+  assert.match(detail, /国内検索用の名前/);
+});

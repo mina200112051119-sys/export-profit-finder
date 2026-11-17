@@ -154,3 +154,19 @@ test('deduplication identity is stable when a duplicate listing has no translate
   const withoutTranslation = {name:title,title,displayName:title};
   assert.equal(keyContext.identityKey(withTranslation, 'ポケモン関連サプライ用品'), keyContext.identityKey(withoutTranslation, 'ポケモン関連サプライ用品'));
 });
+
+
+test('Pokémon cards: selectable You Pick listings are rejected while a named single card remains', () => {
+  assert.equal(accept({title:'Pokemon TCG You Pick Single Card Art Rare SR SAR Umbreon Espeon ex NM'}, 'ポケモンカード'), false);
+  assert.equal(accept({title:'Pokemon TCG Mew 8/53 Black Star Promo Single Card'}, 'ポケモンカード'), true);
+});
+
+test('fishing: mixed-brand listings are rejected from a single-brand category', () => {
+  assert.equal(accept({title:'Shimano TLD 20 Fishing Reel + Tiburon Power Handle Penn Daiwa Okuma'}, '釣具'), false);
+  assert.equal(accept({title:'Shimano TLD 20 Fishing Reel Tested'}, '釣具'), true);
+});
+
+test('replacement parts: multi-listing menus are rejected when the actual part is unspecified', () => {
+  assert.equal(accept({title:'Shimano Reel Parts - Spinning - Multi Listing - RD'}, '交換部品・消耗品'), false);
+  assert.equal(accept({title:'Shimano Spinning Reel Line Roller Genuine Replacement Part'}, '交換部品・消耗品'), true);
+});

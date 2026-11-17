@@ -47,11 +47,14 @@ test('retro-game candidate guard accepts the expanded console families', () => {
   assert.match(html, /3do/);
 });
 
-test('live eBay category search uses the same sales-evidence-aware ranking as the main app', () => {
+test('live eBay category search keeps evidence-aware ranking internally but uses the compact product cards', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
   assert.match(live, /RankingEngine\.rankV2\(items/);
-  assert.match(live, /p\.soldHistoryAvailable&&Number\(p\.soldHistoryCount\|\|0\)>0\)\?p\.stars/);
-  assert.match(live, /評価保留（販売実績未確認）/);
+  assert.match(live, /activeListingsTotal:0/);
+  assert.match(live, /source:'eBay\.com（米国サイト）現在出品（販売済み実績なし）'/);
+  assert.match(live, /compactProductCard\(/);
+  assert.doesNotMatch(live, /p\.soldHistoryAvailable&&Number\(p\.soldHistoryCount\|\|0\)>0\)\?p\.stars/);
+  assert.doesNotMatch(live, /評価保留（販売実績未確認）/);
 });
 
 test('name enrichment is limited to the 50 candidates that can be displayed', () => {
@@ -69,7 +72,21 @@ test('manual sold-history entry is available in the page and records median sold
   assert.match(html, /renderManualEvidenceList\(\)/);
 });
 
-test('the live category ranking also holds products with zero sold count', () => {
+test('live category candidates without sold history remain unverified and are not given a visible score', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(live, /Number\(p\.soldHistoryCount\|\|0\)>0/);
+  assert.match(live, /RankingEngine\.rankV2\(items/);
+  assert.match(live, /activeListingsTotal:0/);
+  assert.match(live, /source:'eBay\.com（米国サイト）現在出品（販売済み実績なし）'/);
+  assert.doesNotMatch(live, /soldHistoryCount\s*\|\|0/);
+  assert.doesNotMatch(live, /総合評価|総合点|データ信頼度|30\/60\/90日後/);
+});
+
+
+test('category quality guard rejects selectable single-card pages, mixed-brand fishing bundles, and vague parts menus', () => {
+  assert.match(html, /\\byou\\s\+pick\\b/);
+  assert.match(html, /brands\.length<=1/);
+  assert.match(html, /multi\.\?listing/);
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(live, /window\.map\(\{items,total:data\.total\},cat,0\)/);
+  assert.match(live, /このカテゴリーの商品条件に合う候補はありませんでした/);
 });
