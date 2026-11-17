@@ -80,3 +80,13 @@ test('live category candidates without sold history remain unverified and are no
   assert.doesNotMatch(live, /soldHistoryCount\s*\|\|0/);
   assert.doesNotMatch(live, /総合評価|総合点|データ信頼度|30\/60\/90日後/);
 });
+
+
+test('category quality guard rejects selectable single-card pages, mixed-brand fishing bundles, and vague parts menus', () => {
+  assert.match(html, /\\byou\\s\+pick\\b/);
+  assert.match(html, /brands\.length<=1/);
+  assert.match(html, /multi\.\?listing/);
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(live, /window\.map\(\{items,total:data\.total\},cat,0\)/);
+  assert.match(live, /このカテゴリーの商品条件に合う候補はありませんでした/);
+});
