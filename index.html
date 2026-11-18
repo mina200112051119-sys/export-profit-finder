@@ -96,12 +96,24 @@ function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:I
 function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
 function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value));Promise.resolve(saveCloudStorage()).catch(()=>{})}
 const CLOUD_STORAGE_API=API_BASE+'/api/translate?action=storage';
+function readExportUserCookie(){
+  const hit=document.cookie.split(';').map(v=>v.trim()).find(v=>v.startsWith('exportUserIdV1='));
+  return hit?decodeURIComponent(hit.slice('exportUserIdV1='.length)):'';
+}
+function writeExportUserCookie(id){
+  // iOS copies cookies once when a Home Screen web app is created.
+  // This lets Safari and a freshly-added Home Screen app share one cloud identity.
+  document.cookie='exportUserIdV1='+encodeURIComponent(id)+'; Max-Age=31536000; Path=/; SameSite=Lax; Secure';
+}
 function getExportUserId(){
-  let id=localStorage.getItem('exportUserId:v1');
+  const cookieId=readExportUserCookie();
+  const localId=localStorage.getItem('exportUserId:v1');
+  let id=cookieId||localId;
   if(!id){
     id=(crypto.randomUUID?crypto.randomUUID():'u'+Date.now()+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
-    localStorage.setItem('exportUserId:v1',id);
   }
+  if(localId!==id)localStorage.setItem('exportUserId:v1',id);
+  if(cookieId!==id)writeExportUserCookie(id);
   return id;
 }
 function cloudStorageData(){
