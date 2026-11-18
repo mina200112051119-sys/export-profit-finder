@@ -553,6 +553,38 @@ function saveRankingSnapshot(){
   localStorage.setItem(RANKING_SNAPSHOT_KEY,JSON.stringify({data,fxRate,fxDate,updated,categorySearchStats,savedAt:Date.now()}));
  }catch(e){console.warn('ランキングデータの保存に失敗しました',e);}
 }
+async function loadServerRankingSnapshot(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(RANKING_SNAPSHOT_KEY)||'null');
+  const localSavedAt=Number(saved?.savedAt||0);
+  const response=await fetch(API_BASE+'/api/data-snapshot',{cache:'no-store'});
+  if(!response.ok)return false;
+  const snapshot=await response.json();
+  const remoteAt=Date.parse(snapshot.refreshedAt||'');
+  if(!Number.isFinite(remoteAt)||!Array.isArray(snapshot.categories)||remoteAt<=localSavedAt)return false;
+  const fresh=[],stats={};
+  for(const c of RankingEngine.CATEGORIES){
+   const allRows=snapshot.categories.filter(row=>row&&row.category===c);
+   const rows=allRows.filter(row=>row.ok&&Array.isArray(row.items));
+   if(!rows.length){stats[c]={requestedQueries:allRows.length,successfulQueries:0,searchResultTotal:0,rawUniqueItems:0,matchedItems:0};continue;}
+   const items=[...new Map(rows.flatMap(row=>row.items).map(item=>[String(item.itemId||item.id||item.url||item.title),item])).values()];
+   const total=rows.reduce((sum,row)=>sum+Number(row.count||0),0);
+   const mapped=map({items,total},c);
+   stats[c]={requestedQueries:allRows.length,successfulQueries:rows.length,searchResultTotal:total,rawUniqueItems:items.length,matchedItems:mapped.length};
+   fresh.push(...mapped);
+  }
+  if(!fresh.length)return false;
+  data=mergeManualEvidence(fresh);
+  if(Number.isFinite(Number(snapshot.fx?.rate)))fxRate=Number(snapshot.fx.rate);
+  if(snapshot.fx?.date)fxDate=snapshot.fx.date;
+  categorySearchStats=stats;
+  updated=new Date(remoteAt).toLocaleString('ja-JP');
+  saveRankingSnapshot();
+  render();
+  $('status').innerHTML='<b>毎朝の自動取得データを表示中</b><br>取得日時：'+esc(updated)+'<br>必要なら「今すぐ更新・再計算」から手動で新しく取得できます。';
+  return true;
+ }catch(e){console.warn('自動取得データの読み込みに失敗しました',e);return false;}
+}
 function shouldRunDailyRefresh(){
  try{
   const attempted=Number(localStorage.getItem('exportDailyRefreshAttempt:v1')||0);
@@ -562,7 +594,6 @@ function shouldRunDailyRefresh(){
  }catch(e){return true;}
 }
 async function refresh(){
- try{localStorage.setItem('exportDailyRefreshAttempt:v1',String(Date.now()))}catch(e){}
  const b=$('refresh');
  if(activeRefreshController){activeRefreshController.abort();return;}
  const controller=new AbortController();activeRefreshController=controller;
@@ -594,11 +625,12 @@ async function refresh(){
   const live=[],searchStats={};
   for(const c of RankingEngine.CATEGORIES){
    const rows=results.filter(x=>x&&x.cat===c);
-   if(!rows.length){searchStats[c]={requestedQueries:defaultSearchQueriesForCategory(c).length,successfulQueries:0,searchResultTotal:0};continue;}
+   if(!rows.length){searchStats[c]={requestedQueries:defaultSearchQueriesForCategory(c).length,successfulQueries:0,searchResultTotal:0};live.push(...data.filter(p=>p.cat===c));continue;}
    const mergedItems=[...new Map(rows.flatMap(x=>x.data.items).map(x=>[String(x.itemId||x.id||x.url||x.title),x])).values()];
    const merged={items:mergedItems,total:rows.reduce((n,x)=>n+Number(x.data.total||0),0)};
    try{const mapped=map(merged,c);searchStats[c]={requestedQueries:defaultSearchQueriesForCategory(c).length,successfulQueries:rows.length,searchResultTotal:merged.total,rawUniqueItems:mergedItems.length,matchedItems:mapped.length};live.push(...mapped);}catch(e){errors.push(c+'：候補の整理に失敗しました '+(e?.message||String(e)));}
   }
+  if(!live.length){$('status').textContent='新しい候補を取得できませんでした。前回のランキングを保持しています。';return;}
   categorySearchStats=searchStats;
   data=mergeManualEvidence(live);updated=new Date().toLocaleString('ja-JP');saveRankingSnapshot();
   try{render();}catch(e){$('status').textContent='ランキング作成エラー：'+(e?.message||String(e));return;}
@@ -1285,7 +1317,7 @@ function detail(id){
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
-data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}const hasSavedRanking=restoreRankingSnapshot();if(!hasSavedRanking){$('status').textContent='保存済みランキングはありません。「今すぐ更新・再計算」でeBay検索を開始できます。';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}if(shouldRunDailyRefresh()){Promise.resolve().then(()=>refresh());}</script><script src="./cost-fix.js"></script>
+data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}const hasSavedRanking=restoreRankingSnapshot();if(!hasSavedRanking){$('status').textContent='保存済みランキングを確認中…';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}Promise.resolve(loadServerRankingSnapshot()).then(loaded=>{if(!loaded&&!hasSavedRanking)$('status').textContent='保存済みランキングはありません。「今すぐ更新・再計算」から取得できます。'}).catch(e=>console.error('自動取得データ読み込みエラー',e));</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
 
