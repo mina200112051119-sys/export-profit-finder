@@ -613,7 +613,7 @@ async function officialNameCandidate(p, categoryOverride){
   }else if(cat==='レトロゲーム' && /VIB[-\s]?RIBBON/i.test(titleKey) && /PLAYSTATION|PS1/i.test(titleKey)){
     curated={titleJa:'ビブリボン（Vib-Ribbon）｜PlayStation',score:100,status:'商品名整理済み（版・付属品は要確認）',diagnostic:{match:'game-title-platform'}};
   }else if(cat==='ガンプラ' && /MGSD/i.test(titleKey) && /KSHATRIYA/i.test(titleKey)){
-    curated={titleJa:'MGSD クシャトリヤ｜機動戦士ガンダムUC',score:100,status:'メーカー公式商品名と一致確認済み（BANDAI SPIRITS）',diagnostic:{match:'bandai-official-product-name',officialUrl:'https://www.bandaispirits.co.jp/products/search/detail.php?grp_id=5325&prd_id=4573102743039000'}};
+    curated={titleJa:'MGSD クシャトリヤ｜機動戦士ガンダムUC',score:85,status:'商品名候補（公式情報との一致は未確認）',diagnostic:{match:'model-name-keywords',officialLookup:'not-confirmed'}};
   }else if(cat==='釣具' && /SHIMANO/i.test(titleKey) && /BB[-\s]?X\s*LARISSA/i.test(titleKey) && /C3000DXG/i.test(titleKey)){
     curated={titleJa:'シマノ BB-X ラリッサ C3000DXG',score:100,status:'シマノ公式製品情報でシリーズ・型番を照合済み',diagnostic:{match:'shimano-bb-x-larissa-c3000dxg'}};
   }else if(cat==='カメラ' && /OLYMPUS/i.test(titleKey) && /VH[-\s]?210/i.test(titleKey)){
@@ -899,9 +899,11 @@ function buildDomesticSearchTerms(p, category, displayName){
  const add=s=>{const v=short(s);if(v&&v.length>1&&!out.some(x=>x.toLowerCase()===v.toLowerCase()))out.push(v)};
  if(cat==='ポケモンカード'){
   const no=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||'';
+  const name=shown.split(/[｜|]/)[0].trim();
+  if(name&&no)add(name+' '+no);
   add(shown);if(no)add('ポケモンカード '+no);
  }else if(cat==='ポケモン関連サプライ用品'){
-  add(cleanPokemonSupplyDisplayName(p,shown));add(shown);
+  add(shown);add(cleanPokemonSupplyDisplayName(p,shown));
  }else if(cat==='カメラ'){
   const model=(raw.match(/(?:POWERSHOT\s*[A-Z]?\d{1,3}[A-Z]?(?:\s*X)?(?:\s*MARK\s*[IVX0-9]+)?|COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|DMC[- ]?[A-Z0-9-]{3,}|DSC[- ]?[A-Z0-9-]{3,}|VH[- ]?\d{2,4}|(?:μ|µ)[- ]?\d{3,4})/i)||[])[0]||'';
   if(brand&&model){add(brand[1]+' '+model);add(brand[2]+' '+model)}add(shown);
@@ -1122,7 +1124,7 @@ function detail(id){
   '<div class="row"><span>eBay送料</span><b>'+shipping+'</b></div>'+
   (p.watchCount!=null?'<div class="row"><span>ウォッチ数</span><b>'+Number(p.watchCount).toLocaleString()+'</b></div>':'')+
   '<div class="row"><span>予想利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div>'+
-  '<div class="notice"><b>国内フリマ検索用の商品名</b><div>'+esc(p.domesticSearchName||domestic.primary)+'</div>'+(searchTerms.length>1?'<div class="muted" style="margin-top:6px">別の検索語：'+searchTerms.slice(1).map(esc).join(' ／ ')+'</div>':'')+'</div>'+
+  '<div class="notice"><b>国内フリマ検索用の商品名</b><div>'+esc(p.domesticSearchName||domestic.primary)+'</div>'+(searchTerms.length>1?'<div class="muted" style="margin-top:6px">別の検索語：'+searchTerms.slice(1).map(esc).join(' ／ ')+'</div>':'')+'<div style="margin-top:8px"><a href="https://jp.mercari.com/search?keyword='+encodeURIComponent(p.domesticSearchName||domestic.primary)+'" target="_blank" rel="noopener">この商品名でメルカリ検索</a></div></div>'+
   (p.officialNameStatus?'<div class="muted">商品名：'+esc(p.officialNameStatus)+'</div>':'')+
   (retroInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>型番</span><b>'+esc(retroInfo.model||'未確認')+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div></div>':'')+
   (gunplaInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>グレード・縮尺</span><b>'+esc(gunplaInfo.grade+' '+gunplaInfo.scale)+'</b></div><div class="row"><span>組立状態</span><b>'+esc(gunplaInfo.state)+'</b></div><div class="row"><span>型番</span><b>'+esc(gunplaInfo.model||'未確認')+'</b></div></div>':'')+
