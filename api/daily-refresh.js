@@ -98,6 +98,7 @@ module.exports = async (req, res) => {
           query: item.q,
           ok: result.statusCode >= 200 && result.statusCode < 300 && Array.isArray(body.items),
           count: Number(body.count || 0),
+          total: Number(body.total || body.count || 0),
           items: Array.isArray(body.items) ? body.items : [],
           priceStatsUsd: body.priceStatsUsd || null,
           ...((result.statusCode < 200 || result.statusCode >= 300) ? { error: body.error || 'eBay search failed' } : {})
@@ -111,6 +112,26 @@ module.exports = async (req, res) => {
     }
   };
   await Promise.all(Array.from({ length: 4 }, () => worker()));
+
+  // Keep search diagnostics in the server snapshot only; the normal app UI does not show them.
+  const seenItemIds = new Set();
+  for (const row of categories) {
+    if (!row) continue;
+    const ids = (row.items || []).map(item => String(item.itemId || item.url || item.title || '')).filter(Boolean);
+    const withinQuery = new Set(ids);
+    let duplicatesAcrossQueries = 0;
+    for (const id of withinQuery) {
+      if (seenItemIds.has(id)) duplicatesAcrossQueries++;
+      else seenItemIds.add(id);
+    }
+    row.diagnostics = {
+      returnedCount: Number(row.count || 0),
+      totalAvailable: Number(row.total || row.count || 0),
+      uniqueItemCount: withinQuery.size,
+      duplicateWithinQueryCount: Math.max(0, ids.length - withinQuery.size),
+      duplicateAcrossQueriesCount: duplicatesAcrossQueries
+    };
+  }
 
   let fx = null;
   try {
