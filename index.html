@@ -837,13 +837,14 @@ function cleanPokemonSupplyDisplayName(p, translated){
 }
 function cleanPokemonDisplayName(p, translated){
   const raw=String(p.name||p.title||'').normalize('NFKC');
-  // Curated exact match: Gurusha SAR from Snow Hazard, card SV2P 095/071.
-  // The BCTC-9 seller grading string is deliberately kept out of the card name.
   if(/\bGurusha\b/i.test(raw) && /\bSAR\b/i.test(raw) && /\b095\s*\/\s*071\b/.test(raw)){
-    return 'グルーシャ SAR SV2P 095/071';
+    return 'グルーシャ｜スノーハザード｜095/071｜SAR';
   }
-  const ja=cleanProductDisplayName(p,translated,'ポケモンカード');
-  const number=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||(raw.match(/#\s*(\d{1,3})\b/)||[])[1]||'';
+  const ja=String(translated||p.displayName||p.titleJa||raw).normalize('NFKC');
+  const segments=ja.split(/[｜|]/).map(x=>x.trim()).filter(Boolean);
+  const rawNumber=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||'';
+  const jaNumber=(ja.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||'';
+  const number=rawNumber||jaNumber;
   const setRules=[
     [/VSTAR Universe|S12a/i,'VSTARユニバース'],
     [/Terastal Festival|SV8a/i,'テラスタルフェスex'],
@@ -853,9 +854,21 @@ function cleanPokemonDisplayName(p, translated){
     [/30th\s*Celebration/i,'30th Celebration'],
     [/151|SV2a/i,'ポケモンカード151']
   ];
-  const set=(setRules.find(([re])=>re.test(raw))||[])[1]||'';
-  const name=ja.replace(/\b(?:PSA|CGC|BGS|SGC)\s*\d+(?:\.\d+)?\b/gi,' ').replace(/\s+/g,' ').trim();
-  return [name,number,set?'（'+set+'）':''].filter(Boolean).join(' ');
+  const knownSet=(setRules.find(([re])=>re.test(raw))||[])[1]||'';
+  const rarityMatch=(raw+' '+ja).match(/\b(SAR|SR|AR|RR|UR|HR|CHR|CSR)\b/i);
+  const rarity=/(?:\bPROMO\b|\bWOTC\b|\bBLACK\s*STAR\b|プロモ)/i.test(raw+' '+ja)?'プロモ':rarityMatch?rarityMatch[1].toUpperCase():'';
+  let name=(segments[0]||ja)
+    .replace(/\b\d{1,3}\s*\/\s*\d{1,3}\b/g,' ')
+    .replace(/\b(?:PROMO|WOTC|BLACK\s*STAR|SAR|SR|AR|RR|UR|HR|CHR|CSR)\b/gi,' ')
+    .replace(/プロモ|レアリティ未確認/g,' ')
+    .replace(/\s+/g,' ').trim();
+  if(!name)name=cleanProductDisplayName(p,translated,'ポケモンカード').split(/[｜|]/)[0].trim();
+  let set=knownSet;
+  if(!set&&segments.length>1){
+    set=segments.slice(1).find(x=>!/\b\d{1,3}\s*\/\s*\d{1,3}\b/.test(x)&&!/\b(?:PROMO|WOTC|SAR|SR|AR|RR|UR|HR|CHR|CSR)\b|プロモ/i.test(x))||'';
+  }
+  set=String(set||'').replace(/\b\d{1,3}\s*\/\s*\d{1,3}\b/g,'').trim();
+  return [name,set,number,rarity].filter(Boolean).join('｜')||'カード名未確認';
 }
 function buildUnverifiedJapaneseIdentity(p, categoryOverride){
   const raw=String(p?.name||p?.title||'').normalize('NFKC').trim();
