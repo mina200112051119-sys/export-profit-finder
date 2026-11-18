@@ -690,9 +690,12 @@ async function officialNameCandidate(p, categoryOverride){
           }else{
             if(Number(x.score)<80||!hasJapaneseText(actualName))return false;
             // A fuzzy official-page hit must never replace a different model number.
-            const modelTokens=rawTitle.match(/\b(?:VH[- ]?\d{2,4}|C\d{3,5}[A-Z]{0,4}|SCPH[- ]?\d{3,5}|HVC[- ]?\d{3}|SHVC[- ]?\d{3}|NUS[- ]?\d{3}|NRX[- ]?\d{4}|GF\d{2}[- ]?\d{3}[A-Z]{2,}|RX[- ]?\d{2,3}(?:[- ][A-Z0-9]+)?|MS[- ]?\d{2,3}[A-Z0-9-]*)\b/ig)||[];
+            const modelTokens=rawTitle.match(/\b(?:POWERSHOT\s*[A-Z]?\d{1,3}[A-Z]?(?:\s*X)?(?:\s*MARK\s*[IVX0-9]+)?|COOLPIX\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|DMC[- ]?[A-Z0-9-]{3,}|DSC[- ]?[A-Z0-9-]{3,}|VH[- ]?\d{2,4}|SCPH[- ]?\d{3,5}|HVC[- ]?\d{3}|SHVC[- ]?\d{3}|NUS[- ]?\d{3}|NRX[- ]?\d{4}|GF\d{2}[- ]?\d{3}[A-Z]{2,}|RX[- ]?\d{2,3}(?:[- ][A-Z0-9]+)?|MS[- ]?\d{2,3}[A-Z0-9-]*)\b/ig)||[];
             const candidateIdentity=compact([x.title,x.cardName,x.number].filter(Boolean).join(' '));
-            if(modelTokens.length&&!modelTokens.every(token=>candidateIdentity.includes(compact(token))))return false;
+            if(modelTokens.length&&!modelTokens.every(token=>{
+              const wanted=compact(token),at=candidateIdentity.indexOf(wanted);
+              return at>=0&&!/[a-z0-9]/i.test(candidateIdentity[at+wanted.length]||'');
+            }))return false;
           }
           return true;
         }).sort((a,b)=>{
