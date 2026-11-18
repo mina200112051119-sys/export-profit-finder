@@ -74,9 +74,15 @@ function toggleFavorite(id){
  const p=data.find(x=>String(x.id)===String(id));if(!p)return false;
  const a=getFavoriteProducts(),has=a.some(x=>String(x.id)===String(id));
  localStorage.setItem(FAVORITES_KEY,JSON.stringify(has?a.filter(x=>String(x.id)!==String(id)):[...a,JSON.parse(JSON.stringify(p))]));
- renderFavorites();updateFavoriteButtons();return !has;
+ renderFavorites();updateFavoriteButtons();
+ saveCloudStorage();
+ return !has;
 }
-function removeFavorite(id){localStorage.setItem(FAVORITES_KEY,JSON.stringify(getFavoriteProducts().filter(p=>String(p.id)!==String(id))));renderFavorites();updateFavoriteButtons()}
+function removeFavorite(id){
+ localStorage.setItem(FAVORITES_KEY,JSON.stringify(getFavoriteProducts().filter(p=>String(p.id)!==String(id))));
+ renderFavorites();updateFavoriteButtons();
+ saveCloudStorage();
+}
 function updateFavoriteButtons(){document.querySelectorAll('[data-favorite-id]').forEach(b=>{b.textContent=isFavorite(b.dataset.favoriteId)?'★ マイリストから削除':'☆ マイリストに追加'})}
 function renderFavorites(){
  const el=$('favorite-list');if(!el)return;const rows=getFavoriteProducts();
@@ -129,11 +135,15 @@ async function checkCloudStorage(){
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
 }
 async function saveCloudStorage(){
+  if(window.__cloudSaveTimer){clearTimeout(window.__cloudSaveTimer);window.__cloudSaveTimer=null;}
   try{
-    const r=await fetch(CLOUD_STORAGE_API,{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':getExportUserId()},body:JSON.stringify({data:cloudStorageData()})});
+    const r=await fetch(CLOUD_STORAGE_API,{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':getExportUserId()},body:JSON.stringify({data:cloudStorageData()}),keepalive:true});
+    const result=await r.json().catch(()=>({}));
+    const saved=Boolean(r.ok&&result.saved===true);
     const el=$('cloud-status');
-    if(el)el.textContent=r.ok?'☁️ クラウド保存：接続済み':'☁️ クラウド保存：未設定または保存失敗';
-  }catch(e){const el=$('cloud-status');if(el)el.textContent='☁️ クラウド保存：接続できません';}
+    if(el)el.textContent=saved?'☁️ クラウド保存：保存済み':'☁️ クラウド保存：保存失敗（再確認してください）';
+    return saved;
+  }catch(e){const el=$('cloud-status');if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
 }
 async function loadCloudStorage(){
   const el=$('cloud-status');
