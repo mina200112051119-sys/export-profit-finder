@@ -422,7 +422,7 @@ function classifyPartsDetail(p){
     :/av cable|usb cable|cable|cord|ケーブル/i.test(t)?'接続ケーブル'
     :/refill|詰め替え|consumable|消耗品/i.test(t)?'消耗品'
     :/replacement|spare|repair|parts?|component|交換|補修|修理|部品|パーツ/i.test(t)?'内容未特定の交換部品':'種類未確認';
-  const modelCandidate=(t.match(/\b(?:SCPH-?\d{3,5}|HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|AGB-?\d{3}|DMG-?\d{3}|[A-Z]{1,4}[- ]?\d{2,5}[A-Z0-9-]*)\b/i)||[])[0]||'';
+  const modelCandidate=(t.match(/\b(?:SCPH-?\d{3,5}|HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|AGB-?\d{3}|DMG-?\d{3}|[A-Z]{1,4}-\d{2,5}[A-Z0-9-]*)\b/i)||[])[0]||'';
   const compatibilityMatches=t.match(/\b(?:\d{2}\s*)?(?:twin\s*power(?:\s*xd)?|stradic(?:\s*sw)?|vanquish|stella|nasci|sedona|fuego|certate|exist|luvias|caldia|saltiga|tatula)\b/ig)||[];
   const normalizeCompatibility=value=>String(value||'').replace(/\s+/g,' ').trim()
     .replace(/^(\d{2})\s*twin\s*power\s*xd$/i,'$1 ツインパワーXD')
