@@ -423,8 +423,10 @@ function classifyPartsDetail(p){
     :/refill|詰め替え|consumable|消耗品/i.test(t)?'消耗品'
     :/replacement|spare|repair|parts?|component|交換|補修|修理|部品|パーツ/i.test(t)?'内容未特定の交換部品':'種類未確認';
   const modelCandidate=(t.match(/\b(?:SCPH-?\d{3,5}|HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|AGB-?\d{3}|DMG-?\d{3}|[A-Z]{1,4}[- ]?\d{2,5}[A-Z0-9-]*)\b/i)||[])[0]||'';
-  const compatibilityRaw=(t.match(/\b(?:\d{2}\s*)?(?:twin\s*power(?:\s*xd)?|stradic(?:\s*sw)?|vanquish|stella|nasci|sedona|fuego|certate|exist|luvias|caldia|saltiga|tatula)\b/i)||[])[0]||'';
-  const compatibilityModel=compatibilityRaw.replace(/\s+/g,' ').trim()
+  const compatibilityMatches=t.match(/\b(?:\d{2}\s*)?(?:twin\s*power(?:\s*xd)?|stradic(?:\s*sw)?|vanquish|stella|nasci|sedona|fuego|certate|exist|luvias|caldia|saltiga|tatula)\b/ig)||[];
+  const normalizeCompatibility=value=>String(value||'').replace(/\s+/g,' ').trim()
+    .replace(/^(\d{2})\s*twin\s*power\s*xd$/i,'$1 ツインパワーXD')
+    .replace(/^(\d{2})\s*twin\s*power$/i,'$1 ツインパワー')
     .replace(/twin\s*power\s*xd/i,'ツインパワーXD').replace(/twin\s*power/i,'ツインパワー')
     .replace(/stradic\s*sw/i,'ストラディックSW').replace(/stradic/i,'ストラディック')
     .replace(/vanquish/i,'ヴァンキッシュ').replace(/stella/i,'ステラ')
@@ -433,8 +435,10 @@ function classifyPartsDetail(p){
     .replace(/exist/i,'イグジスト').replace(/luvias/i,'ルビアス')
     .replace(/caldia/i,'カルディア').replace(/saltiga/i,'ソルティガ')
     .replace(/tatula/i,'タトゥーラ');
+  const compatibilityModels=[...new Set(compatibilityMatches.map(normalizeCompatibility))];
+  const compatibilityModel=compatibilityModels.length===1?compatibilityModels[0]:compatibilityModels.join('・');
   const compatibility=compatibilityModel?'対応機種候補：'+compatibilityModel+'（一致確認が必要）':modelCandidate?'型番候補あり・対応機種との一致は未確認（対応表との照合が必要）':'対応機種を特定できる型番なし（対応表との照合が必要）';
-  return {kind,family,brand,modelCandidate,compatibilityModel,compatibility,model:modelCandidate||'出品タイトルからは確認できず'};
+  return {kind,family,brand,modelCandidate,compatibilityModel,compatibilityModels,compatibility,model:modelCandidate||'出品タイトルからは確認できず'};
 }
 function rankAll(cat=null){return RankingEngine.rank(data,baseSettings(),cat)}
 function productListingStatus(p){
@@ -958,8 +962,12 @@ function buildDomesticSearchTerms(p, category, displayName){
   const x=classifyPartsDetail({...p,displayName:shown});
   const validBrand=x.brand!=='メーカー未確認'?x.brand:'';
   const validKind=!['内容未特定の交換部品','種類未確認'].includes(x.kind)?x.kind:'';
-  add([validBrand,validKind,x.compatibilityModel,x.modelCandidate].filter(Boolean).join(' '));
-  add([validKind,x.compatibilityModel,x.modelCandidate].filter(Boolean).join(' '));
+  if(x.compatibilityModels&&x.compatibilityModels.length){
+    x.compatibilityModels.forEach(model=>add([validBrand,validKind,model,x.modelCandidate].filter(Boolean).join(' ')));
+  }else{
+    add([validBrand,validKind,x.modelCandidate].filter(Boolean).join(' '));
+  }
+  add([validBrand,validKind,x.modelCandidate].filter(Boolean).join(' '));
   add(shown);
  }else add(shown);
  return {primary:out[0]||short(shown)||'商品名未確認',variants:out.slice(0,3)};
@@ -1178,7 +1186,7 @@ function detail(id){
   (p.officialNameStatus?'<div class="muted">商品名：'+esc(p.officialNameStatus)+'</div>':'')+
   (retroInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>型番</span><b>'+esc(retroInfo.model||'未確認')+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div></div>':'')+
   (gunplaInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>グレード・縮尺</span><b>'+esc(gunplaInfo.grade+' '+gunplaInfo.scale)+'</b></div><div class="row"><span>組立状態</span><b>'+esc(gunplaInfo.state)+'</b></div><div class="row"><span>型番</span><b>'+esc(gunplaInfo.model||'未確認')+'</b></div></div>':'')+
-  (partsInfo?'<div class="notice"><b>部品情報</b><div class="row"><span>部品の種類</span><b>'+esc(partsInfo.kind)+'</b></div><div class="row"><span>メーカー</span><b>'+esc(partsInfo.brand)+'</b></div><div class="row"><span>対応機種候補</span><b>'+esc(partsInfo.compatibilityModel||'未確認')+'</b></div><div class="muted">'+esc(partsInfo.compatibility)+'</div></div>':'')+
+  (partsInfo?'<div class="notice"><b>部品情報</b><div class="row"><span>部品の種類</span><b>'+esc(partsInfo.kind)+'</b></div><div class="row"><span>メーカー</span><b>'+esc(partsInfo.brand)+'</b></div><div class="row"><span>対応機種候補（未確認）</span><b>'+esc(partsInfo.compatibilityModels&&partsInfo.compatibilityModels.length?partsInfo.compatibilityModels.join('・'):(partsInfo.compatibilityModel||'未確認'))+'</b></div><div class="muted">'+esc(partsInfo.compatibility)+'</div></div>':'')+
   '<h3>仕入れ先・利益計算</h3><div id="source-panel" class="card" style="margin-top:8px"><div class="notice">仕入れ候補を読み込み中…</div></div>'+
   (p.url?'<a href="'+esc(p.url)+'" target="_blank" rel="noopener">eBayの商品ページを確認</a>':'')+
   '<p class="muted">価格と送料は現在のeBay出品情報です。販売済み価格ではありません。</p>';
