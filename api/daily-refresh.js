@@ -1,12 +1,15 @@
 const QUERIES = [
   { cat: 'ポケモンカード', q: 'Japanese Pokemon SAR special art rare single card Japanese -lot -bulk -proxy' },
-  { cat: 'ポケモンカード', q: 'Japanese Pokemon TCG SAR Japanese special art rare card single -lot -bulk' },
-  { cat: 'ポケモンカード', q: 'Japanese Pokemon modern SAR SR UR secret rare single card -lot -deck -collection' },
-  { cat: 'ポケモンカード', q: 'Japanese Pokemon card promo Japanese exclusive high rarity single card -lot -deck' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon AR art rare single card Japanese -lot -bulk -proxy' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon SR full art super rare single card Japanese -lot -bulk -proxy' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon RR double rare ex single card Japanese -lot -bulk -proxy' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon popular character single card Pikachu Charizard Mew Eevee Gengar Japanese -lot -bulk' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon promo exclusive single card Japanese -lot -bulk -proxy' },
   { cat: 'ポケモンカード', q: 'Japanese Pokemon vintage WOTC e-reader Neo rare single card -lot -bulk' },
-  { cat: 'ポケモンカード', q: 'Japanese Pokemon graded PSA CGC BGS SAR Japanese card single -lot -bulk' },
-  { cat: 'ポケモンカード', q: 'Japanese Pokemon card set number promo Japanese card single -lot -bulk' },
-  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon UR HR secret rare single card Japanese -lot -bulk' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon card set number single card Japanese -lot -bulk -proxy' },
+{ cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
   { cat: '釣具', q: 'Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
   { cat: 'レトロゲーム', q: 'Nintendo Famicom console Japan' },
@@ -28,6 +31,7 @@ const QUERIES = [
   { cat: '交換部品・消耗品', q: 'Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan' },
   { cat: '交換部品・消耗品', q: 'Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan' },
   { cat: '交換部品・消耗品', q: 'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan' }
+];
 ];
 
 const { loadSnapshot, saveSnapshot, storageConfigured } = require('./data-store');
