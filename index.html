@@ -353,7 +353,8 @@ function classifyRetroListing(p){
 }
 function classifyGunplaListing(p){
   const t=String([p.name,p.title,p.displayName,p.titleJa,p.nameJa].filter(Boolean).join(' ')).normalize('NFKC');
-  const grade=/\bHG(?:UC|AC|CE|FC|00|IBO)?\b|ハイグレード/i.test(t)?'HG'
+  const grade=/\bMGSD\b/i.test(t)?'MGSD'
+    :/\bHG(?:UC|AC|CE|FC|00|IBO)?\b|ハイグレード/i.test(t)?'HG'
     :/\bMG\b|マスターグレード/i.test(t)?'MG'
     :/\bRG\b|リアルグレード/i.test(t)?'RG'
     :/\bPG\b|パーフェクトグレード/i.test(t)?'PG'
@@ -784,7 +785,7 @@ function cleanProductDisplayName(p, translated, category){
     '交換部品・消耗品':[/スプール|ラインローラー|ドラグノブ|ノブ|電源アダプター|ACアダプター|充電器|バッテリー|ケーブル|キャップ|アイカップ|デカール|シール|交換部品|消耗品/i,'交換部品']
   };
   if(cat==='レトロゲーム'){const x=classifyRetroListing({...p,displayName:ja});const title=ja.replace(/\b(?:Nintendo|Sega|Sony|Famicom|Super Famicom|Game Boy|PlayStation|Dreamcast|Saturn|console|system|game|software|cartridge|disc|controller|Japan|Japanese|used|new|tested|bundle|lot)\b/gi,' ').replace(/\s+/g,' ').trim().slice(0,72);return [x.platform,x.productType,title||'商品名未確認',x.model?('型番 '+x.model):'',x.bundle].filter(Boolean).join('｜');}
-  if(cat==='ガンプラ'){const x=classifyGunplaListing({...p,displayName:ja});const title=ja.replace(/\b(?:Bandai|Gundam|Gunpla|HGUC?|MG|RG|PG|EG|RE\/100|plastic model kit|model kit|Japan|Japanese|unbuilt|assembled|built|new|used)\b/gi,' ').replace(/\b1\s*\/\s*(?:144|100|60|72|48|550)\b/gi,' ').replace(/\s+/g,' ').trim().slice(0,72);return ['バンダイ',x.grade,x.scale,x.itemType,'ガンプラ',title||'商品名未確認',x.model?('型番 '+x.model):'',x.state,x.bundle].filter(Boolean).join('｜');}
+  if(cat==='ガンプラ'){const x=classifyGunplaListing({...p,displayName:ja});const title=ja.replace(/\b(?:Bandai|Gundam|Gunpla|MGSD|HGUC?|MG|RG|PG|EG|RE\/100|plastic model kit|model kit|Japan|Japanese|unbuilt|assembled|built|new|used)\b/gi,' ').replace(/\b1\s*\/\s*(?:144|100|60|72|48|550)\b/gi,' ').replace(/\s+/g,' ').trim().slice(0,72);return ['バンダイ',x.grade,x.scale,x.itemType,'ガンプラ',title||'商品名未確認',x.model?('型番 '+x.model):'',x.state,x.bundle].filter(Boolean).join('｜');}
   if(cat==='交換部品・消耗品'){const x=classifyPartsDetail({...p,displayName:ja});return [x.brand,x.kind,x.compatibility].join('｜');}
   if(cat==='釣具') return cleanFishingDisplayName(p,translated);
   if(cat==='カメラ' && code){
@@ -976,7 +977,7 @@ function buildDomesticSearchTerms(p, category, displayName){
  }else if(cat==='ガンプラ'){
   const x=classifyGunplaListing({...p,displayName:shown});
   const title=clean(shown).replace(/バンダイ|ガンプラ|プラモデル|ガンダム/g,' ').replace(/\s+/g,' ').trim();
-  const grade=['HG','MG','RG','PG','EG','RE/100','SD'].includes(x.grade)?x.grade:'';
+  const grade=['MGSD','HG','MG','RG','PG','EG','RE/100','SD'].includes(x.grade)?x.grade:'';
   if(grade&&title)add(grade+' '+title);
   if(title)add(title);
   add(shown);
