@@ -954,7 +954,7 @@ async function searchByPhoto(){
 }
 function photoCandidateProduct(x){
  const cat=x?.category||document.getElementById('cat').value;
- const rows=map({items:[{itemId:x.itemId,title:x.title,titleJa:x.titleJa,price:x.price,shipping:x.shipping,image:x.image,url:x.url,condition:x.condition}],total:1},cat,0);
+ const rows=map({items:[{itemId:x.itemId,title:x.title,titleJa:x.titleJa,price:x.price,shipping:x.shipping,shippingKnown:x.shippingKnown,image:x.image,url:x.url,condition:x.condition}],total:1},cat,0);
  if(rows[0])rows[0].watchCount=x.watchCount??null;
  return rows[0]||null;
 }
