@@ -420,7 +420,15 @@ function classifyPartsDetail(p){
     :/replacement|spare|repair|parts?|component|交換|補修|修理|部品|パーツ/i.test(t)?'内容未特定の交換部品':'種類未確認';
   const modelCandidate=(t.match(/\b(?:SCPH-?\d{3,5}|HVC-?\d{3}|SHVC-?\d{3}|NUS-?\d{3}|HST-?\d{3,4}|HKT-?\d{3,4}|AGB-?\d{3}|DMG-?\d{3}|[A-Z]{1,4}[- ]?\d{2,5}[A-Z0-9-]*)\b/i)||[])[0]||'';
   const compatibilityRaw=(t.match(/\b(?:\d{2}\s*)?(?:twin\s*power(?:\s*xd)?|stradic(?:\s*sw)?|vanquish|stella|nasci|sedona|fuego|certate|exist|luvias|caldia|saltiga|tatula)\b/i)||[])[0]||'';
-  const compatibilityModel=compatibilityRaw.replace(/\s+/g,' ').trim();
+  const compatibilityModel=compatibilityRaw.replace(/\s+/g,' ').trim()
+    .replace(/twin\s*power\s*xd/i,'ツインパワーXD').replace(/twin\s*power/i,'ツインパワー')
+    .replace(/stradic\s*sw/i,'ストラディックSW').replace(/stradic/i,'ストラディック')
+    .replace(/vanquish/i,'ヴァンキッシュ').replace(/stella/i,'ステラ')
+    .replace(/nasci/i,'ナスキー').replace(/sedona/i,'セドナ')
+    .replace(/fuego/i,'フエゴ').replace(/certate/i,'セルテート')
+    .replace(/exist/i,'イグジスト').replace(/luvias/i,'ルビアス')
+    .replace(/caldia/i,'カルディア').replace(/saltiga/i,'ソルティガ')
+    .replace(/tatula/i,'タトゥーラ');
   const compatibility=compatibilityModel?'対応機種候補：'+compatibilityModel+'（一致確認が必要）':modelCandidate?'型番候補あり・対応機種との一致は未確認（対応表との照合が必要）':'対応機種を特定できる型番なし（対応表との照合が必要）';
   return {kind,family,brand,modelCandidate,compatibilityModel,compatibility,model:modelCandidate||'出品タイトルからは確認できず'};
 }
