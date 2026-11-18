@@ -332,7 +332,7 @@ function render(p) {
         // HG 1/144, Pokémon 151). Keep digit-bearing tokens from the original
         // eBay title so domestic searches remain specific.
         const identifiers = originalModelTokens(original).map(token => token.raw);
-        const compactIdentifier = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+        const compactIdentifier = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[\s　・･\-‐‑–—_【】「」『』()（）［］]/g, '');
         const translatedCompact = compactIdentifier(translated);
         const preserved = identifiers.filter(token => {
           const compact = compactIdentifier(token);
