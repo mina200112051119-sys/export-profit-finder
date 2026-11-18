@@ -922,6 +922,20 @@ function photoPriceLabel(amount,currency){
   if(cur==='USD')return yen(value*fxRate);
   return esc(cur)+' '+value.toFixed(2)+'（円換算未対応）';
 }
+function inferPhotoCategory(item){
+  const raw=String(item?.title||item?.name||item?.category||'').normalize('NFKC');
+  const known=['ポケモンカード','ポケモン関連サプライ用品','釣具','カメラ','レトロゲーム','ガンプラ','交換部品・消耗品'];
+  const supplied=String(item?.category||'');
+  if(known.includes(supplied))return supplied;
+  if(/replacement|spare parts?|repair parts?|refill|consumable|battery door|eyecup|lens cap|charger|adapter|line roller|bail arm|drag knob|spool|handle|交換部品|補修部品|詰め替え|消耗品|バッテリー|充電器|穂先|ガイドリング/i.test(raw))return '交換部品・消耗品';
+  if(/pokemon|ポケモン|pikachu|charizard|mew/i.test(raw)&&/deck box|deck case|sleeve|playmat|binder|card file|デッキケース|スリーブ|プレイマット|バインダー|カードファイル/i.test(raw))return 'ポケモン関連サプライ用品';
+  if(/pokemon|ポケモン|pikachu|charizard|mew|trading card|pokemon card|\btc[g]?\b|ポケモンカード/i.test(raw))return 'ポケモンカード';
+  if(/gunpla|gundam|ガンプラ|ガンダム|bandai spirits|plastic model kit/i.test(raw))return 'ガンプラ';
+  if(/fishing|釣具|fishing reel|fishing rod|shimano|daiwa|リール|釣竿|ルアー/i.test(raw))return '釣具';
+  if(/camera|カメラ|powershot|coolpix|lumix|finepix|cyber.?shot|デジカメ/i.test(raw))return 'カメラ';
+  if(/playstation|nintendo|sega|game boy|famicom|super famicom|dreamcast|saturn|ゲームソフト|ゲーム機|ファミコン|ゲームボーイ|ドリームキャスト|サターン/i.test(raw))return 'レトロゲーム';
+  return '商品名・カテゴリー未確認';
+}
 async function photoDisplayName(x,cat){
   const p={id:'photo:'+String(x.itemId||x.url||x.title),name:x.title,cat};
   try{
@@ -949,17 +963,19 @@ async function searchByPhoto(){
   const r=await fetch(IMAGE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoDataUrl})});
   const d=await r.json();if(!r.ok)throw new Error(d.error||'画像検索に失敗しました');
   if(!d.items?.length){$('photoMsg').textContent='候補が見つかりませんでした。別の角度・明るい写真でも試してください。';return}
-  const photoCategory=document.getElementById('cat').value;
-  window.photoCandidates=dedupeCategoryProducts(d.items.map(x=>({...x,name:x.title||x.name||'',category:photoCategory})),photoCategory);
-  if(!window.photoCandidates.length){$('photoMsg').textContent='選択カテゴリーに合う候補がありません。カテゴリーを確認してください。';return}
-  await Promise.all(window.photoCandidates.map(x=>photoDisplayName(x,photoCategory)));
+  window.photoCandidates=dedupeCategoryProducts(d.items.map(x=>{
+    const category=inferPhotoCategory(x);
+    return {...x,name:x.title||x.name||'',category};
+  }),null);
+  if(!window.photoCandidates.length){$('photoMsg').textContent='商品候補を特定できませんでした。別の角度・明るい写真でも試してください。';return}
+  await Promise.all(window.photoCandidates.map(x=>photoDisplayName(x,x.category)));
   $('photoMsg').textContent='候補が見つかりました。商品名と写真を確認して、近い商品を選んでください。';
   $('photoResults').innerHTML=window.photoCandidates.map((x,i)=>'<div class="photo-card" onclick="selectPhotoCandidate('+i+')">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'')+'<h3>'+esc(x.titleJa||x.title)+'</h3><div><b>eBay価格 '+photoPriceLabel(x.price,x.currency)+'</b></div><div>送料 '+(x.shippingKnown===false||x.shipping==null?'送料未取得':photoPriceLabel(x.shipping,x.currency))+'</div>'+(x.watchCount!=null?'<div>ウォッチ数 '+Number(x.watchCount).toLocaleString()+'</div>':'')+'<small>'+esc(x.officialNameStatus||'名称未確認')+'｜'+esc(x.condition||'状態不明')+'</small><button class="primary" type="button" style="margin-top:8px" onclick="event.stopPropagation();selectPhotoCandidate('+i+')">候補を確認して利益計算へ</button><button class="secondary" type="button" data-favorite-id="'+esc(x.itemId||x.url||x.title)+'" onclick="event.stopPropagation();savePhotoCandidateFavorite('+i+')">'+(isFavorite(x.itemId||x.url||x.title)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('');
  }catch(e){$('photoMsg').textContent='画像検索に失敗しました。eBay API設定または画像形式を確認してください。'}
  finally{$('photoSearch').disabled=false}
 }
 function photoCandidateProduct(x){
- const cat=x?.category||document.getElementById('cat').value;
+ const cat=x?.category||'商品名・カテゴリー未確認';
  const rows=map({items:[{itemId:x.itemId,title:x.title,titleJa:x.titleJa,price:x.price,shipping:x.shipping,shippingKnown:x.shippingKnown,image:x.image,url:x.url,condition:x.condition}],total:1},cat,0);
  if(rows[0])rows[0].watchCount=x.watchCount??null;
  return rows[0]||null;
@@ -986,7 +1002,7 @@ async function confirmPhotoCandidate(){
  const title=String(x.title||'').trim();if(!title)return;
  $('photoMsg').textContent='写真で選んだ出品そのものを使って、詳細分析を作成中…';
  try{
-  const chosenCategory=x.category||document.getElementById('cat').value;
+  const chosenCategory=x.category||'商品名・カテゴリー未確認';
   const selected=photoCandidateProduct({...x,category:chosenCategory});
   if(!selected){$('photoMsg').textContent='選択した候補を商品情報に変換できませんでした。別の候補を選んでください。';return}
   const existing=data.find(p=>String(p.id)===String(selected.id));
