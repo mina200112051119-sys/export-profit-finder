@@ -51,16 +51,27 @@ async function liveSearch(){
  box.innerHTML='<div class="notice">eBayの現在の出品価格と商品名を確認しています…</div>';
  try{
   const fx=await loadFx();if(!fx)throw Error('為替レートを取得できませんでした');
-  const r=await fetch(SEARCH_API+'?q='+encodeURIComponent(q)+'&limit=50',{cache:'no-store'}),data=await r.json();
-  if(!r.ok)throw Error(data.error||'eBay検索に失敗しました');
-  const items=(data.items||[]).slice(0,20);
-  if(!items.length){box.innerHTML='<div class="notice">eBayで現在の出品候補が見つかりませんでした。検索語を少し変えてください。</div>';return;}
-  const named=await Promise.all(items.map(async item=>({...item,display:(await displayListingName(item,cat))})));
-  box.innerHTML=named.map(p=>{
-   const price=yenLabel(p.price,p.currency,fx),shipping=p.shippingKnown===false||p.shipping==null?'送料未取得':yenLabel(p.shipping,p.currency,fx);
-   return '<div class="search-card">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':'')+'<h3>'+esc(p.display.name)+'</h3><div class="row"><span>eBay価格</span><b>'+price+'</b></div><div class="row"><span>送料</span><b>'+shipping+'</b></div><small>'+esc(p.display.status)+'｜'+esc(p.condition||'状態不明')+'</small><a class="primary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="'+esc(p.url)+'" target="_blank" rel="noopener">eBayで確認</a></div>';
-  }).join('')+'<div class="warning" style="grid-column:1/-1">※円表示は取得した為替レートで換算したeBay.com（米国サイト）の現在出品価格です。売れた価格ではありません。</div>';
- }catch(e){box.innerHTML='<div class="warning">最新データを取得できませんでした。'+esc(e.message)+'<br>eBayの認証情報がVercelに設定されているか確認してください。</div>';}
+  const r=await fetch(SEARCH_API+'?q='+encodeURIComponent(q)+'&limit=50',{cache:'no-store'}),d=await r.json();
+  if(!r.ok)throw Error(d.error||'eBay検索に失敗しました');
+  const products=typeof window.map==='function'?window.map(d,cat,0):[];
+  if(!products.length){box.innerHTML='<div class="notice">eBayで現在の出品候補が見つかりませんでした。検索語を少し変えてください。</div>';return;}
+  if(typeof window.enrichOfficialNames==='function')await window.enrichOfficialNames(products,cat);
+  const appData=window.__exportApp?.getData?.();
+  if(Array.isArray(appData)){
+    const ids=new Set(products.map(p=>String(p.id)));
+    appData.splice(0,appData.length,...products,...appData.filter(p=>!ids.has(String(p.id))));
+  }
+  box.innerHTML='<div class="notice"><b>検索語</b>：'+esc(q)+'<br><span class="muted">現在のeBay出品価格と送料を表示します。販売済み価格ではありません。商品を選ぶと利益計算・仕入れ先比較を確認できます。</span></div>'+
+   products.slice(0,12).map(p=>'<div class="search-card" data-product-id="'+esc(p.id)+'" onclick="detail(encodeURIComponent(this.dataset.productId))">'+
+    (p.image?'<img src="'+esc(p.image)+'" alt="">':'')+
+    '<h3>'+esc(p.displayName||p.name)+'</h3>'+
+    '<div class="row"><span>eBay価格</span><b>'+yen(Number(p.sell||0)*fx)+'</b></div>'+
+    '<div class="row"><span>eBay送料</span><b>'+(p.shippingKnown===false?'送料未取得':yen(Number(p.ship||0)*fx))+'</b></div>'+
+    '<small>'+esc(p.condition||'状態不明')+'｜販売済み価格・販売件数は未確認</small>'+
+    '<button class="primary" type="button" style="margin-top:8px" data-product-id="'+esc(p.id)+'" onclick="event.stopPropagation();detail(encodeURIComponent(this.dataset.productId))">利益計算・仕入先を確認</button>'+
+    '<button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="event.stopPropagation();toggleFavorite(this.dataset.favoriteId)">'+(typeof window.isFavorite==='function'&&window.isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('')+
+   '<div class="warning" style="grid-column:1/-1">※円表示は取得した為替レートで換算したeBay.com（米国サイト）の現在出品価格です。売れた価格ではありません。</div>';
+ }catch(e){box.innerHTML='<div class="warning">最新データを取得できませんでした。'+esc(e.message||'')+'<br>eBayの認証情報がVercelに設定されているか確認してください。</div>';}
 }
 window.searchProduct=liveSearch;window.search=liveSearch;window.runLiveCategoryRanking=runCategoryRanking;window.searchLiveCategory=searchCategorySuggestions;
 const nativeDetail=window.detail;window.detail=function(id){const decoded=decodeURIComponent(String(id||''));const live=(window.__LIVE_CATEGORY_DATA||[]).find(p=>String(p.id)===decoded);if(live){const list=window.__exportApp?.getData?.();if(Array.isArray(list)&&!list.some(p=>String(p.id)===decoded))list.push(live);}if(typeof nativeDetail==='function' && nativeDetail(id))return true;return liveDetail(id);};
