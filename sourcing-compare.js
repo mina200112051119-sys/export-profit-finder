@@ -125,7 +125,7 @@ function isSelectedCandidate(selectedInfo, row, index) {
 }
 
 function candidateProfit(p, row) {
-  if (!(Number(p.sell) > 0) || row.priceJpy == null || row.priceJpy === '' || !(Number(row.priceJpy) > 0)) return null;
+  if (!(Number(p.sell) > 0) || row.priceJpy == null || row.priceJpy === '' || !(Number(row.priceJpy) > 0) || row.shippingJpy == null || row.shippingJpy === '') return null;
   // Use the same calculation engine and settings as the main product detail/ranking.
   // This keeps fees, buyer-paid shipping, sourcing shipping, packaging and other costs in sync.
   const engine = window.RankingEngine;
@@ -248,7 +248,7 @@ function render(p) {
       <label>商品価格（円・任意）</label>
       <input id="sc-price" type="number" min="0" placeholder="分かる場合だけ入力（例：8000）">
       <label>国内送料（円）</label>
-      <input id="sc-shipping" type="number" min="0" value="0">
+      <input id="sc-shipping" type="number" min="0" placeholder="分かる場合だけ入力（無料なら0）">
       <label>出品URL（任意）</label>
       <input id="sc-url" type="url" placeholder="確認した出品ページのURL">
       <label>メモ（任意）</label>
@@ -450,7 +450,7 @@ function render(p) {
       list.innerHTML='<div class="notice">まだ保存されていません。3社それぞれで確認した出品を保存できます。</div>';
       return;
     }
-    const ranked = current.map((r,i) => ({r,i,total:r.priceJpy==null||r.priceJpy===''?null:Number(r.priceJpy)+Number(r.shippingJpy||0),profit:candidateProfit(p,r)}))
+    const ranked = current.map((r,i) => ({r,i,total:r.priceJpy==null||r.priceJpy===''||r.shippingJpy==null||r.shippingJpy===''?null:Number(r.priceJpy)+Number(r.shippingJpy),profit:candidateProfit(p,r)}))
       .sort((a,b)=>(b.profit??-Infinity)-(a.profit??-Infinity));
     list.innerHTML = `
       <div class="notice" style="margin-bottom:10px">
@@ -477,7 +477,7 @@ function render(p) {
           ${r.storeContact?'<div class="muted">連絡先・URL：'+esc(r.storeContact)+'</div>':''}
           <div class="row"><span>状態</span><b>${esc(r.condition)}</b></div>
           <div class="row"><span>商品価格</span><b>${r.priceJpy==null?"未入力":yen(r.priceJpy)}</b></div>
-          <div class="row"><span>国内送料</span><b>${yen(r.shippingJpy)}</b></div>
+          <div class="row"><span>国内送料</span><b>${r.shippingJpy==null?"未入力":yen(r.shippingJpy)}</b></div>
           ${r.officialCandidate?'<div class="notice" style="margin:8px 0"><b>関連付けた公式候補</b><br>'+(r.officialCandidate.image?'<img src="'+esc(r.officialCandidate.image)+'" alt="関連する公式候補画像" style="max-width:72px;max-height:72px;object-fit:contain;vertical-align:middle">':'')+esc(r.officialCandidate.title||'')+(r.officialCandidate.url?'<br><a href="'+esc(r.officialCandidate.url)+'" target="_blank" rel="noopener noreferrer">公式ページを照合</a>':'')+'<br><span class="muted">候補との関連付けであり、同一商品と確定したものではありません。</span></div>':''}
           ${r.domesticSearchName?'<div class="muted">保存時の国内検索語：'+esc(r.domesticSearchName)+'</div>':''}
           <div class="row"><span>実質仕入額</span><b>${total==null?"未入力":yen(total)}</b></div>
@@ -486,7 +486,7 @@ function render(p) {
           ${r.url?`<div style="margin-top:7px"><a href="${esc(r.url)}" target="_blank" rel="noopener">保存した出品を開く →</a></div>`:''}
           ${isSelectedCandidate(window.__exportApp?.getSelectedSourcing?.(p.id),r,i)?'<div class="notice" style="margin-top:8px"><b>✓ 現在の分析に採用中</b></div>':''}
           ${appliedOfficial?'<div class="notice" style="margin-top:8px"><b>分析に反映した公式候補</b><br>'+(appliedOfficial.image?'<img src="'+esc(appliedOfficial.image)+'" alt="分析に反映した公式候補画像" style="max-width:64px;max-height:64px;object-fit:contain;vertical-align:middle">':'')+esc(appliedOfficial.title||'')+(appliedOfficial.url?'<br><a href="'+esc(appliedOfficial.url)+'" target="_blank" rel="noopener noreferrer">公式ページを確認</a>':'')+'<br><span class="muted">公式候補との関連付けです。商品が同一であることは別途確認してください。</span></div>':''}
-          <button class="primary sc-apply" type="button" data-index="${i}" ${r.priceJpy==null?"disabled":""}>この仕入れ価格を分析に反映</button>
+          <button class="primary sc-apply" type="button" data-index="${i}" ${r.priceJpy==null||r.shippingJpy==null?"disabled":""}>この仕入れ価格を分析に反映</button>
           <div class="muted" style="margin:8px 0">比較メモ：${comparisonNote}</div>
           <button class="secondary sc-delete" type="button" data-index="${i}">この保存情報を削除</button>
         </div>`;
@@ -496,12 +496,12 @@ function render(p) {
       const index = Number(btn.dataset.index);
       const row = readCandidates(p)[index];
       if (!row) return;
-      if (row.priceJpy == null || row.priceJpy === '' || !(Number(row.priceJpy) > 0)) {
+      if (row.priceJpy == null || row.priceJpy === '' || !(Number(row.priceJpy) > 0) || row.shippingJpy == null || row.shippingJpy === '') {
         const m=document.getElementById('sc-message');
-        if(m){m.style.display='block';m.textContent='商品価格が未入力のため、保存だけ行いました。利益計算に反映するには商品価格を入力してください。';}
+        if(m){m.style.display='block';m.textContent='商品価格または国内送料が未入力のため、保存だけ行いました。利益計算には分かる金額を入力してください（送料無料なら送料0円）。';}
         return;
       }
-      const total = Number(row.priceJpy) + Number(row.shippingJpy||0);
+      const total = Number(row.priceJpy) + Number(row.shippingJpy);
       if (!Number.isFinite(total) || total <= 0) return;
       if (row.domesticSearchName) saveDomesticSearchName(p, row.domesticSearchName);
       if (row.officialCandidate) { selectedOfficialCandidate = { ...row.officialCandidate }; writeOfficialCandidate(p, selectedOfficialCandidate); drawSelectedOfficialCandidate(); }
@@ -531,11 +531,11 @@ function render(p) {
     const priceText = String(document.getElementById('sc-price').value || '').trim();
     const price = priceText === '' ? null : Number(priceText);
     const shippingText = String(document.getElementById('sc-shipping').value ?? '').trim();
-    const shipping = shippingText === '' ? 0 : Number(shippingText);
+    const shipping = shippingText === '' ? null : Number(shippingText);
     if (price !== null && (!Number.isFinite(price) || price <= 0)) {
       const m=document.getElementById('sc-message');m.style.display='block';m.textContent='商品価格は1円以上で入力してください。空欄のままでも保存できます。';return;
     }
-    if (!Number.isFinite(shipping) || shipping < 0) {
+    if (shipping !== null && (!Number.isFinite(shipping) || shipping < 0)) {
       const m=document.getElementById('sc-message');m.style.display='block';m.textContent='国内送料は0円以上で入力してください。';return;
     }
     const selectedSource = document.getElementById('sc-source').value;
@@ -560,7 +560,7 @@ function render(p) {
     next.unshift(row);
     writeCandidates(p,next);
     document.getElementById('sc-price').value='';
-    document.getElementById('sc-shipping').value='0';
+    document.getElementById('sc-shipping').value='';
     document.getElementById('sc-url').value='';
     document.getElementById('sc-note').value='';
     if (document.getElementById('sc-store-name')) document.getElementById('sc-store-name').value='';
