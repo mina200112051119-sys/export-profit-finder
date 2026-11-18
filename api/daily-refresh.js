@@ -1,5 +1,11 @@
 const QUERIES = [
-  { cat: 'ポケモンカード', q: 'Pokemon card graded rare Japanese' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon SAR special art rare single card Japanese -lot -bulk -proxy' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon TCG SAR Japanese special art rare card single -lot -bulk' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon modern SAR SR UR secret rare single card -lot -deck -collection' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon card promo Japanese exclusive high rarity single card -lot -deck' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon vintage WOTC e-reader Neo rare single card -lot -bulk' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon graded PSA CGC BGS SAR Japanese card single -lot -bulk' },
+  { cat: 'ポケモンカード', q: 'Japanese Pokemon card set number promo Japanese card single -lot -bulk' },
   { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
   { cat: '釣具', q: 'Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
