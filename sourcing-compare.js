@@ -331,10 +331,11 @@ function render(p) {
         // Translation can omit or alter model identifiers (e.g. Z8, EOS R5,
         // HG 1/144, Pokémon 151). Keep digit-bearing tokens from the original
         // eBay title so domestic searches remain specific.
-        const identifiers = original.match(/[A-Za-z]{1,8}[- ]?\\d{1,5}[A-Za-z0-9-]*/g) || [];
-        const translatedCompact = translated.normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+        const identifiers = originalModelTokens(original).map(token => token.raw);
+        const compactIdentifier = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+        const translatedCompact = compactIdentifier(translated);
         const preserved = identifiers.filter(token => {
-          const compact = token.normalize('NFKC').toLowerCase().replace(/[\\s　・･\\-‐‑–—_【】「」『』()（）［］]/g, '');
+          const compact = compactIdentifier(token);
           return compact && !translatedCompact.includes(compact);
         });
         const domesticQuery = [translated, ...preserved].join(' ').trim();
