@@ -146,10 +146,23 @@ async function loadCloudStorage(){
     if(!d.data)return;
     if(d.data.settings&&typeof d.data.settings==='object'){['domestic','pack','other','conv'].forEach(id=>{if(d.data.settings[id]!=null){const value=String(d.data.settings[id]);localStorage.setItem(id,value);if($(id))$(id).value=value;}});}
     Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
-    Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row)));
+    Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>{
+      localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row));
+      const product=data.find(p=>String(p.id)===String(id));
+      if(product&&row&&typeof row==='object'){
+        product.cost=Number(row.itemPrice??row.cost??0);
+        product.sourcingShippingJpy=Number(row.shippingJpy||0);
+        product.sourcingSource=row.source||'';
+        product.sourcingCondition=row.condition||'';
+        product.sourcingCheckedAt=row.checkedAt||'';
+        product.costs=RankingEngine.calcCosts(product,settings(product));
+      }
+    });
     Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.domesticSearchNames||{}).forEach(([id,name])=>localStorage.setItem('domesticSearchName:v1:'+id,String(name)));
-    if(Array.isArray(d.data.manualEvidence)){localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));data=mergeManualEvidence(data);if(typeof render==='function')render();}if(Array.isArray(d.data.favorites)){localStorage.setItem(FAVORITES_KEY,JSON.stringify(d.data.favorites));if(typeof renderFavorites==='function')renderFavorites();}
+    if(Array.isArray(d.data.manualEvidence)){localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));data=mergeManualEvidence(data);}
+    if(Array.isArray(d.data.favorites))localStorage.setItem(FAVORITES_KEY,JSON.stringify(d.data.favorites));
+    if(typeof render==='function')render();
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
