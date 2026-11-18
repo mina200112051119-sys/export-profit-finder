@@ -603,7 +603,7 @@ async function officialNameCandidate(p, categoryOverride){
     }else if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /4\s*\/\s*17/.test(titleKey) && /POP\s*SERIES\s*4/i.test(titleKey)){
       curated={titleJa:'ミュウ｜POP Series 4｜4/17｜ホロ',score:100,status:'カード名・番号・収録シリーズの一致候補（画像・状態は要確認）',diagnostic:{match:'mew-pop-series-4-4-17'}};
     }else if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /8\s*\/\s*53/.test(titleKey) && /WOTC|WIZARDS|PROMO/i.test(titleKey)){
-    curated={titleJa:'ミュウ｜Wizards Black Star Promos｜8/53｜プロモ',score:100,status:'カード名・番号の一致候補（収録元は要確認）',diagnostic:{match:'exact-name-number-promo'}};
+    curated={titleJa:'ミュウ｜Wizards Black Star Promos｜8/53｜プロモ',score:100,status:'カード名・番号・WOTCプロモシリーズの一致候補（言語・仕様・状態は画像で確認）',diagnostic:{match:'exact-name-number-promo'}};
   }else if(cat==='ポケモンカード' && /\bMEW\b/i.test(titleKey) && /(?:OLD\s*MAID|BABANUKI|ババ抜き|ババヌキ)/i.test(titleKey) && /(?:RED\s*BACK|RED\s*BACKED|赤い?裏面)/i.test(titleKey)){
     curated={titleJa:'ミュウ｜2019年 ポケモンセンター限定 ババ抜きカード（赤い裏面）',score:100,status:'商品名整理済み（2019年ポケモンセンターのババ抜きカード。画像との一致は要確認）',diagnostic:{match:'mew-old-maid-babanuki-red-back-2019'}};
   }else if(cat==='ポケモン関連サプライ用品' && /POKEMON\s*CENTER\s*FUKUOKA/i.test(titleKey) && /DECK\s*BOX|DECK\s*CASE/i.test(titleKey) && /SLEEVE/i.test(titleKey)){
@@ -914,6 +914,7 @@ function buildDomesticSearchTerms(p, category, displayName){
   const no=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||shown.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]||'';
   const name=shown.split(/[｜|]/)[0].trim();
   if(name&&/[ぁ-んァ-ヶ一-龯]/u.test(name)&&no)add(name+' '+no);
+  if(name&&/[ぁ-んァ-ヶ一-龯]/u.test(name)&&no&&/WOTC|WIZARDS|BLACK STAR/i.test(raw))add(name+' WOTC プロモ '+no);
   if(name&&/[ぁ-んァ-ヶ一-龯]/u.test(name))add(name);
   add(shown);
   if(no)add('ポケモンカード '+no);
