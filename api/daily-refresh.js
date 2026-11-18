@@ -32,7 +32,6 @@ const QUERIES = [
   { cat: '交換部品・消耗品', q: 'Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan' },
   { cat: '交換部品・消耗品', q: 'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan' }
 ];
-];
 
 const { loadSnapshot, saveSnapshot, storageConfigured } = require('./data-store');
 const ebaySearch = require('./ebay-search');
