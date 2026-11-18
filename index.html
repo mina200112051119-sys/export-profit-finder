@@ -171,8 +171,24 @@ async function loadCloudStorage(){
     Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
     Object.entries(d.data.domesticSearchNames||{}).forEach(([id,name])=>localStorage.setItem('domesticSearchName:v1:'+id,String(name)));
     if(Array.isArray(d.data.manualEvidence)){localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));data=mergeManualEvidence(data);}
-    if(Array.isArray(d.data.favorites))localStorage.setItem(FAVORITES_KEY,JSON.stringify(d.data.favorites));
+    if(Array.isArray(d.data.favorites)){
+      // Merge cloud and this browser's saved favorites instead of letting an
+      // older/empty cloud response erase items already stored on the device.
+      const localFavorites=getFavoriteProducts();
+      const merged=new Map();
+      [...d.data.favorites,...localFavorites].forEach(p=>{
+        if(p&&p.id!=null)merged.set(String(p.id),p);
+      });
+      const mergedFavorites=[...merged.values()];
+      localStorage.setItem(FAVORITES_KEY,JSON.stringify(mergedFavorites));
+      if(mergedFavorites.length!==d.data.favorites.length){
+        // Sync recovered local-only favorites back to the cloud.
+        Promise.resolve().then(()=>saveCloudStorage());
+      }
+    }
     if(typeof render==='function')render();
+    renderFavorites();
+    updateFavoriteButtons();
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
