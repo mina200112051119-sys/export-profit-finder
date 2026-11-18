@@ -922,7 +922,13 @@ function buildDomesticSearchTerms(p, category, displayName){
   const supply=cleanPokemonSupplyDisplayName(p,shown);
   add(supply);add(shown);
  }else if(cat==='カメラ'){
-  const model=(raw.match(/(?:POWERSHOT\s*[A-Z]?\d{1,3}[A-Z]?(?:\s*X)?(?:\s*MARK\s*[IVX0-9]+)?|COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|DMC[- ]?[A-Z0-9-]{3,}|DSC[- ]?[A-Z0-9-]{3,}|VH[- ]?\d{2,4}|(?:μ|µ)[- ]?\d{3,4})/i)||[])[0]||'';
+  let model=(raw.match(/(?:POWERSHOT\s*[A-Z]?\d{1,3}[A-Z]?(?:\s*X)?(?:\s*MARK\s*[IVX0-9]+)?|COOLPIX\s*[A-Z]?\d{2,4}|CYBER.?SHOT\s*[A-Z]?\d{2,4}|FINEPIX\s*[A-Z]?\d{2,4}|LUMIX\s*[A-Z0-9-]{3,}|DMC[- ]?[A-Z0-9-]{3,}|DSC[- ]?[A-Z0-9-]{3,}|VH[- ]?\d{2,4}|(?:μ|µ)[- ]?\d{3,4})/i)||[])[0]||'';
+  // Use short model codes only when the manufacturer is explicitly identified.
+  if(!model&&/\bNIKON\b/i.test(raw))model=(raw.match(/\b(?:S|L|P|A)\d{3,4}\b/i)||[])[0]||'';
+  if(!model&&/\bSONY\b/i.test(raw))model=(raw.match(/\bH\d{3}\b/i)||[])[0]||'';
+  if(!model&&/\bSAMSUNG\b/i.test(raw))model=(raw.match(/\bMV\d{3,4}\b/i)||[])[0]||'';
+  if(!model&&/\bCANON\b/i.test(raw))model=(raw.match(/\bG\d{1,2}X?\b/i)||[])[0]||'';
+  if(!model&&/\bOLYMPUS\b/i.test(raw))model=(raw.match(/(?:μ|µ)[- ]?\d{3,4}/i)||[])[0]||'';
   if(brand&&model){add(brand[1]+' '+model);add(brand[2]+' '+model)}
   if(model)add(model);
   add(shown);
