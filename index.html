@@ -541,14 +541,14 @@ async function refresh(){
   b.disabled=false;b.textContent=oldLabel;
  }
 }
-const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v22';
+const OFFICIAL_NAME_CACHE_KEY='officialProductNames:v23';
 function readOfficialNameCache(){try{return JSON.parse(localStorage.getItem(OFFICIAL_NAME_CACHE_KEY)||'{}')}catch(e){return {}}}
 function writeOfficialNameCache(cache){try{localStorage.setItem(OFFICIAL_NAME_CACHE_KEY,JSON.stringify(cache))}catch(e){}}
 function hasJapaneseText(value){return /[ぁ-んァ-ヶ一-龯]/u.test(String(value||''))}
 async function officialNameCandidate(p, categoryOverride){
   if(!p)return null;
   const cat=categoryOverride||p.cat||p.category||'';
-  const cache=readOfficialNameCache(), key='name-v2:'+String(p.id||p.itemId||p.name||p.title||'');
+  const cache=readOfficialNameCache(), key='name-v3:'+String(p.id||p.itemId||p.name||p.title||'');
   if(cache[key]&&cache[key].category===cat)return cache[key];
   const raw=String(p.name||p.title||'').trim();
   if(!raw)return null;
@@ -899,14 +899,33 @@ async function enrichOfficialNames(items, categoryOverride){
       const target=(data||[]).find(x=>String(x.id)===id);
       const cat=categoryOverride||p.cat||p.category||'';
       const strong=!!(candidate&&Number(candidate.score)>=60&&hasJapaneseText(candidate.titleJa));
-      const displayName=strong?String(candidate.titleJa).trim():buildUnverifiedJapaneseIdentity(p,cat);
+      const translated=String(candidate?.titleJa||'').trim();
+      let displayName='';
+      if(strong){
+        displayName=translated;
+      }else if(translated&&hasJapaneseText(translated)){
+        // A machine translation is not an official-name match. Still run it through
+        // category-specific cleanup so the displayed/searchable name is not a raw
+        // translated eBay sentence.
+        try{
+          displayName=cat==='ポケモンカード'
+            ? cleanPokemonDisplayName(p,translated)
+            : cleanProductDisplayName(p,translated,cat);
+        }catch(e){}
+      }
+      if(!displayName||displayName.length<2||/^(商品名未確認|メーカー未確認|正式名称未確認)$/u.test(displayName)){
+        displayName=buildUnverifiedJapaneseIdentity(p,cat);
+      }
       const official=!!(strong&&/公式(?:情報|商品名|カード情報)/.test(String(candidate.status||''))&&!/候補|要確認/.test(String(candidate.status||'')));
       const status=strong
         ? (candidate.status||'名称候補（画像・型番・仕様の一致確認が必要）')
-        : (candidate?.diagnostic?.sourceErrors?.length?'一致候補を取得できず（商品名未確認）':'一致候補なし（商品名未確認）');
+        : (translated&&hasJapaneseText(translated)
+          ? '日本語名を整形済み（正式名称・同一商品との一致は未確認）'
+          : (candidate?.diagnostic?.sourceErrors?.length?'名称候補を取得できず（商品名未確認）':'商品名・型番の確認が必要'));
       for(const item of [p,target].filter(Boolean)){
         item.displayName=displayName;
         item.titleJa=displayName;
+        item.domesticSearchName=displayName;
         item.officialNameSource=strong?(candidate.url||''):'';
         item.officialNameStatus=status;
         item.officialNameVerified=official;
