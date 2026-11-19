@@ -19,7 +19,7 @@ function profitScore(c,profits=[]){if(c.profit===null)return 0;const pos=profits
 function projectedPrice(p,days){if(p.soldMedian>0){const base=p.soldMedian,trend=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.98:days===60?.96:.94);return round(base*trend)}let f=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='横ばい'?(days===30?.98:days===60?.96:.94):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.97:days===60?.94:.9);return round(Math.max(p.sell,0)*f)}
 function breakEvenPrice(p,s={}){
   const fx=Math.max(num(s.fxRate,150),.0001);
-  const variable=Math.max(0,num(s.feeRate,.136))
+  const variable=Math.max(0,num(s.feeRate,.15))
     +Math.max(0,num(s.internationalRate,.0135))
     +Math.max(0,num(s.conversionFeeRate))/100;
   const local=Math.max(0,num(s.domesticShipping))
