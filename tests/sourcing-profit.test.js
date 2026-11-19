@@ -369,7 +369,7 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
 test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk/);
-  assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
+  assert.match(html, /Pokemon Center Japan official Pokemon character goods card sleeves deck box playmat binder/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
   assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
