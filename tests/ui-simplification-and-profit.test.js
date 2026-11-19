@@ -48,12 +48,23 @@ test('category list hides search diagnostics but keeps candidate counts', () => 
   assert.doesNotMatch(renderCats, /検索成功|検索結果合計|検索状況|rawUniqueItems|matchedItems/);
 });
 
-test('profit example returns 5,654 yen with all agreed costs and fees', () => {
-  assert.equal(runCandidateProfit(), 5654);
+test('profit example includes 10% Japanese consumption tax on eBay fees', () => {
+  assert.equal(runCandidateProfit(), 4815);
 });
 
 test('supplier shipping is deducted once and separately from the purchase price', () => {
-  assert.equal(runCandidateProfit({ sourcingShipping: 250 }), 5404);
+  assert.equal(runCandidateProfit({ sourcingShipping: 250 }), 4565);
+});
+
+
+test('eBay fee tax is included separately at 10 percent', () => {
+  const result = rankingEngine.calcCosts(
+    { sell: 100, ship: 10, shippingKnown: true, cost: 10000 },
+    { fxRate: 150, feeRate: 0.15, internationalRate: 0.0135, conversionFeeRate: 0 }
+  );
+  assert.equal(result.feeTaxRate, 0.10);
+  assert.equal(result.feeTaxJpy, Math.round(result.feesBeforeTax * 0.10));
+  assert.equal(result.totalFees, Math.round(result.feesBeforeTax) + result.feeTaxJpy);
 });
 
 test('profit remains unconfirmed when eBay shipping is unavailable', () => {
