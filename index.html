@@ -731,7 +731,7 @@ async function officialNameCandidate(p, categoryOverride){
     curated={titleJa:'HG RX-78-2 ガンダム Ver.G30th',score:100,status:'商品名・型番の一致候補（スケール・組立状態は出品情報で要確認）',diagnostic:{match:'hg-rx-78-2-g30th'}};
   }
   if(curated){
-    const result={category:cat,url:'',image:'',...curated,checkedAt:new Date().toISOString()};
+    const result={category:cat,url:'',image:'',...curated,translatedTitle:translated,checkedAt:new Date().toISOString()};
     cache[key]=result;writeOfficialNameCache(cache);return result;
   }
   // Translation is a fallback only. Never label it as an official product-name match.
@@ -807,10 +807,10 @@ async function officialNameCandidate(p, categoryOverride){
           const bn=cardNo&&hasNumber(b)?1:0;
           return bn-an||Number(b.score)-Number(a.score);
         })[0];
-        if(candidate)entry={category:cat,titleJa:cat==='ポケモンカード'?[String(candidate.cardName||candidate.title||'').trim(),String(candidate.setName||'').trim(),String(candidate.number||'').trim(),String(candidate.rarity||'').trim()].filter(Boolean).join('｜'):String(candidate.cardName||candidate.title).trim(),cardName:candidate.cardName||candidate.title||'',setName:candidate.setName||'',number:candidate.number||'',rarity:candidate.rarity||'',url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(cat==='ポケモンカード'&&cardNo?'カード番号一致候補（セット・カード名・画像は要確認）':(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）')),diagnostic:{provider:result.provider||'',sourceStatus:result.status||'',candidateCount:candidates.length,sourceErrors:result.sourceErrors||[]},checkedAt:new Date().toISOString()};
+        if(candidate)entry={category:cat,titleJa:cat==='ポケモンカード'?[String(candidate.cardName||candidate.title||'').trim(),String(candidate.setName||'').trim(),String(candidate.number||'').trim(),String(candidate.rarity||'').trim()].filter(Boolean).join('｜'):String(candidate.cardName||candidate.title).trim(),cardName:candidate.cardName||candidate.title||'',setName:candidate.setName||'',number:candidate.number||'',rarity:candidate.rarity||'',url:candidate.url||'',image:candidate.image||'',score:Number(candidate.score),status:(cat==='ポケモンカード'&&cardNo?'カード番号一致候補（セット・カード名・画像は要確認）':(candidate.sourceName==='ポケモンカード公式カード検索'?'公式情報の名称候補（商品・型番の一致確認が必要）':'カードカタログ候補（非公式・画像と番号の照合が必要）')),translatedTitle:translated,diagnostic:{provider:result.provider||'',sourceStatus:result.status||'',candidateCount:candidates.length,sourceErrors:result.sourceErrors||[]},checkedAt:new Date().toISOString()};
       }
     }catch(e){}
-    if(!entry){const d=lookupResult;const errors=d&&Array.isArray(d.sourceErrors)?d.sourceErrors:[];entry={category:cat,titleJa:String(translated||raw).trim(),url:'',image:'',score:0,status:cat==='ポケモンカード'?(errors.length?'候補取得失敗（情報源エラーあり）':'一致候補なし（同一商品と判断できる根拠不足）'):'自動翻訳（正式名称・型番の一致未確認）',diagnostic:{sourceStatus:d&&d.status||'応答なし',candidateCount:d&&Array.isArray(d.candidates)?d.candidates.length:0,sourceErrors:errors},checkedAt:new Date().toISOString()};}
+    if(!entry){const d=lookupResult;const errors=d&&Array.isArray(d.sourceErrors)?d.sourceErrors:[];entry={category:cat,titleJa:String(translated||raw).trim(),url:'',image:'',score:0,status:cat==='ポケモンカード'?(errors.length?'候補取得失敗（情報源エラーあり）':'一致候補なし（同一商品と判断できる根拠不足）'):'自動翻訳（正式名称・型番の一致未確認）',translatedTitle:translated,diagnostic:{sourceStatus:d&&d.status||'応答なし',candidateCount:d&&Array.isArray(d.candidates)?d.candidates.length:0,sourceErrors:errors},checkedAt:new Date().toISOString()};}
   }
   if(entry){cache[key]=entry;writeOfficialNameCache(cache)}
   return entry;
@@ -1087,6 +1087,14 @@ function buildDomesticSearchTerms(p, category, displayName){
  }else add(shown);
  return {primary:out[0]||short(shown)||'商品名未確認',variants:out.slice(0,3)};
 }
+function trustedProductNameCandidate(candidate){
+  if(!candidate||Number(candidate.score)<60||!hasJapaneseText(candidate.titleJa))return false;
+  const status=String(candidate.status||'');
+  const verifiedOfficial=/(?:公式情報|公式商品名|公式カード情報|メーカー製品情報)/.test(status)
+    && /(?:確認済み|照合済み)/.test(status) && !/候補|要確認/.test(status);
+  const exactTitleRule=Boolean(candidate.diagnostic?.match)&&Number(candidate.score)>=80;
+  return verifiedOfficial||exactTitleRule;
+}
 async function enrichOfficialNames(items, categoryOverride){
   const list=(items||[]).slice(0,50);
   for(let start=0;start<list.length;start+=5){
@@ -1095,8 +1103,10 @@ async function enrichOfficialNames(items, categoryOverride){
       const id=String(p.id||p.itemId||'');
       const target=(data||[]).find(x=>String(x.id)===id);
       const cat=categoryOverride||p.cat||p.category||'';
-      const strong=!!(candidate&&Number(candidate.score)>=60&&hasJapaneseText(candidate.titleJa));
-      const translated=String(candidate?.titleJa||'').trim();
+      const strong=trustedProductNameCandidate(candidate);
+      const candidateStatus=String(candidate?.status||'');
+      const verified=!!(strong&&/(?:公式情報|公式商品名|公式カード情報|メーカー製品情報)/.test(candidateStatus)&&/(?:確認済み|照合済み)/.test(candidateStatus)&&!/候補|要確認/.test(candidateStatus));
+      const translated=String(strong?candidate.titleJa:(candidate?.translatedTitle||'')).trim();
       let displayName='';
       if(strong){
         displayName=translated;
@@ -1115,7 +1125,7 @@ async function enrichOfficialNames(items, categoryOverride){
       }
       if(cat==='ポケモン関連サプライ用品'){try{displayName=cleanPokemonSupplyDisplayName(p,translated||displayName)}catch(e){}}
       const domestic=buildDomesticSearchTerms(p,cat,displayName);
-      const official=!!(strong&&/公式(?:情報|商品名|カード情報)/.test(String(candidate.status||''))&&!/候補|要確認/.test(String(candidate.status||'')));
+      const official=verified;
       const status=strong
         ? (candidate.status||'名称候補（画像・型番・仕様の一致確認が必要）')
         : (translated&&hasJapaneseText(translated)
@@ -1126,7 +1136,7 @@ async function enrichOfficialNames(items, categoryOverride){
         item.titleJa=displayName;
         item.domesticSearchName=domestic.primary;
         item.domesticSearchVariants=domestic.variants;
-        item.officialNameSource=strong?(candidate.url||''):'';
+        item.officialNameSource=official?(candidate.url||''):'';
         item.officialNameStatus=status;
         item.officialNameVerified=official;
         item.officialNameDiagnostic=candidate?.diagnostic||null;
@@ -1162,7 +1172,7 @@ async function photoDisplayName(x,cat){
   const p={id:'photo:'+String(x.itemId||x.url||x.title),name:x.title,cat};
   try{
     const candidate=await officialNameCandidate(p,cat);
-    if(candidate&&Number(candidate.score)>=60&&candidate.titleJa){
+    if(trustedProductNameCandidate(candidate)){
       x.titleJa=candidate.titleJa;
       const domestic=buildDomesticSearchTerms(p,cat,x.titleJa);x.domesticSearchName=domestic.primary;x.domesticSearchVariants=domestic.variants;
       x.officialNameStatus=candidate.status||'名称候補（公式情報との一致確認が必要）';
