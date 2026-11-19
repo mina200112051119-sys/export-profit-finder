@@ -387,11 +387,11 @@ test('deduplication keeps the listing with a saved sourcing cost instead of repl
   assert.ok(html.includes('candidateHasSavedCost&&!priorHasSavedCost'));
 });
 
-test('camera profit calculation uses the standard eBay final value fee rather than the obsolete lower rate', () => {
+test('camera profit calculation uses the conservative 15 percent eBay fee estimate', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(html, /'カメラ':\.136/);
-  assert.match(live, /camera\|カメラ\/i\.test\(cat\)\?0\.136/);
+  assert.match(html, /'カメラ':\.15/);
+  assert.match(live, /camera\|カメラ\/i\.test\(cat\)\?0\.15/);
   assert.doesNotMatch(html, /'カメラ':\.0935/);
   assert.doesNotMatch(live, /camera\|カメラ\/i\.test\(cat\)\?0\.0935/);
 });
@@ -406,3 +406,11 @@ test('manual research form explains the exact data to enter and saves the checke
 });
 
 // Keep regression expectations aligned with the category-specific query set.
+
+test('profit breakdown exposes each fee, Japanese tax, and separate shipping costs', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /function profitBreakdownHtml\(c,p\)/);
+  assert.match(html, /手数料の消費税（10%）/);
+  assert.match(html, /仕入先送料/);
+  assert.match(html, /海外発送送料/);
+});
