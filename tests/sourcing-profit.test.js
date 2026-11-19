@@ -414,3 +414,28 @@ test('profit breakdown exposes each fee, Japanese tax, and separate shipping cos
   assert.match(html, /仕入先送料/);
   assert.match(html, /海外発送送料/);
 });
+
+test('fuzzy official candidates cannot overwrite a translated product name', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const start = html.indexOf('function trustedProductNameCandidate(candidate){');
+  const end = html.indexOf('\n}', start);
+  assert.ok(start >= 0 && end > start);
+  const trusted = vm.runInNewContext('(' + html.slice(start, end + 2) + ')', {
+    hasJapaneseText: value => /[ぁ-んァ-ヶ一-龯]/u.test(String(value || ''))
+  });
+  assert.equal(trusted({
+    score: 100, titleJa: '別のカード名｜別のセット｜169/086',
+    status: 'カード番号一致候補（セット・カード名・画像は要確認）',
+    diagnostic: { provider: 'official search' }
+  }), false);
+  assert.equal(trusted({
+    score: 100, titleJa: 'ゼクロムex｜公式セット｜169/086',
+    status: '公式カード情報で名称・番号・収録パック確認済み',
+    diagnostic: { match: 'exact-number-and-set' }
+  }), true);
+  assert.equal(trusted({
+    score: 100, titleJa: 'キヤノン PowerShot G9',
+    status: '商品名候補（公式情報との一致は未確認）',
+    diagnostic: { match: 'curated-title-rule' }
+  }), true);
+});
