@@ -47,11 +47,13 @@ test('retro-game candidate guard accepts the expanded console families', () => {
   assert.match(html, /3do/);
 });
 
-test('live eBay category search uses the same sales-evidence-aware ranking as the main app', () => {
+test('live eBay category search uses the ranking function exported by RankingEngine', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(live, /RankingEngine\.rankV2\(items/);
-  assert.match(live, /p\.soldHistoryAvailable&&Number\(p\.soldHistoryCount\|\|0\)>0\)\?p\.stars/);
-  assert.match(live, /評価保留（販売実績未確認）/);
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  assert.match(live, /RankingEngine\.rank\(items/);
+  assert.doesNotMatch(live, /RankingEngine\.rankV2\(items/);
+  assert.match(engine, /rank:rankV2/);
+  assert.match(live, /販売済み価格ではありません/);
 });
 
 test('name enrichment is limited to the 50 candidates that can be displayed', () => {
@@ -69,7 +71,8 @@ test('manual sold-history entry is available in the page and records median sold
   assert.match(html, /renderManualEvidenceList\(\)/);
 });
 
-test('the live category ranking also holds products with zero sold count', () => {
+test('live category search does not invent historical sales counts', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(live, /Number\(p\.soldHistoryCount\|\|0\)>0/);
+  assert.doesNotMatch(live, /soldHistoryCount|soldHistoryAvailable/);
+  assert.match(live, /販売済み価格ではありません/);
 });
