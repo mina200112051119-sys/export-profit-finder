@@ -636,6 +636,17 @@ module.exports = async (req, res) => {
       });
     }
     if (category === 'レトロゲーム') {
+      // Sega and PlayStation are listed as manual official references, but only
+      // Nintendo's catalog is queried automatically. Never label those systems
+      // as a failed official match when their source was not searched.
+      if (/playstation|\\bps[123]\\b|vib.?ribbon|sega|saturn|dreamcast|mega\\s*(?:cd|drive)|セガ|サターン|ドリームキャスト|メガcd|メガドライブ/i.test(query)) {
+        return res.json({
+          category, query, provider: null, fetchedAt: new Date().toISOString(),
+          status: 'manual_verification_required', verification: 'not_checked',
+          message: 'この検索語は任天堂以外の機種です。公式の自動検索対象外のため、商品が見つからないとは判定せず、セガ・PlayStation公式情報で手動確認してください。',
+          candidates: [], sources
+        });
+      }
       const candidates = await searchNintendoGames(query);
       return res.json({
         category, query, provider: '任天堂公式ゲーム検索',
