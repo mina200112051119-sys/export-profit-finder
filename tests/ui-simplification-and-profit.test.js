@@ -66,7 +66,8 @@ test('profit remains unconfirmed when eBay shipping is unavailable', () => {
 });
 
 test('Pokemon card candidates reject metal display replicas', () => {
-  const start = html.indexOf("if(cat==='ポケモンカード'){");
+  const filterStart = html.indexOf('function acceptCandidate(p,cat){');
+  const start = html.indexOf("if(cat==='ポケモンカード'){", filterStart);
   const end = html.indexOf("if(cat==='ポケモン関連サプライ用品'){", start);
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);
@@ -75,7 +76,8 @@ test('Pokemon card candidates reject metal display replicas', () => {
 });
 
 test('retro-game candidates reject choose-from-a-menu listings', () => {
-  const start = html.indexOf("if(cat==='レトロゲーム'){");
+  const filterStart = html.indexOf('function acceptCandidate(p,cat){');
+  const start = html.indexOf("if(cat==='レトロゲーム'){", filterStart);
   const end = html.indexOf("if(cat==='ガンプラ'){", start);
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);
