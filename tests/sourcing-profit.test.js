@@ -13,7 +13,7 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
   let receivedProduct;
   let receivedSettings;
   const candidateProfit = vm.runInNewContext('(' + fnSource + ')', {
-    feeOf: () => 0.136,
+    feeOf: () => 0.15,
     window: {
       RankingEngine: {
         calcCosts(product, settings) {
@@ -40,7 +40,7 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
   assert.equal(receivedProduct.cost, 1000);
   assert.equal(receivedProduct.sourcingShippingJpy, 100);
   assert.equal(receivedSettings.fxRate, 150);
-  assert.equal(receivedSettings.feeRate, 0.136);
+  assert.equal(receivedSettings.feeRate, 0.15);
   assert.equal(receivedSettings.internationalRate, 0.0135);
 });
 
