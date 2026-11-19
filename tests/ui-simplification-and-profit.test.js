@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const html = fs.readFileSync('index.html', 'utf8');
 const rankingSource = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot bridge')[0];
 const sourcingSource = fs.readFileSync('sourcing-compare.js', 'utf8');
+const officialSearchSource = fs.readFileSync('api/official-product-search.js', 'utf8');
 
 const rankingContext = { window: {} };
 vm.runInNewContext(rankingSource, rankingContext);
@@ -80,4 +81,20 @@ test('retro-game candidates reject choose-from-a-menu listings', () => {
   assert.notEqual(end, -1);
   const retroFilter = html.slice(start, end);
   assert.match(retroFilter, /choose\\s+from|choose\\s+.*games?|ゲームを選んで|選択してください/);
+});
+
+test('official Pokemon card lookup uses the live card-name search route', () => {
+  const start = officialSearchSource.indexOf('async function searchPokemonCardsOfficial(query) {');
+  const end = officialSearchSource.indexOf('module.exports', start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const lookup = officialSearchSource.slice(start, end);
+  assert.match(lookup, /card-search\\/index\\.php/);
+  assert.match(lookup, /searchParams\\.set\\('pokemon'/);
+  assert.match(lookup, /new URL\\(href, searchUrl\\)/);
+});
+
+test('Sega and PlayStation lookups are not falsely reported as no official match', () => {
+  assert.match(officialSearchSource, /manual_verification_required/);
+  assert.match(officialSearchSource, /playstation.*sega|sega.*playstation/is);
 });
