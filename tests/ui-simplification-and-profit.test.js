@@ -63,3 +63,12 @@ test('profit remains unconfirmed when eBay shipping is unavailable', () => {
   );
   assert.equal(result.profit, null);
 });
+
+test('Pokemon card candidates reject metal display replicas', () => {
+  const start = html.indexOf("if(cat==='ポケモンカード'){");
+  const end = html.indexOf("if(cat==='ポケモン関連サプライ用品'){", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const cardFilter = html.slice(start, end);
+  assert.match(cardFilter, /metal card|metal pokemon|gold plated|gold-plated|collector\.?s edition|display piece|replica|proxy card|custom card|fake card/);
+});
