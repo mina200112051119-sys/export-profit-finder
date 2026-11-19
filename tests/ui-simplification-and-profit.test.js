@@ -72,3 +72,12 @@ test('Pokemon card candidates reject metal display replicas', () => {
   const cardFilter = html.slice(start, end);
   assert.match(cardFilter, /metal card|metal pokemon|gold plated|gold-plated|collector\.?s edition|display piece|replica|proxy card|custom card|fake card/);
 });
+
+test('retro-game candidates reject choose-from-a-menu listings', () => {
+  const start = html.indexOf("if(cat==='レトロゲーム'){");
+  const end = html.indexOf("if(cat==='ガンプラ'){", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const retroFilter = html.slice(start, end);
+  assert.match(retroFilter, /choose\\s+from|choose\\s+.*games?|ゲームを選んで|選択してください/);
+});
