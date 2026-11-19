@@ -181,12 +181,13 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 });
 
 
-test('detail sourcing links prefer saved Japanese domestic search name', () => {
-  const source = fs.readFileSync('index.html', 'utf8');
-  assert.match(source, /function domesticSearchQuery\(p\)/);
-  assert.match(source, /localStorage\.getItem\('domesticSearchName:v1:'\+String\(p\.id\)\)/);
-  assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\),p\.cat\)/);
-  assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
+test('sourcing search links use and save the selected Japanese domestic search name', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(source, /function getDomesticSearchName\(p\)/);
+  assert.match(source, /localStorage\.getItem\(SEARCH_NAME_KEY \+ String\(p\.id\)\)/);
+  assert.match(source, /value="\$\{esc\(getDomesticSearchName\(p\)\)\}"/);
+  assert.match(source, /saveDomesticSearchName\(p, searchNameInput\.value\)/);
+  assert.match(source, /searchUrl\(p, source, query\)/);
 });
 
 
@@ -204,7 +205,7 @@ test('sourcing selected marker uses stable candidate ID after reorder and deleti
 
 test('saving a sourcing candidate rejects negative domestic shipping', () => {
   const source = fs.readFileSync('sourcing-compare.js', 'utf8');
-  assert.match(source, /if \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)/);
+  assert.match(source, /if \(shipping !== null && \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)\)/);
   assert.match(source, /国内送料は0円以上で入力してください/);
   assert.match(source, /shippingJpy: shipping/);
 });
@@ -294,7 +295,8 @@ test('replacement parts are a first-class category with item detail and official
   assert.match(html, /p\.cat==='交換部品・消耗品'\?classifyPartsDetail\(p\):null/);
   assert.match(html, /部品の種類/);
   assert.match(html, /対象分野/);
-  assert.match(html, /対応機種・型番の手がかり/);
+  assert.match(html, /対応機種候補（未確認）/);
+  assert.match(html, /partsInfo\.compatibilityModels/);
   assert.match(sourcing, /'交換部品・消耗品': \[/);
   assert.match(official, /'交換部品・消耗品': \[/);
 });
@@ -355,14 +357,18 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
   assert.match(html, /完成品・組立済/);
   assert.match(html, /未組立・未開封の記載あり/);
   assert.match(html, /型番候補あり・対応機種との一致は未確認/);
-  assert.match(html, /レトロゲームの商品分類/);
-  assert.match(html, /ガンプラの商品分類/);
+  assert.match(html, /retroInfo\?'<div class="notice"><b>商品情報/);
+  assert.match(html, /gunplaInfo\?'<div class="notice"><b>商品情報/);
+  assert.match(html, /partsInfo\?'<div class="notice"><b>部品情報/);
+  assert.match(html, /<span>商品種類<\/span>/);
+  assert.match(html, /<span>グレード・縮尺<\/span>/);
+  assert.match(html, /<span>対応機種候補（未確認）<\/span>/);
 });
 
 
 test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /Japanese Pokemon TCG graded PSA CGC Japanese cards/);
+  assert.match(html, /Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk/);
   assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
