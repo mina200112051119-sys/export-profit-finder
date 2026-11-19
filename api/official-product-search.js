@@ -523,16 +523,20 @@ async function searchPokemonCardsOfficial(query) {
       value && value.length >= 2 && value.length <= 100
     ) || '';
     if (!title) continue;
-    const url = new URL(href, 'https://www.pokemon-card.com/').toString();
+    const url = new URL(href, searchUrl).toString();
     if (!url.startsWith('https://www.pokemon-card.com/')) continue;
     if (!/card-search\/details\.php\/card\//i.test(url)) continue;
+    const context = html.slice(Math.max(0, match.index - 700), Math.min(html.length, linkPattern.lastIndex + 900));
+    const number = (context.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/) || [])[0] || '';
+    const packMatch = context.match(/(?:拡張パック|強化拡張パック|ハイクラスパック|スターターセット|プロモカード)[^<]{0,50}/u);
+    const setName = packMatch ? decodeHtml(packMatch[0]).replace(/\s+/g, ' ').trim() : '';
     const normalizedTitle = normalizeText(title);
     const score = q && normalizedTitle.includes(q) ? 100 :
       terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
     if (score >= 45) {
       const imagePath = (inner.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
-      const image = imagePath ? new URL(decodeHtml(imagePath), 'https://www.pokemon-card.com/').toString() : '';
-      rows.push({ title, url, image, date: '', sourceName: 'ポケモンカード公式カード検索', score });
+      const image = imagePath ? new URL(decodeHtml(imagePath), searchUrl).toString() : '';
+      rows.push({ title: [title, setName, number].filter(Boolean).join('｜'), cardName: title, setName, number, url, image, date: '', sourceName: 'ポケモンカード公式カード検索', score });
     }
   }
   return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
