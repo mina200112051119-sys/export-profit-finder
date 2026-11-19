@@ -19,9 +19,9 @@
 </details>
 <details class="card">
 <summary><b>利益計算の設定</b></summary>
-<div style="padding-top:12px"><div class="grid"><div><label>海外発送送料（日本から購入者へ・1商品あたり）</label><input id="domestic" type="number" value="0"></div><div><label>標準梱包費（1商品あたり・円）</label><input id="pack" type="number" value="0"></div><div><label>その他経費</label><input id="other" type="number" value="0"></div><div><label>eBay為替換算手数料（0% / 3%）</label><input id="conv" type="number" value="0" step="0.01"></div></div><div class="notice">日本登録住所のセラーがeBayで通貨換算を受ける場合、eBayの為替換算手数料は3.0%です。eBay.comのUSD取引など、通貨換算が発生しないケースでは0%です。citeturn0search0turn0search1</div><button class="secondary" onclick="save();render()">保存して再計算</button></div></details></main><div id="modal" class="modal-backdrop" onclick="closeDetail(event)"><div class="modal" onclick="event.stopPropagation()"><div class="modal-head"><h2 id="title">商品詳細</h2><button class="close" type="button" onclick="document.getElementById('modal').classList.remove('open')">× 閉じる</button></div><div id="body"></div></div></div><script src="./ranking-engine.js"></script><script>'use strict';
+<div style="padding-top:12px"><div class="grid"><div><label>海外発送送料（日本から購入者へ・1商品あたり）</label><input id="domestic" type="number" value="0"></div><div><label>標準梱包費（1商品あたり・円）</label><input id="pack" type="number" value="0"></div><div><label>その他経費</label><input id="other" type="number" value="0"></div><div><label>eBay為替換算手数料（米ドル取引は通常0%／対象通貨のみ3%）</label><input id="conv" type="number" value="0" step="0.01"></div></div><div class="notice">日本登録住所のセラーがeBayで通貨換算を受ける場合、eBayの為替換算手数料は3.0%です。eBay.comのUSD取引など、通貨換算が発生しないケースでは0%です。citeturn0search0turn0search1</div><button class="secondary" onclick="save();render()">保存して再計算</button></div></details></main><div id="modal" class="modal-backdrop" onclick="closeDetail(event)"><div class="modal" onclick="event.stopPropagation()"><div class="modal-head"><h2 id="title">商品詳細</h2><button class="close" type="button" onclick="document.getElementById('modal').classList.remove('open')">× 閉じる</button></div><div id="body"></div></div></div><script src="./ranking-engine.js"></script><script>'use strict';
 const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':''; const API=API_BASE+'/api/ebay-search',SOLD=API_BASE+'/api/ebay-sold-search',FX=API_BASE+'/api/exchange-rate',IMAGE_API=API_BASE+'/api/ebay-search-by-image';
-const FEES={'ポケモンカード':.1325,'ポケモン関連サプライ用品':.136,'釣具':.136,'カメラ':.136,'レトロゲーム':.136,'ガンプラ':.136,'交換部品・消耗品':.136};
+const FEES={'ポケモンカード':.1325,'ポケモン関連サプライ用品':.15,'釣具':.15,'カメラ':.15,'レトロゲーム':.15,'ガンプラ':.15,'交換部品・消耗品':.15};
 const INT=.0135;
 const SOLD_CATEGORY={'ポケモンカード':'183454','ポケモン関連サプライ用品':'183460','釣具':'261030','カメラ':'31388','レトロゲーム':'139973'};
 let data=[],fxRate=150,fxDate='',updated='',photoDataUrl='',currentRankingCategory=null,currentRankingTitle='仕入れ候補ランキング（現在出品・利益ベース）',categorySearchStats={};
@@ -93,7 +93,7 @@ function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.re
 function yen(v){return v==null?'—':Math.round(Number(v||0)).toLocaleString()+'円'}
 function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
 function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:INT,domesticShipping:+$('domestic').value||0,packaging:+$('pack').value||0,otherCost:+$('other').value||0,conversionFeeRate:+$('conv').value||0}}
-function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
+function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.15}}
 function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value));Promise.resolve(saveCloudStorage()).catch(()=>{})}
 const CLOUD_STORAGE_API=API_BASE+'/api/translate?action=storage';
 function readExportUserCookie(){
