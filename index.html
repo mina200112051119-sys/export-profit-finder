@@ -1090,7 +1090,7 @@ function buildDomesticSearchTerms(p, category, displayName){
 function trustedProductNameCandidate(candidate){
   if(!candidate||Number(candidate.score)<60||!hasJapaneseText(candidate.titleJa))return false;
   const status=String(candidate.status||'');
-  const verifiedOfficial=/(?:公式情報|公式商品名|公式カード情報|メーカー製品情報)/.test(status)
+  const verifiedOfficial=/(?:公式(?:製品)?情報|公式商品名|公式カード情報|メーカー製品情報)/.test(status)
     && /(?:確認済み|照合済み)/.test(status) && !/候補|要確認/.test(status);
   const exactTitleRule=Boolean(candidate.diagnostic?.match)&&Number(candidate.score)>=80;
   return verifiedOfficial||exactTitleRule;
@@ -1105,7 +1105,7 @@ async function enrichOfficialNames(items, categoryOverride){
       const cat=categoryOverride||p.cat||p.category||'';
       const strong=trustedProductNameCandidate(candidate);
       const candidateStatus=String(candidate?.status||'');
-      const verified=!!(strong&&/(?:公式情報|公式商品名|公式カード情報|メーカー製品情報)/.test(candidateStatus)&&/(?:確認済み|照合済み)/.test(candidateStatus)&&!/候補|要確認/.test(candidateStatus));
+      const verified=!!(strong&&/(?:公式(?:製品)?情報|公式商品名|公式カード情報|メーカー製品情報)/.test(candidateStatus)&&/(?:確認済み|照合済み)/.test(candidateStatus)&&!/候補|要確認/.test(candidateStatus));
       const translated=String(strong?candidate.titleJa:(candidate?.translatedTitle||'')).trim();
       let displayName='';
       if(strong){
