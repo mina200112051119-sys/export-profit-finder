@@ -89,9 +89,9 @@ test('official Pokemon card lookup uses the live card-name search route', () => 
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);
   const lookup = officialSearchSource.slice(start, end);
-  assert.match(lookup, /card-search\\/index\\.php/);
-  assert.match(lookup, /searchParams\\.set\\('pokemon'/);
-  assert.match(lookup, /new URL\\(href, searchUrl\\)/);
+  assert.match(lookup, /card-search\/index\.php/);
+  assert.match(lookup, /searchParams\.set\('pokemon'/);
+  assert.match(lookup, /new URL\(href, searchUrl\)/);
 });
 
 test('Sega and PlayStation lookups are not falsely reported as no official match', () => {
