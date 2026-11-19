@@ -1286,6 +1286,19 @@ function domesticSearchQuery(p){
   return clean||raw;
 }
 function sourceSearchUrls(name,category){const q=encodeURIComponent(name),links=[['メルカリ','https://jp.mercari.com/search?keyword='+q],['ヤフオク','https://auctions.yahoo.co.jp/search/search?p='+q]];if(/ポケモンカード|ポケモン関連サプライ用品/.test(String(category||'')))links.splice(1,0,['スニダン','https://snkrdunk.com/search?keyword='+q]);return links}
+function profitBreakdownHtml(c,p){
+ const rows=[
+  ['商品価格',c.saleJpy],['購入者負担送料',c.shipJpy],['売上合計',c.grossSaleJpy],
+  ['eBay販売手数料',c.finalValueFeeJpy],['海外決済手数料',c.internationalFeeJpy],
+  ['取引ごとの固定手数料',c.fixedFeeJpy],['為替換算手数料',c.conversionFeeJpy],
+  ['手数料の消費税（10%）',c.feeTaxJpy],['仕入価格',p.cost],
+  ['仕入先送料',c.sourcingShippingJpy],['海外発送送料',c.domesticShippingJpy],
+  ['梱包費',c.packagingJpy],['その他経費',c.otherCostJpy],['費用合計',c.totalCosts]
+ ];
+ return '<details class="card" style="margin-top:10px"><summary><b>利益の内訳を確認</b></summary>'+
+  rows.map(([label,value])=>'<div class="row"><span>'+esc(label)+'</span><b>'+(value==null?'未取得':yen(value))+'</b></div>').join('')+
+  '<p class="muted">手数料率はポケモンカード13.25%、その他のカテゴリー15%を目安にし、手数料の消費税10%を含めた安全側の概算です。実際の手数料はカテゴリーや契約条件で変わります。</p></details>';
+}
 function detail(id){
  const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)return;
  window.__detailProduct=p;
@@ -1305,6 +1318,7 @@ function detail(id){
   '<div class="row"><span>eBay送料</span><b>'+shipping+'</b></div>'+
   (p.watchCount!=null?'<div class="row"><span>ウォッチ数</span><b>'+Number(p.watchCount).toLocaleString()+'</b></div>':'')+
   '<div class="row"><span>予想利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div>'+
+  profitBreakdownHtml(c,p)+
   '<div class="notice"><b>国内フリマで同じ商品を探す</b><div class="muted" style="margin:5px 0 8px">上から順に検索して、同じ商品が見つかる言葉を使ってください</div>'+searchTerms.map((term,i)=>'<div class="row" style="align-items:center;gap:8px"><span>'+(i===0?'おすすめ':'別の検索語')+'</span><a href="https://jp.mercari.com/search?keyword='+encodeURIComponent(term)+'" target="_blank" rel="noopener">'+esc(term)+'</a></div>').join('')+'</div>'+
   (p.officialNameStatus?'<div class="muted">商品名：'+esc(p.officialNameStatus)+'</div>':'')+
   (retroInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>型番</span><b>'+esc(retroInfo.model||'未確認')+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div></div>':'')+
