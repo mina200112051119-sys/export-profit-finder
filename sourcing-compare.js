@@ -94,14 +94,14 @@ function categoryOf(p) {
 function feeOf(p) {
   const fees = {
     'ポケモンカード':.1325,
-    'ポケモン関連サプライ用品':.136,
-    '釣具':.136,
-    'カメラ':.136,
-    'レトロゲーム':.136,
-    'ガンプラ':.136,
-    '交換部品・消耗品':.136
+    'ポケモン関連サプライ用品':.15,
+    '釣具':.15,
+    'カメラ':.15,
+    'レトロゲーム':.15,
+    'ガンプラ':.15,
+    '交換部品・消耗品':.15
   };
-  return fees[categoryOf(p)] ?? .136;
+  return fees[categoryOf(p)] ?? .15;
 }
 function settings() {
   const g=id => Number(document.getElementById(id)?.value || 0);
