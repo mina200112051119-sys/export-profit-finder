@@ -1311,7 +1311,7 @@ function profitBreakdownHtml(c,p){
  ];
  return '<details class="card" style="margin-top:10px"><summary><b>利益の内訳を確認</b></summary>'+
   rows.map(([label,value])=>'<div class="row"><span>'+esc(label)+'</span><b>'+(value==null?'未取得':yen(value))+'</b></div>').join('')+
-  '<p class="muted">eBayでは購入者が支払う税金も手数料の計算対象に含まれる場合があるため、購入者税金を最大10%見込んで販売手数料・海外決済手数料を計算しています。さらに日本の消費税10%を手数料に加えています。実際の税率や手数料は購入先・カテゴリー・契約条件で変わります。</p></details>';
+  '<p class="muted">eBayでは購入者が支払う税金も手数料の計算対象に含まれる場合があるため、購入者税金を10%見込んで販売手数料・海外決済手数料を計算しています。さらに日本の消費税10%を手数料に加えています。実際の税率や手数料は購入先・カテゴリー・契約条件で変わります。</p></details>';
 }
 function detail(id){
  const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)return;
