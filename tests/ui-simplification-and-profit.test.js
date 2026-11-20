@@ -48,12 +48,12 @@ test('category list hides search diagnostics but keeps candidate counts', () => 
   assert.doesNotMatch(renderCats, /検索成功|検索結果合計|検索状況|rawUniqueItems|matchedItems/);
 });
 
-test('profit example includes 10% Japanese consumption tax on eBay fees', () => {
-  assert.equal(runCandidateProfit(), 4815);
+test('profit example includes buyer-tax allowance and Japanese consumption tax on eBay fees', () => {
+  assert.equal(runCandidateProfit(), 4055);
 });
 
 test('supplier shipping is deducted once and separately from the purchase price', () => {
-  assert.equal(runCandidateProfit({ sourcingShipping: 250 }), 4565);
+  assert.equal(runCandidateProfit({ sourcingShipping: 250 }), 3805);
 });
 
 
@@ -62,6 +62,8 @@ test('eBay fee tax is included separately at 10 percent', () => {
     { sell: 100, ship: 10, shippingKnown: true, cost: 10000 },
     { fxRate: 150, feeRate: 0.15, internationalRate: 0.0135, conversionFeeRate: 0 }
   );
+  assert.equal(result.salesTaxAllowanceRate, 0.10);
+  assert.equal(result.feeBasisJpy, Math.round(result.grossSaleJpy * 1.10));
   assert.equal(result.feeTaxRate, 0.10);
   assert.equal(result.feeTaxJpy, Math.round(result.feesBeforeTax * 0.10));
   assert.equal(result.totalFees, Math.round(result.feesBeforeTax) + result.feeTaxJpy);
