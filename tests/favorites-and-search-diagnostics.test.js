@@ -20,7 +20,8 @@ function makeContext() {
     JSON,
     String,
     Array,
-    Number
+    Number,
+    saveCloudStorage: () => Promise.resolve(true)
   };
   vm.runInNewContext(
     html.slice(start, end) +
@@ -60,5 +61,6 @@ test('favorites: cloud storage includes favorites and schedules their saves', ()
 test('category diagnostics: reports successful queries and combined search-result totals', () => {
   assert.match(html, /categorySearchStats=searchStats/);
   assert.match(html, /searchResultTotal:merged\.total/);
-  assert.match(html, /検索成功 /);
+  assert.ok(html.includes("'検索 '+(tasks.length-errors.length)+'/'+tasks.length+'件成功。現在の出品価格"),
+    'update summary should report successful query count without exposing per-category diagnostics');
 });
