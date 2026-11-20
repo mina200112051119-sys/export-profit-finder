@@ -19,9 +19,10 @@ function profitScore(c,profits=[]){if(c.profit===null)return 0;const pos=profits
 function projectedPrice(p,days){if(p.soldMedian>0){const base=p.soldMedian,trend=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.98:days===60?.96:.94);return round(base*trend)}let f=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='横ばい'?(days===30?.98:days===60?.96:.94):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.97:days===60?.94:.9);return round(Math.max(p.sell,0)*f)}
 function breakEvenPrice(p,s={}){
   const fx=Math.max(num(s.fxRate,150),.0001);
-  const variable=Math.max(0,num(s.feeRate,.15))
+  const feeTaxRate=Math.max(0,num(s.feeTaxRate,.10));
+  const variable=(Math.max(0,num(s.feeRate,.15))
     +Math.max(0,num(s.internationalRate,.0135))
-    +Math.max(0,num(s.conversionFeeRate))/100;
+    +Math.max(0,num(s.conversionFeeRate))/100)*(1+feeTaxRate);
   const local=Math.max(0,num(s.domesticShipping))
     +Math.max(0,num(p.sourcingShippingJpy))
     +Math.max(0,num(s.packaging))
@@ -29,8 +30,12 @@ function breakEvenPrice(p,s={}){
   const cost=Math.max(0,num(p.cost));
   const buyerShipping=Math.max(0,num(p.ship));
   const denominator=fx*(1-variable);
+  // 送料が未取得なら、送料0円と仮定した損益分岐点を表示しない。
   if(cost<=0||denominator<=0||p.shippingKnown===false||p.ship==null)return null;
-  const solve=fixedUsd=>round((cost+local+fixedUsd*fx)/denominator-buyerShipping);
+  // 手数料にかかる消費税も含め、損益分岐点を下回らないよう切り上げる。
+  const solve=fixedUsd=>Math.ceil(
+    (cost+local+fixedUsd*fx*(1+feeTaxRate))/denominator-buyerShipping
+  );
   const candidates=[.30,.40].map(fixedUsd=>({fixedUsd,sale:solve(fixedUsd)}))
     .filter(x=>x.sale>=0&&((x.sale+buyerShipping)<=10)===(x.fixedUsd===.30));
   return candidates.length?candidates[0].sale:solve(.40);
