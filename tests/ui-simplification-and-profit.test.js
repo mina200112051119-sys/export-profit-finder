@@ -99,10 +99,10 @@ test('retro-game candidates reject choose-from-a-menu listings', () => {
 });
 
 test('known Pokemon card identifiers normalize Zekrom ex and Iono to Japanese searchable names', () => {
-  assert.match(html, /number:'169\/086',name:\/ZEKROM\\s\*EX\/i);
-  assert.match(html, /ゼクロムex｜ブラックボルト｜169\/086｜SAR/);
-  assert.match(html, /number:'091\/071',name:\/POKEMON\\s\*SUPPORTER/);
-  assert.match(html, /ナンジャモ｜クレイバースト｜091\/071｜SR/);
+  assert.ok(html.includes("number:'169/086',name:/ZEKROM\\s*EX/i"));
+  assert.ok(html.includes('ゼクロムex｜ブラックボルト｜169/086｜SAR'));
+  assert.ok(html.includes("number:'091/071',name:/POKEMON\\s*SUPPORTER|SUPPORTER|IONO|ナンジャモ/i"));
+  assert.ok(html.includes('ナンジャモ｜クレイバースト｜091/071｜SR'));
 });
 
 test('official Pokemon card lookup uses the live card-name search route', () => {
