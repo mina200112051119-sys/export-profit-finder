@@ -71,7 +71,9 @@ const FAVORITES_KEY='favoriteProducts:v1';
 function getFavoriteProducts(){try{const a=JSON.parse(localStorage.getItem(FAVORITES_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function isFavorite(id){return getFavoriteProducts().some(p=>String(p.id)===String(id))}
 function toggleFavorite(id){
- const p=data.find(x=>String(x.id)===String(id));if(!p)return false;
+ // Category ranking and detail views keep products outside the main search array.
+ // Resolve from every active product source so the favorite action cannot silently no-op.
+ const p=findProductForSourcing(id)||data.find(x=>String(x.id)===String(id));if(!p)return false;
  const a=getFavoriteProducts(),has=a.some(x=>String(x.id)===String(id));
  localStorage.setItem(FAVORITES_KEY,JSON.stringify(has?a.filter(x=>String(x.id)!==String(id)):[...a,JSON.parse(JSON.stringify(p))]));
  renderFavorites();updateFavoriteButtons();
