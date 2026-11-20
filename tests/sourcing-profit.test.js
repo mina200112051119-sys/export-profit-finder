@@ -467,3 +467,23 @@ test('unverified exchange rates suppress profit and break-even estimates', () =>
   assert.equal(costs.margin, null);
   assert.equal(engine.breakEvenPrice(product, settings), null);
 });
+
+
+test('photo search does not convert JPY prices using the fallback exchange rate', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const start = html.indexOf('function photoCandidateProduct(x){');
+  assert.notEqual(start, -1, 'photoCandidateProduct function exists');
+  const end = html.indexOf('\n}', start);
+  assert.notEqual(end, -1, 'photoCandidateProduct function closes');
+  const fnSource = html.slice(start, end + 2);
+  const message = { textContent: '' };
+  const photoCandidateProduct = vm.runInNewContext('(' + fnSource + ')', {
+    window: { __exportApp: { getFx: () => 150 } },
+    fxRate: 150,
+    fxRateVerified: false,
+    $: () => message,
+    map: () => []
+  });
+  assert.equal(photoCandidateProduct({ currency: 'JPY', price: 15000, shipping: 0 }), null);
+  assert.match(message.textContent, /為替未取得/);
+});
