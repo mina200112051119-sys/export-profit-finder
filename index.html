@@ -1219,6 +1219,7 @@ function photoCandidateProduct(x){
  // The ranking engine stores eBay prices in USD. Convert JPY listings before
  // they enter the shared profit calculation; never treat another currency as USD.
  if(!['USD','JPY'].includes(currency)||!(fx>0))return null;
+ if(currency==='JPY'&&!fxRateVerified){const msg=$('photoMsg');if(msg)msg.textContent='為替未取得のため、円表示の商品は利益計算に進めません。先に為替を更新してください。';return null;}
  const toUsd=value=>value==null||value===''?null:(currency==='JPY'?Number(value)/fx:Number(value));
  const priceUsd=toUsd(x.price),shippingUsd=toUsd(x.shipping);
  if(!(Number(priceUsd)>0))return null;
