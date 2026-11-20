@@ -13,6 +13,8 @@ function makeContext() {
   const values = new Map();
   const context = {
     data: [{ id: 'item-1', name: 'Camera model', displayName: 'カメラ', cat: 'カメラ', sell: 100, ship: 10 }],
+    __LIVE_CATEGORY_DATA: [],
+    findProductForSourcing: id => context.__detailProduct?.id === id ? context.__detailProduct : context.__LIVE_CATEGORY_DATA.find(p => p.id === id) || context.data.find(p => p.id === id) || null,
     localStorage: {
       getItem: key => values.has(key) ? values.get(key) : null,
       setItem: (key, value) => values.set(key, String(value))
@@ -41,6 +43,14 @@ test('favorites: saves a product snapshot and toggles it off', () => {
   assert.equal(c.getFavoriteProducts()[0].displayName, 'カメラ');
   assert.equal(c.toggleFavorite('item-1'), false);
   assert.equal(c.getFavoriteProducts().length, 0);
+});
+
+test('favorites: can save a category-ranking product not present in the search array', () => {
+  const c = makeContext();
+  c.__LIVE_CATEGORY_DATA.push({ id: 'rank-1', name: 'Fishing reel', displayName: 'ダイワ リール', cat: '釣具', sell: 80, ship: 12 });
+  assert.equal(c.toggleFavorite('rank-1'), true);
+  assert.equal(c.getFavoriteProducts().length, 1);
+  assert.equal(c.getFavoriteProducts()[0].id, 'rank-1');
 });
 
 test('favorites: removing one item leaves other saved items intact', () => {
