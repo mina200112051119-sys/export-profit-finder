@@ -44,8 +44,8 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
   assert.equal(receivedSettings.internationalRate, 0.0135);
 });
 
-test('break-even includes sourcing shipping, conversion fee, and buyer-paid shipping', () => {
-  const source = fs.readFileSync('ranking-engine.js', 'utf8');
+test('break-even includes fee tax, sourcing shipping, conversion fee, and buyer-paid shipping', () => {
+  const source = fs.readFileSync('cost-fix.js', 'utf8');
   const start = source.indexOf('function breakEvenPrice(p,s={}){');
   assert.notEqual(start, -1, 'breakEvenPrice function exists');
   const end = source.indexOf('\n}\n', start);
@@ -53,18 +53,15 @@ test('break-even includes sourcing shipping, conversion fee, and buyer-paid ship
   const fnSource = source.slice(start, end + 2);
   const breakEvenPrice = vm.runInNewContext('(' + fnSource + ')', {
     num: (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback,
-    round: value => Math.round(value),
     Math,
     Number
   });
-  const price = breakEvenPrice(
-    { cost: 1000, sourcingShippingJpy: 100, ship: 5 },
-    { fxRate: 150, feeRate: .136, internationalRate: .0135,
-      conversionFeeRate: 2, domesticShipping: 50, packaging: 80, otherCost: 0 }
-  );
-  assert.equal(price, 5);
+  const product = { cost: 1000, sourcingShippingJpy: 100, ship: 5, shippingKnown: true };
+  const settings = { fxRate: 150, feeRate: .15, internationalRate: .0135,
+    conversionFeeRate: 2, feeTaxRate: .10, domesticShipping: 50, packaging: 80, otherCost: 0 };
+  assert.equal(breakEvenPrice(product, settings), 6);
+  assert.equal(breakEvenPrice({ ...product, ship: null, shippingKnown: false }, settings), null);
 });
-
 test('product profit and 30/60/90-day forecasts all include sourcing shipping', () => {
   const source = fs.readFileSync('ranking-engine.js', 'utf8');
   const functionSource = (name, nextName) => {
