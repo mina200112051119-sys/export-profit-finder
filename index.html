@@ -1298,7 +1298,7 @@ function domesticSearchQuery(p){
 function sourceSearchUrls(name,category){const q=encodeURIComponent(name),links=[['メルカリ','https://jp.mercari.com/search?keyword='+q],['ヤフオク','https://auctions.yahoo.co.jp/search/search?p='+q]];if(/ポケモンカード|ポケモン関連サプライ用品/.test(String(category||'')))links.splice(1,0,['スニダン','https://snkrdunk.com/search?keyword='+q]);return links}
 function profitBreakdownHtml(c,p){
  const rows=[
-  ['商品価格',c.saleJpy],['購入者負担送料',c.shipJpy],['売上合計',c.grossSaleJpy],
+  ['商品価格',c.saleJpy],['購入者負担送料',c.shipJpy],['売上合計',c.grossSaleJpy],['手数料計算対象額（購入者税金見込み10%含む）',c.feeBasisJpy],
   ['eBay販売手数料',c.finalValueFeeJpy],['海外決済手数料',c.internationalFeeJpy],
   ['取引ごとの固定手数料',c.fixedFeeJpy],['為替換算手数料',c.conversionFeeJpy],
   ['手数料の消費税（10%）',c.feeTaxJpy],['仕入価格',p.cost],
@@ -1307,7 +1307,7 @@ function profitBreakdownHtml(c,p){
  ];
  return '<details class="card" style="margin-top:10px"><summary><b>利益の内訳を確認</b></summary>'+
   rows.map(([label,value])=>'<div class="row"><span>'+esc(label)+'</span><b>'+(value==null?'未取得':yen(value))+'</b></div>').join('')+
-  '<p class="muted">手数料率はポケモンカード13.25%、その他のカテゴリー15%を目安にし、手数料の消費税10%を含めた安全側の概算です。実際の手数料はカテゴリーや契約条件で変わります。</p></details>';
+  '<p class="muted">eBayでは購入者が支払う税金も手数料の計算対象に含まれる場合があるため、購入者税金を最大10%見込んで販売手数料・海外決済手数料を計算しています。さらに日本の消費税10%を手数料に加えています。実際の税率や手数料は購入先・カテゴリー・契約条件で変わります。</p></details>';
 }
 function detail(id){
  const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)return;
