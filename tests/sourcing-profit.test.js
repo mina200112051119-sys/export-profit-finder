@@ -47,7 +47,7 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
 test('break-even includes fee tax, sourcing shipping, conversion fee, and buyer-paid shipping', () => {
   const product = { cost: 1000, sourcingShippingJpy: 100, ship: 5, shippingKnown: true };
   const settings = { fxRate: 150, feeRate: .15, internationalRate: .0135,
-    conversionFeeRate: 2, feeTaxRate: .10, domesticShipping: 50, packaging: 80, otherCost: 0 };
+    conversionFeeRate: 2, feeTaxRate: .10, salesTaxAllowanceRate: .10, domesticShipping: 50, packaging: 80, otherCost: 0 };
   for (const path of ['ranking-engine.js', 'cost-fix.js']) {
     const source = fs.readFileSync(path, 'utf8');
     const start = source.indexOf('function breakEvenPrice(p,s={}){');
@@ -60,7 +60,7 @@ test('break-even includes fee tax, sourcing shipping, conversion fee, and buyer-
       Math,
       Number
     });
-    assert.equal(breakEvenPrice(product, settings), 6, path + ' includes fee tax and rounds upward');
+    assert.equal(breakEvenPrice(product, settings), 7, path + ' includes buyer tax, fee tax, and rounds upward');
     assert.equal(breakEvenPrice({ ...product, ship: null, shippingKnown: false }, settings), null,
       path + ' does not assume unknown shipping is free');
   }
