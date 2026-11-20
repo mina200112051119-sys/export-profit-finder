@@ -138,6 +138,7 @@ function candidateProfit(p, row) {
     sourcingShippingJpy: Math.max(0, Number(row.shippingJpy || 0))
   }, {
     fxRate: fx,
+    fxRateVerified: window.__exportApp?.isFxVerified?.() !== false,
     feeRate: feeOf(p),
     internationalRate: .0135,
     conversionFeeRate: g('conv'),
