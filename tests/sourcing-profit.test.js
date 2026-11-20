@@ -453,3 +453,17 @@ test('profit margin uses the full cost total rather than purchase price alone', 
   );
   assert.equal(result.margin, result.profit / result.totalCosts);
 });
+
+
+test('unverified exchange rates suppress profit and break-even estimates', () => {
+  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot bridge')[0];
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  const engine = context.window.RankingEngine;
+  const product = { sell: 100, ship: 10, shippingKnown: true, cost: 5000 };
+  const settings = { fxRate: 150, fxRateVerified: false, feeRate: .15, internationalRate: .0135 };
+  const costs = engine.calcCosts(product, settings);
+  assert.equal(costs.profit, null);
+  assert.equal(costs.margin, null);
+  assert.equal(engine.breakEvenPrice(product, settings), null);
+});
