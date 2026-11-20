@@ -439,3 +439,17 @@ test('fuzzy official candidates cannot overwrite a translated product name', () 
     diagnostic: { match: 'curated-title-rule' }
   }), true);
 });
+
+
+test('profit margin uses the full cost total rather than purchase price alone', () => {
+  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot bridge')[0];
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  const engine = context.window.RankingEngine;
+  const result = engine.calcCosts(
+    { sell: 100, ship: 10, shippingKnown: true, cost: 10000, sourcingShippingJpy: 500 },
+    { fxRate: 150, feeRate: .15, internationalRate: .0135,
+      domesticShipping: 200, packaging: 100, otherCost: 50 }
+  );
+  assert.equal(result.margin, result.profit / result.totalCosts);
+});
