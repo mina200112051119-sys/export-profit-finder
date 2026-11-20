@@ -12,8 +12,9 @@ const round=v=>Math.round(num(v));
 function breakEvenPrice(p,s={}){
   const fx=Math.max(num(s.fxRate,150),0.0001);
   const feeTaxRate=Math.max(0,num(s.feeTaxRate,0.10));
-  const variable=(Math.max(0,num(s.feeRate,0.15))
-    +Math.max(0,num(s.internationalRate,0.0135))
+  const salesTaxAllowanceRate=Math.max(0,num(s.salesTaxAllowanceRate,0.10));
+  const variable=((Math.max(0,num(s.feeRate,0.15))
+    +Math.max(0,num(s.internationalRate,0.0135)))*(1+salesTaxAllowanceRate)
     +Math.max(0,num(s.conversionFeeRate,0))/100)*(1+feeTaxRate);
   const local=Math.max(0,num(s.domesticShipping))
     +Math.max(0,num(p.sourcingShippingJpy))
@@ -33,7 +34,7 @@ function breakEvenPrice(p,s={}){
   const candidates=[0.30,0.40].map(fixedUsd=>({
     fixedUsd,
     sale:solve(fixedUsd)
-  })).filter(x=>x.sale>=0 && ((x.sale+buyerShipping)<=10)===(x.fixedUsd===0.30));
+  })).filter(x=>x.sale>=0 && ((x.sale+buyerShipping)*(1+salesTaxAllowanceRate)<=10)===(x.fixedUsd===0.30));
 
   if(candidates.length)return candidates[0].sale;
   return solve(0.40);
