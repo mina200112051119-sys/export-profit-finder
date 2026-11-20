@@ -673,12 +673,12 @@ async function officialNameCandidate(p, categoryOverride){
       {number:'202/165',name:/BLASTOISE\s*EX/i,set:/SV2A|151/i,title:'カメックスex｜SV2a 202/165｜ポケモンカード151｜SAR',url:'https://www.pokemon-card.com/card-search/details.php/card/43987'},
       {number:'181/165',name:/SNORLAX/i,set:/SV2A|151/i,title:'カビゴン｜SV2a 181/165｜ポケモンカード151｜AR',url:'https://www.pokemon-card.com/card-search/details.php/card/43966'},
       {number:'095/071',name:/GURUSHA/i,set:/SV2P|SNOW\s*HAZARD|JAPANESE/i,title:'グルーシャ SAR｜SV2P 095/071｜スノーハザード',url:'https://www.pokemon-card.com/card-search/details.php/card/43688'},
-      {number:'169/086',name:/ZEKROM\s*EX/i,set:/SV11B|BLACK\s*BOLT/i,title:'ゼクロムex｜ブラックボルト｜169/086｜SAR',url:'https://www.pokemon-card.com/card-search/index.php'},
-      {number:'091/071',name:/POKEMON\s*SUPPORTER|SUPPORTER|IONO|ナンジャモ/i,set:/SV2D|CLAY\s*BURST/i,title:'ナンジャモ｜クレイバースト｜091/071｜SR',url:'https://www.pokemon-card.com/card-search/index.php'},
+      {number:'169/086',name:/ZEKROM\s*EX/i,set:/SV11B|BLACK\s*BOLT/i,title:'ゼクロムex｜ブラックボルト｜169/086｜SAR',url:'https://www.pokemon-card.com/info/004993.html',status:'公式発表でカード名・収録パックを確認（169/086・SARは出品タイトル表記）'},
+      {number:'091/071',name:/POKEMON\s*SUPPORTER|SUPPORTER|IONO|ナンジャモ/i,set:/SV2D|CLAY\s*BURST/i,title:'ナンジャモ｜クレイバースト｜091/071｜SR',url:'https://www.pokemon-card.com/card-search/details.php/card/43659/regu/all'},
     ];
     const matched=knownCards.find(x=>normalized.includes(x.number)&&x.name.test(normalized)&&x.set.test(normalized));
     if(matched){
-      verified={category:cat,titleJa:matched.title,url:matched.url,image:'',score:100,status:'公式カード情報で名称・番号・収録パック確認済み（レアリティは出品表記）',diagnostic:{match:'exact-card-number-name-and-set',cardNumber:matched.number}};
+      verified={category:cat,titleJa:matched.title,url:matched.url,image:'',score:100,status:matched.status||'公式カード情報で名称・番号・収録パック確認済み（レアリティは出品表記）',diagnostic:{match:'exact-card-number-name-and-set',cardNumber:matched.number}};
     }
     if(!verified && /DPBP\s*#?\s*182/i.test(normalized) && /\bMEW\b/i.test(normalized)){
       verified={category:cat,titleJa:'ミュウ LV.40｜DPBP#182｜DP3「ひかる闇」｜レアリティ未確認',url:'https://www.pokemon-card.com/card-search/details.php/card/3060/regu/all',image:'',score:100,status:'公式情報でカード名・番号・収録パック確認済み（レアリティ未確認）',diagnostic:{match:'exact-card-number-and-name',cardNumber:'DPBP#182',set:'DP3 ひかる闇'}};
