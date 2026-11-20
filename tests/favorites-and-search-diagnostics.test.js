@@ -68,6 +68,12 @@ test('favorites: cloud storage includes favorites and schedules their saves', ()
   assert.match(html, /favoriteProducts:v1/);
 });
 
+
+test('cloud storage: manual save button calls the PUT save function, not only the connection check', () => {
+  assert.match(html, /onclick="saveCloudStorage\(\)"[^>]*>☁️ マイリストをクラウドに保存/);
+  assert.match(html, /onclick="checkCloudStorage\(\)"[^>]*>☁️ 接続状態を確認/);
+});
+
 test('category diagnostics: reports successful queries and combined search-result totals', () => {
   assert.match(html, /categorySearchStats=searchStats/);
   assert.match(html, /searchResultTotal:merged\.total/);
