@@ -22,10 +22,12 @@ function breakEvenPrice(p,s={}){
   const cost=Math.max(0,num(p.cost));
   const buyerShipping=Math.max(0,num(p.ship));
   const denominator=fx*(1-variable);
-  if(cost<=0||denominator<=0)return null;
+  // 送料が未取得なら、送料0円と仮定した損益分岐点を表示しない。
+  if(cost<=0||denominator<=0||p.shippingKnown===false||p.ship==null)return null;
 
   // 購入者負担送料は売上に加算し、手数料計算には含めるが経費として二重控除しない。
-  const solve=(fixedUsd)=>round(
+  // 手数料にかかる消費税も含め、損益分岐点を下回らないよう切り上げる。
+  const solve=(fixedUsd)=>Math.ceil(
     (cost+local+fixedUsd*fx*(1+feeTaxRate))/denominator-buyerShipping
   );
   const candidates=[0.30,0.40].map(fixedUsd=>({
