@@ -32,14 +32,15 @@ test('all seven categories are present in the initial page, including replacemen
   assert.match(html, /category\('交換部品・消耗品'\)/);
 });
 
-test('initial data refresh is not started twice before the snapshot bridge runs', () => {
+test('opening the app loads the saved snapshot without starting an eBay search', () => {
   const boot = html.slice(html.lastIndexOf('data=[];')).split('</script>')[0].trim();
   assert.equal(boot.endsWith('refresh();'), false);
+  assert.match(html, /Promise\\.resolve\\(loadServerRankingSnapshot\\(\\)\\)/);
   const engine = fs.readFileSync('ranking-engine.js', 'utf8');
-  assert.match(engine, /window\.__dailySnapshotMode=!!snapshot/);
-  assert.match(engine, /await window\.refresh\(\)/);
+  assert.doesNotMatch(engine, /window\\.refresh\\(\\)/);
+  assert.doesNotMatch(engine, /__dailySnapshotMode/);
+  assert.match(html, /async function refresh\\(\\)/);
 });
-
 test('retro-game candidate guard accepts the expanded console families', () => {
   assert.match(html, /gamecube\|game cube\|ゲームキューブ/);
   assert.match(html, /ps vita\|playstation vita/);
