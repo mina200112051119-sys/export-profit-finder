@@ -38,6 +38,19 @@ function runCandidateProfit({ domestic = 2000, pack = 800, other = 500, conv = 3
   );
 }
 
+test('ranking cards and product details show the eBay listing condition with a clear fallback', () => {
+  const start = html.indexOf('function listingConditionLabel(p){');
+  const end = html.indexOf('\\n', start);
+  assert.notEqual(start, -1, 'listing condition helper exists');
+  assert.notEqual(end, -1, 'listing condition helper ends');
+  const helper = vm.runInNewContext('(' + html.slice(start, end) + ')');
+  assert.equal(helper({ condition: 'Used' }), 'Used');
+  assert.equal(helper({ condition: '' }), '状態未確認');
+  assert.equal(helper({}), '状態未確認');
+  assert.match(html, /eBay商品状態/);
+  assert.match(html, /listingConditionLabel\\(p\\)/);
+});
+
 test('category list hides search diagnostics but keeps candidate counts', () => {
   const start = html.indexOf('function renderCats()');
   const end = html.indexOf('\nfunction refreshCurrentRanking', start);
