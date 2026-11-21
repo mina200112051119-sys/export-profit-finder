@@ -130,4 +130,8 @@ test('opening the app loads the saved daily snapshot without starting an eBay pr
   assert.doesNotMatch(bridge, /window\.refresh\(\)/);
   assert.doesNotMatch(bridge, /__dailySnapshotMode/);
   assert.match(html, /ページを開いただけではeBay検索を行いません/);
+  assert.match(html, /onclick="refresh\(\)"/);
+  assert.match(html, /async function refresh\(\)/);
+  const vercel = fs.readFileSync('vercel.json', 'utf8');
+  assert.match(vercel, /"schedule":\s*"0 21 \* \* \*"/);
 });
