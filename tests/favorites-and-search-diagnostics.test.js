@@ -69,6 +69,12 @@ test('favorites: cloud storage includes favorites and schedules their saves', ()
 });
 
 
+test('cloud storage: manual save shows progress and verifies saved favorites by reading them back', () => {
+  assert.match(html, /button\.textContent='☁️ 保存中…'/);
+  assert.match(html, /const verify=await fetch\(CLOUD_STORAGE_API/);
+  assert.match(html, /マイリスト'\+expectedIds\.length\+'件を確認/);
+  assert.match(html, /button\.disabled=true/);
+});
 test('cloud storage: manual save button calls the PUT save function, not only the connection check', () => {
   assert.match(html, /onclick="saveCloudStorage\(\)"[^>]*>☁️ マイリストをクラウドに保存/);
   assert.match(html, /onclick="checkCloudStorage\(\)"[^>]*>☁️ 接続状態を確認/);
