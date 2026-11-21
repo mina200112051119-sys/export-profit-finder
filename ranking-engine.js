@@ -182,46 +182,11 @@ window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,
 
 })();
 
-/* Daily snapshot bridge
-   自動更新データは初回表示時だけ利用し、「今すぐ更新・再計算」は必ずeBayライブAPIを取得する。 */
-(() => {
-'use strict';
-const originalFetch=window.fetch.bind(window),API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'',queryToCategory={'Japanese Pokemon SAR special art rare single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon AR art rare single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon SR full art super rare single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon RR double rare ex single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon popular character single card Pikachu Charizard Mew Eevee Gengar Japanese -lot -bulk':'ポケモンカード','Japanese Pokemon promo exclusive single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon vintage WOTC e-reader Neo rare single card -lot -bulk':'ポケモンカード','Japanese Pokemon UR HR secret rare single card Japanese -lot -bulk':'ポケモンカード','Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk':'ポケモンカード','Japanese Pokemon card set number single card Japanese -lot -bulk -proxy':'ポケモンカード','Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Nintendo Famicom console Japan':'レトロゲーム','Super Famicom game cartridge Japan':'レトロゲーム','Nintendo Game Boy game cartridge Japan':'レトロゲーム','Nintendo 64 game cartridge Japan':'レトロゲーム','Sega Saturn game disc Japan':'レトロゲーム','Sega Dreamcast game disc Japan':'レトロゲーム','Sony PlayStation PS1 PS2 game disc Japan':'レトロゲーム','Nintendo Sega Sony retro game controller gamepad Japan':'レトロゲーム','Game Boy Advance Nintendo DS PSP handheld console Japan':'レトロゲーム','Bandai Gunpla HG 1/144 model kit':'ガンプラ','Bandai Gundam MG Master Grade 1/100 model kit':'ガンプラ','Bandai Gundam RG Real Grade 1/144 model kit':'ガンプラ','Bandai Gundam PG Perfect Grade model kit':'ガンプラ','Vintage Bandai Gundam plastic model kit Japan':'ガンプラ','Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品','Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品','Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan':'交換部品・消耗品','Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan':'交換部品・消耗品','Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan':'交換部品・消耗品'};
-let snapshot=null;
-const snapshotPromise=originalFetch(API_BASE+'/api/data-snapshot?ts='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-const makeResponse=p=>new Response(JSON.stringify(p),{status:200,headers:{'Content-Type':'application/json'}});
-window.fetch=async function(input,init){
-  const url=typeof input==='string'?input:(input&&input.url)||'';
-  if(window.__dailySnapshotMode&&url.includes('/api/ebay-search?')){
-    const u=new URL(url,location.origin),q=u.searchParams.get('q')||'',cat=queryToCategory[q];
-    if(cat){
-      if(snapshot===null)snapshot=await snapshotPromise;
-      const found=snapshot?.categories?.find(x=>x.query===q);
-      // Failed snapshot rows are not valid empty results; fall back to the live eBay API.
-      if(found?.ok&&Array.isArray(found.items))return makeResponse({items:found.items,count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
-    }
-  }
-  return originalFetch(input,init);
-};
-async function useDaily(){
-  snapshot=await snapshotPromise;
-  const wait=setInterval(async()=>{
-    if(typeof window.refresh!=='function')return;
-    clearInterval(wait);
-    window.__dailySnapshotLoaded=snapshot;
-    window.__dailySnapshotMode=!!snapshot;
-    // This is the single initial refresh. index.html does not start a second
-    // refresh before DOMContentLoaded, so the first request is not cancelled.
-    try{
-      await window.refresh();
-    }finally{
-      window.__dailySnapshotMode=false;
-    }
-  },50);
-  setTimeout(()=>clearInterval(wait),10000);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',useDaily);else useDaily();
-})();
+/* Daily snapshot handling
+   朝6時の取得はVercel Cronが担当し、画面起動時は保存済みスナップショットを読むだけにする。
+   商品検索は利用者が「今すぐ更新・再計算」を押した場合に限って実行する。
+   index.html の loadServerRankingSnapshot() が最新スナップショットを読み込む。
+*/
 /* Sourcing links */
 (() => {
 'use strict';
