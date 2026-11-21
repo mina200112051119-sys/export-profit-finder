@@ -120,3 +120,14 @@ test('Sega and PlayStation lookups are not falsely reported as no official match
   assert.match(officialSearchSource, /manual_verification_required/);
   assert.match(officialSearchSource, /playstation.*sega|sega.*playstation/is);
 });
+
+
+test('opening the app loads the saved daily snapshot without starting an eBay product search', () => {
+  const bridge = fs.readFileSync('ranking-engine.js', 'utf8');
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /function loadServerRankingSnapshot\(\)/);
+  assert.match(html, /Promise\.resolve\(loadServerRankingSnapshot\(\)\)/);
+  assert.doesNotMatch(bridge, /window\.refresh\(\)/);
+  assert.doesNotMatch(bridge, /__dailySnapshotMode/);
+  assert.match(html, /ページを開いただけではeBay検索を行いません/);
+});
