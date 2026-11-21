@@ -44,7 +44,9 @@ test('ranking cards and product details show the eBay listing condition with a c
   assert.notEqual(start, -1, 'listing condition helper exists');
   assert.notEqual(end, -1, 'listing condition helper ends');
   const helper = vm.runInNewContext('(' + html.slice(start, end) + ')');
-  assert.equal(helper({ condition: 'Used' }), 'Used');
+  assert.equal(helper({ condition: 'Used' }), '中古');
+  assert.equal(helper({ condition: 'New' }), '新品');
+  assert.equal(helper({ condition: 'For parts or not working' }), 'ジャンク・部品取り');
   assert.equal(helper({ condition: '' }), '状態未確認');
   assert.equal(helper({}), '状態未確認');
   assert.match(html, /eBay商品状態/);
