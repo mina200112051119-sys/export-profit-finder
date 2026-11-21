@@ -112,7 +112,10 @@ function writeExportUserCookie(id){
 function getExportUserId(){
   const cookieId=readExportUserCookie();
   const localId=localStorage.getItem('exportUserId:v1');
-  let id=cookieId||localId;
+  // localStorage is persistent within the same Safari or Home Screen app.
+  // Prefer its established identity so a stale/copied iOS cookie cannot
+  // silently switch this app instance to another user's cloud record.
+  let id=localId||cookieId;
   if(!id){
     id=(crypto.randomUUID?crypto.randomUUID():'u'+Date.now()+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
   }
