@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const html = fs.readFileSync('index.html', 'utf8');
-const rankingSource = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot bridge')[0];
+const rankingSource = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot handling')[0];
 const sourcingSource = fs.readFileSync('sourcing-compare.js', 'utf8');
 const officialSearchSource = fs.readFileSync('api/official-product-search.js', 'utf8');
 
