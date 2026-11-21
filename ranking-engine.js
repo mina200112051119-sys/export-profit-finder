@@ -6,7 +6,7 @@ const num=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
 const clamp=(v,min=0,max=100)=>Math.max(min,Math.min(max,v));
 const round=v=>Math.round(num(v));
 function normalizeProduct(r={}){return{id:r.id||r.itemId||r.url||`${r.cat||r.category||''}|${r.name||r.title||''}`,name:r.name||r.title||'商品名不明',displayName:r.displayName||r.titleJa||r.name||r.title||'商品名不明',cat:r.cat||r.category||'その他',cost:num(r.cost),sell:num(r.sell??r.price),ship:(r.ship??r.shipping)==null?null:num(r.ship??r.shipping),shippingKnown:r.shippingKnown===false||(r.ship??r.shipping)==null?false:true,image:r.image||r.imageUrl||'',url:r.url||r.itemWebUrl||'',sold:r.sold==null?null:num(r.sold),list:r.list==null?null:num(r.list),trend:r.trend||'不明',risk:r.risk||'要確認',source:r.source||'eBay',condition:r.condition||'',confidence:r.confidence||null,historicalPrices:Array.isArray(r.historicalPrices)?r.historicalPrices.map(num).filter(v=>v>0):[],soldMedian:num(r.soldMedian),soldHistoryCount:num(r.soldHistoryCount),soldHistoryAvailable:Boolean(r.soldHistoryAvailable),activeListingsTotal:num(r.activeListingsTotal),searchResultTotal:num(r.searchResultTotal),sourcingShippingJpy:num(r.sourcingShippingJpy),sourcingSource:r.sourcingSource||'',sourcingCondition:r.sourcingCondition||'',sourcingCheckedAt:r.sourcingCheckedAt||'',officialNameVerified:Boolean(r.officialNameVerified),evidenceType:r.evidenceType||'',evidenceDate:r.evidenceDate||''}}
-function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fee=num(s.feeRate,.136),international=num(s.internationalRate,.0135),conv=num(s.conversionFeeRate),dom=Math.max(0,num(s.domesticShipping)),pack=Math.max(0,num(s.packaging)),other=Math.max(0,num(s.otherCost));const sale=Math.max(0,num(p.sell)),shippingKnown=p.shippingKnown!==false&&p.ship!==null&&p.ship!==undefined,ship=shippingKnown?Math.max(0,num(p.ship)):0,gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,grossSaleJpy=gross*fx,finalValueFeeJpy=gross*fee*fx,internationalFeeJpy=gross*international*fx,fixedUsd=gross<=10?.30:.40,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=grossSaleJpy*(conv/100),sourcingShippingJpy=Math.max(0,num(p.sourcingShippingJpy)),localCosts=dom+sourcingShippingJpy+pack+other,totalFees=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,totalCosts=totalFees+localCosts+Math.max(0,num(p.cost)),profit=p.cost>0&&shippingKnown?round(grossSaleJpy-totalCosts):null,margin=p.cost>0&&shippingKnown?profit/Math.max(1,num(p.cost)):null;return{saleJpy:round(saleJpy),shipJpy:shippingKnown?round(shipJpy):null,shippingKnown,grossSaleJpy:round(grossSaleJpy),finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),fixedFeeUsd:fixedUsd,conversionFeeJpy:round(conversionFeeJpy),domesticShippingJpy:round(dom),sourcingShippingJpy:round(sourcingShippingJpy),packagingJpy:round(pack),otherCostJpy:round(other),localCosts:round(localCosts),totalFees:round(totalFees),totalCosts:round(totalCosts),profit,margin}}
+function calcCosts(p,s={}){const fx=Math.max(num(s.fxRate,150),.0001),fxRateVerified=s.fxRateVerified!==false,fee=num(s.feeRate,.15),international=num(s.internationalRate,.0135),conv=num(s.conversionFeeRate),feeTaxRate=Math.max(0,num(s.feeTaxRate,.10)),salesTaxAllowanceRate=Math.max(0,num(s.salesTaxAllowanceRate,.10)),dom=Math.max(0,num(s.domesticShipping)),pack=Math.max(0,num(s.packaging)),other=Math.max(0,num(s.otherCost));const sale=Math.max(0,num(p.sell)),shippingKnown=p.shippingKnown!==false&&p.ship!==null&&p.ship!==undefined,ship=shippingKnown?Math.max(0,num(p.ship)):0,gross=sale+ship,saleJpy=sale*fx,shipJpy=ship*fx,grossSaleJpy=gross*fx,feeBasisJpy=grossSaleJpy*(1+salesTaxAllowanceRate),finalValueFeeJpy=feeBasisJpy*fee,internationalFeeJpy=feeBasisJpy*international,fixedUsd=gross*(1+salesTaxAllowanceRate)<=10?.30:.40,fixedFeeJpy=fixedUsd*fx,conversionFeeJpy=grossSaleJpy*(conv/100),feesBeforeTax=finalValueFeeJpy+internationalFeeJpy+fixedFeeJpy+conversionFeeJpy,feeTaxJpy=round(feesBeforeTax*feeTaxRate),totalFees=round(feesBeforeTax)+feeTaxJpy,sourcingShippingJpy=Math.max(0,num(p.sourcingShippingJpy)),localCosts=dom+sourcingShippingJpy+pack+other,totalCosts=totalFees+localCosts+Math.max(0,num(p.cost)),profit=p.cost>0&&shippingKnown&&fxRateVerified?round(grossSaleJpy-totalCosts):null,margin=p.cost>0&&shippingKnown&&fxRateVerified?profit/Math.max(1,totalCosts):null;return{saleJpy:round(saleJpy),shipJpy:shippingKnown?round(shipJpy):null,shippingKnown,fxRateVerified,grossSaleJpy:round(grossSaleJpy),feeBasisJpy:round(feeBasisJpy),salesTaxAllowanceRate,finalValueFeeJpy:round(finalValueFeeJpy),internationalFeeJpy:round(internationalFeeJpy),fixedFeeJpy:round(fixedFeeJpy),fixedFeeUsd:fixedUsd,conversionFeeJpy:round(conversionFeeJpy),feesBeforeTax:round(feesBeforeTax),feeTaxRate,feeTaxJpy,totalFees,domesticShippingJpy:round(dom),sourcingShippingJpy:round(sourcingShippingJpy),packagingJpy:round(pack),otherCostJpy:round(other),localCosts:round(localCosts),totalCosts:round(totalCosts),profit,margin}}
 function sellThrough(p){if(p.sold!==null&&p.list!==null&&p.sold>=0&&p.list>=0){const t=p.sold+p.list;return t>0?p.sold/t:null}return null}
 function salesActivityScore(p){if(!p.soldHistoryAvailable)return 0;const s=Math.max(0,num(p.soldHistoryCount));return clamp(20+Math.log1p(s)*17)}
 function confidence(p){if(p.soldHistoryAvailable){const s=Math.max(0,num(p.soldHistoryCount)),l=Math.max(0,p.list==null?num(p.activeListingsTotal):num(p.list));if(s>=50&&l>=50)return{level:'高',factor:1};if(s>=20&&l>=20)return{level:'中',factor:.94};if(s>=5&&l>=5)return{level:'中',factor:.86};return{level:'低',factor:.72}}return p.sell>0?{level:'低',factor:.82}:{level:'低',factor:.75}}
@@ -19,9 +19,11 @@ function profitScore(c,profits=[]){if(c.profit===null)return 0;const pos=profits
 function projectedPrice(p,days){if(p.soldMedian>0){const base=p.soldMedian,trend=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.98:days===60?.96:.94);return round(base*trend)}let f=p.trend==='上昇'?(days===30?1.01:days===60?1:.98):p.trend==='横ばい'?(days===30?.98:days===60?.96:.94):p.trend==='下落'?(days===30?.93:days===60?.87:.8):(days===30?.97:days===60?.94:.9);return round(Math.max(p.sell,0)*f)}
 function breakEvenPrice(p,s={}){
   const fx=Math.max(num(s.fxRate,150),.0001);
-  const variable=Math.max(0,num(s.feeRate,.136))
-    +Math.max(0,num(s.internationalRate,.0135))
-    +Math.max(0,num(s.conversionFeeRate))/100;
+  const feeTaxRate=Math.max(0,num(s.feeTaxRate,.10));
+  const salesTaxAllowanceRate=Math.max(0,num(s.salesTaxAllowanceRate,.10));
+  const variable=((Math.max(0,num(s.feeRate,.15))
+    +Math.max(0,num(s.internationalRate,.0135)))*(1+salesTaxAllowanceRate)
+    +Math.max(0,num(s.conversionFeeRate))/100)*(1+feeTaxRate);
   const local=Math.max(0,num(s.domesticShipping))
     +Math.max(0,num(p.sourcingShippingJpy))
     +Math.max(0,num(s.packaging))
@@ -29,14 +31,18 @@ function breakEvenPrice(p,s={}){
   const cost=Math.max(0,num(p.cost));
   const buyerShipping=Math.max(0,num(p.ship));
   const denominator=fx*(1-variable);
-  if(cost<=0||denominator<=0||p.shippingKnown===false||p.ship==null)return null;
-  const solve=fixedUsd=>round((cost+local+fixedUsd*fx)/denominator-buyerShipping);
+  // 送料が未取得なら、送料0円と仮定した損益分岐点を表示しない。
+  if(cost<=0||denominator<=0||p.shippingKnown===false||p.ship==null||s.fxRateVerified===false)return null;
+  // 手数料にかかる消費税も含め、損益分岐点を下回らないよう切り上げる。
+  const solve=fixedUsd=>Math.ceil(
+    (cost+local+fixedUsd*fx*(1+feeTaxRate))/denominator-buyerShipping
+  );
   const candidates=[.30,.40].map(fixedUsd=>({fixedUsd,sale:solve(fixedUsd)}))
-    .filter(x=>x.sale>=0&&((x.sale+buyerShipping)<=10)===(x.fixedUsd===.30));
+    .filter(x=>x.sale>=0&&((x.sale+buyerShipping)*(1+salesTaxAllowanceRate)<=10)===(x.fixedUsd===.30));
   return candidates.length?candidates[0].sale:solve(.40);
 }
 function simulateRisk(p,s={}){const scenarios=[30,60,90].map(days=>{const sale=projectedPrice(p,days),c=calcCosts({...p,sell:sale},s),risk=c.profit===null?'要仕入価格':c.profit<0?'高':c.margin!==null&&c.margin<.1?'高':c.margin!==null&&c.margin<.2?'中':'低';return{days,sale,profit:c.profit,margin:c.margin,risk}});return{scenarios,breakEven:breakEvenPrice(p,s)}}
-function inventoryRiskScore(r,p){let x=100,s=r.scenarios;if(p.cost<=0)return 45;if(s[0].profit<0)x-=60;else if(s[0].profit<p.cost*.1)x-=30;if(s[1].profit<0)x-=25;else if(s[1].profit<p.cost*.1)x-=12;if(s[2].profit<0)x-=25;else if(s[2].profit<p.cost*.1)x-=12;if(p.cost>50000)x-=10;return clamp(x)}
+function inventoryRiskScore(r,p){let x=100,s=r.scenarios;if(p.cost<=0)return 45;if(s[0].profit<0)x-=60;else if(s[0].margin<.1)x-=30;if(s[1].profit<0)x-=25;else if(s[1].margin<.1)x-=12;if(s[2].profit<0)x-=25;else if(s[2].margin<.1)x-=12;if(p.cost>50000)x-=10;return clamp(x)}
 function riskFlags(p,c,r){const a=[];if(p.cost<=0)a.push('仕入価格未入力');if(p.trend==='下落')a.push('相場下落傾向');if(c.profit!==null&&c.profit<0)a.push('現在価格でも赤字');if(r.scenarios[2].profit!==null&&r.scenarios[2].profit<0)a.push('90日後想定で赤字');if(p.cost>=50000)a.push('高額仕入れ');if(p.soldHistoryAvailable)a.push(`過去90日販売データ：${p.soldHistoryCount}件`);return a}
 function scoreProduct(raw,s={},universe=[]){const p=normalizeProduct(raw),c=calcCosts(p,s),profits=universe.map(x=>calcCosts(normalizeProduct(x),{...s,feeRate:s.feeRateByCategory?.[normalizeProduct(x).cat]??s.feeRate}).profit).filter(v=>v!==null),r=simulateRisk(p,s),scores={sellability:sellabilityScore(p),margin:marginScore(c),profit:profitScore(c,profits),stability:stabilityScore(p),inventory:inventoryRiskScore(r,p),fees:feeScore(p,c),market:trendScore(p)},conf=confidence(p);let total=(scores.sellability*.3+scores.margin*.25+scores.profit*.15+scores.stability*.1+scores.inventory*.1+scores.fees*.05+scores.market*.05)*conf.factor;const flags=riskFlags(p,c,r);if(flags.includes('現在価格でも赤字'))total-=25;if(flags.includes('90日後想定で赤字'))total-=12;if(flags.includes('相場下落傾向'))total-=8;total=round(clamp(total));const stars=total>=90?'★★★★★':total>=80?'★★★★☆':total>=70?'★★★★☆':total>=60?'★★★☆☆':total>=50?'★★☆☆☆':'★☆☆☆☆',risk=flags.includes('現在価格でも赤字')||flags.includes('90日後想定で赤字')?'高':scores.inventory>=75?'低':scores.inventory>=50?'中':'高';return{...p,costs:c,riskData:r,scores,totalScore:total,stars,risk,confidence:conf.level,flags,sellabilityBasis:sellThrough(p)!==null?'販売件数÷（販売件数＋掲載件数）':'現在の出品件数に基づく競合目安（販売実績・売れやすさを示すものではありません）'}}
 function rank(products,s={},category=null){const n=products.map(normalizeProduct),base={...s,feeRateByCategory:s.feeRateByCategory||{}},src=category?n.filter(p=>p.cat===category):n;return src.map(p=>scoreProduct(p,{...base,feeRate:base.feeRateByCategory[p.cat]??base.feeRate},n)).sort((a,b)=>b.totalScore-a.totalScore||(b.costs.profit||-Infinity)-(a.costs.profit||-Infinity)||a.name.localeCompare(b.name,'ja'))}
@@ -176,46 +182,11 @@ window.RankingEngine={CATEGORIES,WEIGHTS,normalizeProduct,calcCosts,sellThrough,
 
 })();
 
-/* Daily snapshot bridge
-   自動更新データは初回表示時だけ利用し、「今すぐ更新・再計算」は必ずeBayライブAPIを取得する。 */
-(() => {
-'use strict';
-const originalFetch=window.fetch.bind(window),API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':'',queryToCategory={'Japanese Pokemon SAR special art rare single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon AR art rare single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon SR full art super rare single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon RR double rare ex single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon popular character single card Pikachu Charizard Mew Eevee Gengar Japanese -lot -bulk':'ポケモンカード','Japanese Pokemon promo exclusive single card Japanese -lot -bulk -proxy':'ポケモンカード','Japanese Pokemon vintage WOTC e-reader Neo rare single card -lot -bulk':'ポケモンカード','Japanese Pokemon UR HR secret rare single card Japanese -lot -bulk':'ポケモンカード','Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk':'ポケモンカード','Japanese Pokemon card set number single card Japanese -lot -bulk -proxy':'ポケモンカード','Pokemon card graded rare Japanese':'ポケモンカード','Pokemon Center Japan limited official merchandise sealed':'ポケモン関連サプライ用品','Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement':'釣具','Japanese digital camera Canon Nikon Fujifilm':'カメラ','Nintendo Famicom console Japan':'レトロゲーム','Super Famicom game cartridge Japan':'レトロゲーム','Nintendo Game Boy game cartridge Japan':'レトロゲーム','Nintendo 64 game cartridge Japan':'レトロゲーム','Sega Saturn game disc Japan':'レトロゲーム','Sega Dreamcast game disc Japan':'レトロゲーム','Sony PlayStation PS1 PS2 game disc Japan':'レトロゲーム','Nintendo Sega Sony retro game controller gamepad Japan':'レトロゲーム','Game Boy Advance Nintendo DS PSP handheld console Japan':'レトロゲーム','Bandai Gunpla HG 1/144 model kit':'ガンプラ','Bandai Gundam MG Master Grade 1/100 model kit':'ガンプラ','Bandai Gundam RG Real Grade 1/144 model kit':'ガンプラ','Bandai Gundam PG Perfect Grade model kit':'ガンプラ','Vintage Bandai Gundam plastic model kit Japan':'ガンプラ','Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品','Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品','Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan':'交換部品・消耗品','Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan':'交換部品・消耗品','Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan':'交換部品・消耗品'};
-let snapshot=null;
-const snapshotPromise=originalFetch(API_BASE+'/api/data-snapshot?ts='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-const makeResponse=p=>new Response(JSON.stringify(p),{status:200,headers:{'Content-Type':'application/json'}});
-window.fetch=async function(input,init){
-  const url=typeof input==='string'?input:(input&&input.url)||'';
-  if(window.__dailySnapshotMode&&url.includes('/api/ebay-search?')){
-    const u=new URL(url,location.origin),q=u.searchParams.get('q')||'',cat=queryToCategory[q];
-    if(cat){
-      if(snapshot===null)snapshot=await snapshotPromise;
-      const found=snapshot?.categories?.find(x=>x.query===q);
-      // Failed snapshot rows are not valid empty results; fall back to the live eBay API.
-      if(found?.ok&&Array.isArray(found.items))return makeResponse({items:found.items,count:found.count||0,priceStatsUsd:found.priceStatsUsd||null,source:'保存済み日次スナップショット',refreshedAt:snapshot.refreshedAt});
-    }
-  }
-  return originalFetch(input,init);
-};
-async function useDaily(){
-  snapshot=await snapshotPromise;
-  const wait=setInterval(async()=>{
-    if(typeof window.refresh!=='function')return;
-    clearInterval(wait);
-    window.__dailySnapshotLoaded=snapshot;
-    window.__dailySnapshotMode=!!snapshot;
-    // This is the single initial refresh. index.html does not start a second
-    // refresh before DOMContentLoaded, so the first request is not cancelled.
-    try{
-      await window.refresh();
-    }finally{
-      window.__dailySnapshotMode=false;
-    }
-  },50);
-  setTimeout(()=>clearInterval(wait),10000);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',useDaily);else useDaily();
-})();
+/* Daily snapshot handling
+   朝6時の取得はVercel Cronが担当し、画面起動時は保存済みスナップショットを読むだけにする。
+   商品検索は利用者が「今すぐ更新・再計算」を押した場合に限って実行する。
+   index.html の loadServerRankingSnapshot() が最新スナップショットを読み込む。
+*/
 /* Sourcing links */
 (() => {
 'use strict';

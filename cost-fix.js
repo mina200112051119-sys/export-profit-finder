@@ -11,9 +11,11 @@ const round=v=>Math.round(num(v));
 // 10 USD超なら0.40 USDとして、両方の境界を検証して有効な解を返す。
 function breakEvenPrice(p,s={}){
   const fx=Math.max(num(s.fxRate,150),0.0001);
-  const variable=Math.max(0,num(s.feeRate,0.136))
-    +Math.max(0,num(s.internationalRate,0.0135))
-    +Math.max(0,num(s.conversionFeeRate,0))/100;
+  const feeTaxRate=Math.max(0,num(s.feeTaxRate,0.10));
+  const salesTaxAllowanceRate=Math.max(0,num(s.salesTaxAllowanceRate,0.10));
+  const variable=((Math.max(0,num(s.feeRate,0.15))
+    +Math.max(0,num(s.internationalRate,0.0135)))*(1+salesTaxAllowanceRate)
+    +Math.max(0,num(s.conversionFeeRate,0))/100)*(1+feeTaxRate);
   const local=Math.max(0,num(s.domesticShipping))
     +Math.max(0,num(p.sourcingShippingJpy))
     +Math.max(0,num(s.packaging))
@@ -21,16 +23,18 @@ function breakEvenPrice(p,s={}){
   const cost=Math.max(0,num(p.cost));
   const buyerShipping=Math.max(0,num(p.ship));
   const denominator=fx*(1-variable);
-  if(cost<=0||denominator<=0)return null;
+  // 送料が未取得なら、送料0円と仮定した損益分岐点を表示しない。
+  if(cost<=0||denominator<=0||p.shippingKnown===false||p.ship==null||s.fxRateVerified===false)return null;
 
   // 購入者負担送料は売上に加算し、手数料計算には含めるが経費として二重控除しない。
-  const solve=(fixedUsd)=>round(
-    (cost+local+fixedUsd*fx)/denominator-buyerShipping
+  // 手数料にかかる消費税も含め、損益分岐点を下回らないよう切り上げる。
+  const solve=(fixedUsd)=>Math.ceil(
+    (cost+local+fixedUsd*fx*(1+feeTaxRate))/denominator-buyerShipping
   );
   const candidates=[0.30,0.40].map(fixedUsd=>({
     fixedUsd,
     sale:solve(fixedUsd)
-  })).filter(x=>x.sale>=0 && ((x.sale+buyerShipping)<=10)===(x.fixedUsd===0.30));
+  })).filter(x=>x.sale>=0 && ((x.sale+buyerShipping)*(1+salesTaxAllowanceRate)<=10)===(x.fixedUsd===0.30));
 
   if(candidates.length)return candidates[0].sale;
   return solve(0.40);
@@ -102,7 +106,7 @@ if(body){
   const feeFor = p => {
     const cat = String(p?.cat || p?.category || '');
     return /ポケモンカード|trading cards?|collectible card games|\btcg\b|\btc g\b/i.test(cat)
-      && !/accessor|supply|サプライ/i.test(cat) ? 0.1325 : 0.136;
+      && !/accessor|supply|サプライ/i.test(cat) ? 0.1325 : 0.15;
   };
   if (typeof E.calcCosts === 'function') {
     const original = E.calcCosts.bind(E);
@@ -127,7 +131,7 @@ if(body){
     .find(el => el.querySelector('h2')?.textContent.trim() === '利益計算の設定');
   const note = settingsCard?.querySelector('.notice');
   if (note) note.textContent =
-    '手数料率の目安：eBay.comのストア未契約を想定し、ポケモンカードは13.25％、その他は13.6％で計算します。日本のセラーにかかる海外決済手数料1.35％は別に計算します。ストア契約や売上条件で実際の率は変わります。eBay.comのUSD取引では通常、eBayの通貨換算手数料はかかりません。受取先で円に替える費用は別です。';
+    '手数料率の目安：ポケモンカードは13.25％、その他はカテゴリー差を考慮して15％で計算します。購入者が支払う税金も手数料の計算対象に含まれる場合があるため、10％を見込んで販売手数料・海外決済手数料の計算対象額に加えます。さらに日本の消費税10％を手数料に加えます。実際の購入先・カテゴリー・契約条件で変わるため、安全側の概算です。受取通貨を日本円などへ換算する場合は3%、USDのまま受け取る場合は0%を入力してください。';
 })();
 
 /* Keep the retro-game daily snapshot aligned with the live search term. */
