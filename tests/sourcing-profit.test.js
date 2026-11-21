@@ -106,31 +106,33 @@ test('retro and Gunpla refresh use focused queries instead of long mixed keyword
   assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
 });
 
-test('daily snapshot category mapping matches all current retro, Gunpla, and replacement-part refresh queries', () => {
-  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
-  for (const query of [
-    "'Nintendo Famicom console Japan':'レトロゲーム'",
-    "'Super Famicom game cartridge Japan':'レトロゲーム'",
-    "'Nintendo Game Boy game cartridge Japan':'レトロゲーム'",
-    "'Nintendo 64 game cartridge Japan':'レトロゲーム'",
-    "'Sega Saturn game disc Japan':'レトロゲーム'",
-    "'Sega Dreamcast game disc Japan':'レトロゲーム'",
-    "'Sony PlayStation PS1 PS2 game disc Japan':'レトロゲーム'",
-    "'Nintendo Sega Sony retro game controller gamepad Japan':'レトロゲーム'",
-    "'Game Boy Advance Nintendo DS PSP handheld console Japan':'レトロゲーム'",
-    "'Bandai Gunpla HG 1/144 model kit':'ガンプラ'",
-    "'Bandai Gundam MG Master Grade 1/100 model kit':'ガンプラ'",
-    "'Bandai Gundam RG Real Grade 1/144 model kit':'ガンプラ'",
-    "'Bandai Gundam PG Perfect Grade model kit':'ガンプラ'",
-    "'Vintage Bandai Gundam plastic model kit Japan':'ガンプラ'",
-    "'Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品'",
-    "'Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品'",
-    "'Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan':'交換部品・消耗品'",
-    "'Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan':'交換部品・消耗品'",
-    "'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan':'交換部品・消耗品'"
-  ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
+test('daily snapshot refresh includes the focused category searches', () => {
+  const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
+  const queries = [
+    ["レトロゲーム","Nintendo Famicom console Japan"],
+    ["レトロゲーム","Super Famicom game cartridge Japan"],
+    ["レトロゲーム","Nintendo Game Boy game cartridge Japan"],
+    ["レトロゲーム","Nintendo 64 game cartridge Japan"],
+    ["レトロゲーム","Sega Saturn game disc Japan"],
+    ["レトロゲーム","Sega Dreamcast game disc Japan"],
+    ["レトロゲーム","Sony PlayStation PS1 PS2 game disc Japan"],
+    ["レトロゲーム","Nintendo Sega Sony retro game controller gamepad Japan"],
+    ["レトロゲーム","Game Boy Advance Nintendo DS PSP handheld console Japan"],
+    ["ガンプラ","Bandai Gunpla HG 1/144 model kit"],
+    ["ガンプラ","Bandai Gundam MG Master Grade 1/100 model kit"],
+    ["ガンプラ","Bandai Gundam RG Real Grade 1/144 model kit"],
+    ["ガンプラ","Bandai Gundam PG Perfect Grade model kit"],
+    ["ガンプラ","Vintage Bandai Gundam plastic model kit Japan"],
+    ["交換部品・消耗品","Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal"],
+    ["交換部品・消耗品","Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal"],
+    ["交換部品・消耗品","Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan"],
+    ["交換部品・消耗品","Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan"],
+    ["交換部品・消耗品","Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan"]
+  ];
+  for (const [category, query] of queries) {
+    assert.ok(cron.includes("cat: '"+category+"', q: '"+query+"'"), 'scheduled query is mapped to '+category+': '+query);
+  }
 });
-
 test('scheduled daily refresh has valid separators and all focused replacement-part searches', () => {
   const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
   for (const query of [
@@ -442,7 +444,7 @@ test('fuzzy official candidates cannot overwrite a translated product name', () 
 
 
 test('profit margin uses the full cost total rather than purchase price alone', () => {
-  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot bridge')[0];
+  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot handling')[0];
   const context = { window: {} };
   vm.runInNewContext(source, context);
   const engine = context.window.RankingEngine;
@@ -456,7 +458,7 @@ test('profit margin uses the full cost total rather than purchase price alone', 
 
 
 test('unverified exchange rates suppress profit and break-even estimates', () => {
-  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot bridge')[0];
+  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot handling')[0];
   const context = { window: {} };
   vm.runInNewContext(source, context);
   const engine = context.window.RankingEngine;
