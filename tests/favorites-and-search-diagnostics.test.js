@@ -86,3 +86,9 @@ test('category diagnostics: reports successful queries and combined search-resul
   assert.ok(html.includes("検索 '+(tasks.length-errors.length)+'/'+tasks.length+'件成功。現在の出品価格"),
     'update summary should report successful query count without exposing per-category diagnostics');
 });
+
+
+test('cloud identity: keeps the established device identity ahead of a stale copied cookie', () => {
+  assert.match(html, /let id=localId\|\|cookieId;/);
+  assert.doesNotMatch(html, /let id=cookieId\|\|localId;/);
+});
