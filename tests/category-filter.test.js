@@ -35,11 +35,11 @@ test('all seven categories are present in the initial page, including replacemen
 test('opening the app loads the saved snapshot without starting an eBay search', () => {
   const boot = html.slice(html.lastIndexOf('data=[];')).split('</script>')[0].trim();
   assert.equal(boot.endsWith('refresh();'), false);
-  assert.match(html, /Promise\\.resolve\\(loadServerRankingSnapshot\\(\\)\\)/);
+  assert.match(html, /Promise\.resolve\(loadServerRankingSnapshot\(\)\)/);
   const engine = fs.readFileSync('ranking-engine.js', 'utf8');
-  assert.doesNotMatch(engine, /window\\.refresh\\(\\)/);
+  assert.doesNotMatch(engine, /window\.refresh\(\)/);
   assert.doesNotMatch(engine, /__dailySnapshotMode/);
-  assert.match(html, /async function refresh\\(\\)/);
+  assert.match(html, /async function refresh\(\)/);
 });
 test('retro-game candidate guard accepts the expanded console families', () => {
   assert.match(html, /gamecube\|game cube\|ゲームキューブ/);
