@@ -134,4 +134,7 @@ test('opening the app loads the saved daily snapshot without starting an eBay pr
   assert.match(html, /async function refresh\(\)/);
   const vercel = fs.readFileSync('vercel.json', 'utf8');
   assert.match(vercel, /"schedule":\s*"0 21 \* \* \*"/);
+  const liveApi = fs.readFileSync('live-api.js', 'utf8');
+  assert.doesNotMatch(liveApi, /Promise\.all\(SEEDS\.map\(categorySuggestions\)\)/);
+  assert.match(liveApi, /function searchCategorySuggestions\(\)/);
 });
