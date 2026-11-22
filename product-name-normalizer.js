@@ -29,7 +29,8 @@ function normalize(p,category,value){
  }
  if(cat==='釣具'){
   const model=(raw.match(/\b(?:STELLA|STRADIC|TWIN\s*POWER|VANQUISH|NASCI|ULTEGRA|SEDONA|EXIST|CERTATE|LUVIAS|CALDIA|FUEGO|LEGALIS|TATULA|SALTIGA|EMERALDAS|PRESSO|AERNOS)(?:\s*[A-Z0-9-]+)?/i)||[])[0]||parts.find(x=>/[A-Z]{1,}[\w-]*\d/.test(x))||'';
-  return [brand,model.replace(/\s+/g,' ').trim()].filter(Boolean).join(' ')||parts.slice(0,2).join('｜');
+  const japaneseModel=model.replace(/\bFUEGO\b/ig,'フエゴ').replace(/\bPRESSO\b/ig,'プレッソ').replace(/\bSTELLA\b/ig,'ステラ').replace(/\bSTRADIC\b/ig,'ストラディック').replace(/\bTWIN\s*POWER\b/ig,'ツインパワー').replace(/\bVANQUISH\b/ig,'ヴァンキッシュ').replace(/\bNASCI\b/ig,'ナスキー').replace(/\bEXIST\b/ig,'イグジスト').replace(/\bCERTATE\b/ig,'セルテート').replace(/\bLUVIAS\b/ig,'ルビアス').replace(/\bCALDIA\b/ig,'カルディア').replace(/\bSALTIGA\b/ig,'ソルティガ');
+  return [brand,japaneseModel.replace(/\s+/g,' ').trim()].filter(Boolean).join(' ')||parts.slice(0,2).join('｜');
  }
  if(cat==='ポケモン関連サプライ用品'){
   const kept=parts.filter(x=>!/(?:セット内容確認|単品候補|ポケモン用品|商品名未確認)/.test(x));
@@ -52,7 +53,8 @@ function normalize(p,category,value){
   const kindRules=[[/SPOOL|スプール/i,'スプール'],[/LINE\s*ROLLER|ラインローラー/i,'ラインローラー'],[/BAIL\s*ARM|ベールアーム/i,'ベールアーム'],[/DRAG\s*KNOB|ドラグノブ/i,'ドラグノブ'],[/BATTERY\s*DOOR|バッテリーカバー/i,'バッテリーカバー'],[/EYECUP|アイカップ/i,'アイカップ'],[/LENS\s*CAP|レンズキャップ/i,'レンズキャップ'],[/CHARGER|充電器/i,'充電器'],[/DECAL|STICKER|デカール|シール/i,'デカール']];
   const kind=(kindRules.find(([re])=>re.test(raw+' '+shown))||[])[1]||parts.find(x=>!/(?:対応機種未確認|型番未確認|メーカー未確認)/.test(x)&&x!==brand)||'';
   const model=(raw.match(/\b[A-Z]{1,5}[- ]?\d{2,6}[A-Z0-9-]*\b/i)||[])[0]||'';
-  const compat=(raw.match(/\b(?:STELLA|STRADIC|NASCI|EXIST|CERTATE|COOLPIX|POWERSHOT|EOS|PS[12]|GAME\s*BOY)\s*[A-Z0-9-]*/i)||[])[0]||'';
+  let compat=(raw.match(/\b(?:STELLA|STRADIC|NASCI|EXIST|CERTATE|COOLPIX|POWERSHOT|EOS|PS[12]|GAME\s*BOY)\s*[A-Z0-9-]*/i)||[])[0]||'';
+  compat=compat.replace(/^STELLA/i,'ステラ').replace(/^STRADIC/i,'ストラディック').replace(/^NASCI/i,'ナスキー').replace(/^EXIST/i,'イグジスト').replace(/^CERTATE/i,'セルテート');
   return [brand,kind,compat,model].filter((x,i,a)=>x&&a.indexOf(x)===i).join('｜')||parts.slice(0,3).join('｜');
  }
  return parts.filter(x=>!/(?:正式名称未確認|原文確認|商品名未確認|未確認$)/.test(x)).slice(0,3).join('｜')||shown.slice(0,60);
