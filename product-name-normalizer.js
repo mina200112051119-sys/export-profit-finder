@@ -45,7 +45,7 @@ function normalize(p,category,value){
  if(cat==='ガンプラ'){
   const grade=(raw.match(/\b(?:MGSD|HGUC|HG|MG|RG|PG|EG|RE\/100|SDCS|SD)\b/i)||[])[0]||'';
   const model=(raw.match(/\b(?:RX[- ]?\d{2,3}[A-Z0-9-]*|MS[- ]?\d{2,3}[A-Z0-9-]*|NRX[- ]?\d{4}[A-Z0-9-]*|GF\d{2}[- ]?\d{3}[A-Z]{2})\b/i)||[])[0]||'';
-  const title=parts.find(x=>!/(?:バンダイ|ガンプラ|プラモデル|型番|正式名称)/.test(x)&&x!==grade)||'';
+  const title=parts.find(x=>!/(?:バンダイ|ガンプラ|プラモデル|型番|正式名称)/.test(x)&&x!==grade&&!/^\\d+\\s*\\/\\s*\\d+$/.test(x))||'';
   return [grade,title,model].filter(Boolean).join('｜')||parts.slice(0,3).join('｜');
  }
  if(cat==='交換部品・消耗品'){
@@ -53,7 +53,7 @@ function normalize(p,category,value){
   const kind=(kindRules.find(([re])=>re.test(raw+' '+shown))||[])[1]||parts.find(x=>!/(?:対応機種未確認|型番未確認|メーカー未確認)/.test(x)&&x!==brand)||'';
   const model=(raw.match(/\b[A-Z]{1,5}[- ]?\d{2,6}[A-Z0-9-]*\b/i)||[])[0]||'';
   const compat=(raw.match(/\b(?:STELLA|STRADIC|NASCI|EXIST|CERTATE|COOLPIX|POWERSHOT|EOS|PS[12]|GAME\s*BOY)\s*[A-Z0-9-]*/i)||[])[0]||'';
-  return [brand,kind,compat,model].filter(Boolean).join('｜')||parts.slice(0,3).join('｜');
+  return [brand,kind,compat,model].filter((x,i,a)=>x&&a.indexOf(x)===i).join('｜')||parts.slice(0,3).join('｜');
  }
  return parts.filter(x=>!/(?:正式名称未確認|原文確認|商品名未確認|未確認$)/.test(x)).slice(0,3).join('｜')||shown.slice(0,60);
 }
