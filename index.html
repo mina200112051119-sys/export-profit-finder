@@ -554,7 +554,7 @@ function rankRecommended(cat=null){
   const ac=RankingEngine.dataCompleteness(a).score,bc=RankingEngine.dataCompleteness(b).score;
   return bc-ac
    ||Number(Boolean(b.officialNameVerified))-Number(Boolean(a.officialNameVerified))
-   ||Number(b.watchCount||0)-Number(a.watchCount||0)
+   ||Number(productListingStatus(b).includes('型番候補'))-Number(productListingStatus(a).includes('型番候補'))
    ||b.totalScore-a.totalScore
    ||String(a.displayName||a.name).localeCompare(String(b.displayName||b.name),'ja');
  };
