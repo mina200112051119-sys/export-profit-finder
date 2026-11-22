@@ -11,7 +11,7 @@ function normalize(p,category,value){
  const cat=category||p?.cat||p?.category||'';
  const shown=String(value||p?.displayName||p?.titleJa||'').normalize('NFKC');
  const parts=noRarity(shown).split('｜').map(x=>clean(x)).filter(Boolean);
- const fraction=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||shown.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]?.replace(/\s/g,'')||'';
+ const fraction=(raw.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||shown.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/)||[])[0]?.replace(/\s/g,'')||(raw.match(/#\s*(\d{1,4})\b/)||[])[1]||'';
  if(cat==='ポケモンカード'){
   let name=parts[0]||'';
   if(!/[ぁ-んァ-ヶ一-龯]/u.test(name)) name='';
