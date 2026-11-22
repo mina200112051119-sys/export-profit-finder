@@ -426,13 +426,8 @@ async function searchPokemonCards(query, originalQuery = '') {
   const englishName = hashNumber
     ? ((rawTitle.match(/#\s*\d{1,3}\s+([A-Z][A-Z'-]{2,})/i) || [])[1] || '')
     : '';
-  const catalogQueries = [...new Set([
-    numberHints[0] || '',
-    hashNumber || '',
-    englishName,
-    cleanedQuery,
-    String(query || '').trim()
-  ].filter(Boolean))];
+  // The former independent catalog endpoint currently returns HTTP 410. Do not make repeated dead requests; use the official card search below.
+  const catalogQueries = [];
 
   // Try the strongest identifier first. Only make a second request when the
   // first query returns no Japanese candidates; this avoids the old request burst.
@@ -494,12 +489,24 @@ async function searchPokemonCards(query, originalQuery = '') {
   };
 }
 async function searchPokemonCardsOfficial(query) {
-  const response = await fetch('https://www.pokemon-card.com/card-search/', {
+  const raw = String(query || '').normalize('NFKC').trim();
+  const nameQuery = raw
+    .replace(/ポケモンカード(?:ゲーム)?/g, ' ')
+    .replace(/(?:WOTC|WIZARDS|BLACK\s*STAR|PROMO|プロモ|ブラックスター|ウィザーズ|SAR|SR|AR|RR|UR|HR|CHR|CSR|レアリティ未確認)/giu, ' ')
+    .replace(/\b\d{1,3}\s*\/\s*\d{1,3}\b/g, ' ')
+    .replace(/#\s*\d{1,3}\b/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+  const pokemonName = (nameQuery.match(/[ぁ-んァ-ヶ一-龯々ー]+(?:\s+[ぁ-んァ-ヶ一-龯々ー]+)*/u) || [])[0] || nameQuery;
+  if (!pokemonName) return [];
+  const searchUrl = new URL('https://www.pokemon-card.com/card-search/index.php');
+  searchUrl.searchParams.set('pokemon', pokemonName);
+  searchUrl.searchParams.set('regulation_detail', 'all');
+  const response = await fetch(searchUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProductLookup/1.0)' }
   });
   if (!response.ok) throw new Error('ポケモンカード公式検索の取得に失敗しました');
   const html = await response.text();
-  const q = normalizeText(query);
+  const q = normalizeText(pokemonName);
   const chars = Array.from(q);
   const terms = chars.length > 1 ? chars.slice(0, -1).map((ch, i) => ch + chars[i + 1]) : chars;
   const rows = [];
@@ -516,17 +523,20 @@ async function searchPokemonCardsOfficial(query) {
       value && value.length >= 2 && value.length <= 100
     ) || '';
     if (!title) continue;
-    const url = new URL(href, 'https://www.pokemon-card.com/').toString();
+    const url = new URL(href, searchUrl).toString();
     if (!url.startsWith('https://www.pokemon-card.com/')) continue;
-    if (!/card|detail/i.test(url)) continue;
-    if (/^(カード検索|検索|詳細|次のページ|前のページ)$/u.test(title)) continue;
+    if (!/card-search\/details\.php\/card\//i.test(url)) continue;
+    const context = html.slice(Math.max(0, match.index - 700), Math.min(html.length, linkPattern.lastIndex + 900));
+    const number = (context.match(/\b\d{1,3}\s*\/\s*\d{1,3}\b/) || [])[0] || '';
+    const packMatch = context.match(/(?:拡張パック|強化拡張パック|ハイクラスパック|スターターセット|プロモカード)[^<]{0,50}/u);
+    const setName = packMatch ? decodeHtml(packMatch[0]).replace(/\s+/g, ' ').trim() : '';
     const normalizedTitle = normalizeText(title);
     const score = q && normalizedTitle.includes(q) ? 100 :
       terms.length ? Math.round(100 * terms.filter(term => normalizedTitle.includes(term)).length / terms.length) : 0;
     if (score >= 45) {
       const imagePath = (inner.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i) || [])[1] || '';
-      const image = imagePath ? new URL(decodeHtml(imagePath), 'https://www.pokemon-card.com/').toString() : '';
-      rows.push({ title, url, image, date: '', sourceName: 'ポケモンカード公式カード検索', score });
+      const image = imagePath ? new URL(decodeHtml(imagePath), searchUrl).toString() : '';
+      rows.push({ title: [title, setName, number].filter(Boolean).join('｜'), cardName: title, setName, number, url, image, date: '', sourceName: 'ポケモンカード公式カード検索', score });
     }
   }
   return [...new Map(rows.map(row => [row.url + '|' + row.title, row])).values()]
@@ -626,6 +636,17 @@ module.exports = async (req, res) => {
       });
     }
     if (category === 'レトロゲーム') {
+      // Sega and PlayStation are listed as manual official references, but only
+      // Nintendo's catalog is queried automatically. Never label those systems
+      // as a failed official match when their source was not searched.
+      if (/playstation|\\bps[123]\\b|vib.?ribbon|sega|saturn|dreamcast|mega\\s*(?:cd|drive)|セガ|サターン|ドリームキャスト|メガcd|メガドライブ/i.test(query)) {
+        return res.json({
+          category, query, provider: null, fetchedAt: new Date().toISOString(),
+          status: 'manual_verification_required', verification: 'not_checked',
+          message: 'この検索語は任天堂以外の機種です。公式の自動検索対象外のため、商品が見つからないとは判定せず、セガ・PlayStation公式情報で手動確認してください。',
+          candidates: [], sources
+        });
+      }
       const candidates = await searchNintendoGames(query);
       return res.json({
         category, query, provider: '任天堂公式ゲーム検索',
