@@ -1126,6 +1126,7 @@ function trustedProductNameCandidate(candidate){
   const exactTitleRule=Boolean(candidate.diagnostic?.match)&&Number(candidate.score)>=80;
   return verifiedOfficial||exactTitleRule;
 }
+function conciseProductName(p,cat,name){try{return window.ProductNameNormalizer?.normalize(p,cat,name)||name}catch(e){return name}}
 async function enrichOfficialNames(items, categoryOverride){
   const list=(items||[]).slice(0,50);
   for(let start=0;start<list.length;start+=5){
@@ -1155,6 +1156,7 @@ async function enrichOfficialNames(items, categoryOverride){
         displayName=buildUnverifiedJapaneseIdentity(p,cat);
       }
       if(cat==='ポケモン関連サプライ用品'){try{displayName=cleanPokemonSupplyDisplayName(p,translated||displayName)}catch(e){}}
+      displayName=conciseProductName(p,cat,displayName);
       const domestic=buildDomesticSearchTerms(p,cat,displayName);
       const official=verified;
       const status=strong
@@ -1204,7 +1206,7 @@ async function photoDisplayName(x,cat){
   try{
     const candidate=await officialNameCandidate(p,cat);
     if(trustedProductNameCandidate(candidate)){
-      x.titleJa=candidate.titleJa;
+      x.titleJa=conciseProductName(p,cat,candidate.titleJa);
       const domestic=buildDomesticSearchTerms(p,cat,x.titleJa);x.domesticSearchName=domestic.primary;x.domesticSearchVariants=domestic.variants;
       x.officialNameStatus=candidate.status||'名称候補（公式情報との一致確認が必要）';
       return x.titleJa;
@@ -1216,6 +1218,7 @@ async function photoDisplayName(x,cat){
   }
   try{
     x.titleJa=cat==='ポケモンカード'?cleanPokemonDisplayName(p,translated):cat==='ポケモン関連サプライ用品'?cleanPokemonSupplyDisplayName(p,translated):cleanProductDisplayName(p,translated,cat);
+    x.titleJa=conciseProductName(p,cat,x.titleJa);
     const domestic=buildDomesticSearchTerms(p,cat,x.titleJa);x.domesticSearchName=domestic.primary;x.domesticSearchVariants=domestic.variants;
   }catch(e){x.titleJa=translated||x.title}
   x.officialNameStatus='名称未確認';
@@ -1378,6 +1381,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList
 data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}const hasSavedRanking=restoreRankingSnapshot();if(!hasSavedRanking){$('status').textContent='保存済みランキングを確認中…';try{render()}catch(e){console.error('初期画面描画エラー',e);$('status').textContent='画面初期化エラー：'+(e&&e.message?e.message:String(e))}}try{Promise.resolve(loadCloudStorage()).catch(e=>console.error('クラウド保存確認エラー',e))}catch(e){console.error('クラウド保存確認エラー',e)}Promise.resolve(loadServerRankingSnapshot()).then(loaded=>{if(!loaded&&!hasSavedRanking)$('status').textContent='保存済みランキングはありません。「今すぐ更新・再計算」から取得できます。'}).catch(e=>console.error('自動取得データ読み込みエラー',e));</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
+<script src="./product-name-normalizer.js"></script>
 
 <script>
 /* Candidate quality guard: reject category mismatches and unidentifiable bundles. */
