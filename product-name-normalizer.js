@@ -15,7 +15,7 @@ function normalize(p,category,value){
  if(cat==='ポケモンカード'){
   let name=parts[0]||'';
   if(!/[ぁ-んァ-ヶ一-龯]/u.test(name)) name='';
-  const setMap=[[/SV2A|\b151\b|ポケモンカード151/i ,'ポケモンカード151'],[/SV8A|TERASTAL FESTIVAL|テラスタルフェス/i,'テラスタルフェスex'],[/M2A|MEGA DREAM|MEGAドリーム/i,'MEGAドリームex'],[/WOTC|WIZARDS|BLACK STAR|ブラックスタープロモ/i,'ブラックスタープロモ'],[/POP SERIES 4/i,'POP Series 4'],[/CELEBRATIONS/i,'Celebrations'],[/TEAM\s*ROCKET|ロケット団/i,'ロケット団'],[/JUNGLE|ジャングル/i,'ジャングル'],[/FOSSIL|化石の秘密/i,'化石の秘密'],[/VSTAR UNIVERSE|S12A|VSTARユニバース/i,'VSTARユニバース']];
+  const setMap=[[/SV2A|POKEMON(?:\\s+CARD)?\\s+151|JAPANESE\\s+151|ポケモンカード151/i,'ポケモンカード151'],[/SV8A|TERASTAL FESTIVAL|テラスタルフェス/i,'テラスタルフェスex'],[/M2A|MEGA DREAM|MEGAドリーム/i,'MEGAドリームex'],[/WOTC|WIZARDS|BLACK STAR|ブラックスタープロモ/i,'ブラックスタープロモ'],[/POP SERIES 4/i,'POP Series 4'],[/CELEBRATIONS/i,'Celebrations'],[/TEAM\\s*ROCKET|ロケット団/i,'ロケット団'],[/JUNGLE|ジャングル/i,'ジャングル'],[/FOSSIL|化石の秘密/i,'化石の秘密'],[/VSTAR UNIVERSE|S12A|VSTARユニバース/i,'VSTARユニバース']];
   const mapped=(setMap.find(([re])=>re.test(raw+' '+shown))||[])[1]||'';
   let set=mapped||parts.slice(1).find(x=>!(/\b\d{1,3}\s*\/\s*\d{1,3}\b/.test(x)||/^(?:SV\d|S\d|M\d)/i.test(x)||/^(?:SAR|SR|AR|RR|UR|HR|CHR|CSR|プロモ|ホロ)$/i.test(x)))||'';
   set=clean(set).replace(/\b(?:SV\d+[A-Z]?|S\d+[A-Z]?|M\d+[A-Z]?)\b/ig,'').trim();
