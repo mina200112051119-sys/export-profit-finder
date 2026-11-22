@@ -1165,8 +1165,8 @@ async function photoDisplayName(x,cat){
   try{
     const candidate=await officialNameCandidate(p,cat);
     if(candidate&&Number(candidate.score)>=60&&candidate.titleJa){
-      x.titleJa=candidate.titleJa;
-      const domestic=buildDomesticSearchTerms(p,cat,x.titleJa);x.domesticSearchName=domestic.primary;x.domesticSearchVariants=domestic.variants;
+      x.titleJa=conciseProductName(p,cat,candidate.titleJa);
+      const domestic=buildDomesticSearchTerms(p,cat,x.titleJa);domestic.primary=x.titleJa;x.domesticSearchName=domestic.primary;x.domesticSearchVariants=domestic.variants;
       x.officialNameStatus=candidate.status||'名称候補（公式情報との一致確認が必要）';
       return x.titleJa;
     }
