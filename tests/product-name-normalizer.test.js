@@ -61,3 +61,12 @@ test('replacement parts display keeps brand, part and compatible model only', ()
     'シマノ｜ラインローラー｜ステラ 2500'
   );
 });
+
+test('card number 151/165 is not mistaken for the Pokémon 151 set', () => {
+  const value = normalize(
+    { name: 'Charizard 151/165 Rare English Card' },
+    'ポケモンカード',
+    'リザードン｜黒炎の支配者｜151/165｜RR'
+  );
+  assert.equal(value, 'リザードン｜黒炎の支配者｜151/165');
+});
