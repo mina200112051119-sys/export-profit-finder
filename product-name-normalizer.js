@@ -45,7 +45,7 @@ function normalize(p,category,value){
  if(cat==='ガンプラ'){
   const grade=(raw.match(/\b(?:MGSD|HGUC|HG|MG|RG|PG|EG|RE\/100|SDCS|SD)\b/i)||[])[0]||'';
   const model=(raw.match(/\b(?:RX[- ]?\d{2,3}[A-Z0-9-]*|MS[- ]?\d{2,3}[A-Z0-9-]*|NRX[- ]?\d{4}[A-Z0-9-]*|GF\d{2}[- ]?\d{3}[A-Z]{2})\b/i)||[])[0]||'';
-  const title=parts.find(x=>!/(?:バンダイ|ガンプラ|プラモデル|型番|正式名称)/.test(x)&&x!==grade&&!/^\\d+\\s*\\/\\s*\\d+$/.test(x))||'';
+  const title=parts.find(x=>!/(?:バンダイ|ガンプラ|プラモデル|型番|正式名称)/.test(x)&&x!==grade&&!x.includes('/'))||'';
   return [grade,title,model].filter(Boolean).join('｜')||parts.slice(0,3).join('｜');
  }
  if(cat==='交換部品・消耗品'){
