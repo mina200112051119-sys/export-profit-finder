@@ -9,8 +9,20 @@ const QUERIES = [
   { cat: 'ポケモンカード', q: 'Japanese Pokemon UR HR secret rare single card Japanese -lot -bulk' },
   { cat: 'ポケモンカード', q: 'Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk' },
   { cat: 'ポケモンカード', q: 'Japanese Pokemon card set number single card Japanese -lot -bulk -proxy' },
-{ cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan limited official merchandise sealed' },
-  { cat: '釣具', q: 'Japanese fishing reel spinning baitcasting Shimano Daiwa Japan -parts -bearing -replacement' },
+  // Keep scheduled search terms aligned with the app's manual refresh.
+  // Broader coverage prevents the morning snapshot from missing items found manually.
+  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan official Pokemon character goods card sleeves deck box playmat binder with character name' },
+  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan exclusive Pokemon character deck case sleeves card storage official' },
+  { cat: 'ポケモン関連サプライ用品', q: 'Japanese Pokemon TCG official sleeves deck box playmat binder character design sealed accessories' },
+  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan official Pikachu Eevee Charizard Mew card binder deck box playmat sleeves' },
+  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon Center Japan card album collection file official goods Pokemon character design' },
+  { cat: 'ポケモン関連サプライ用品', q: 'Pokemon card game official damage counter coin deck case accessories Japan' },
+  { cat: '釣具', q: 'Shimano fishing reel spinning baitcasting Japan' },
+  { cat: '釣具', q: 'Daiwa fishing reel spinning baitcasting Japan' },
+  { cat: '釣具', q: 'Shimano fishing rod surf rod bass rod Japan' },
+  { cat: '釣具', q: 'Daiwa fishing rod surf rod bass rod Japan' },
+  { cat: '釣具', q: 'Shimano fishing lure hard bait soft bait Japan' },
+  { cat: '釣具', q: 'Daiwa fishing lure hard bait soft bait Japan' },
   { cat: 'カメラ', q: 'Japanese digital camera Canon Nikon Fujifilm' },
   { cat: 'レトロゲーム', q: 'Nintendo Famicom console Japan' },
   { cat: 'レトロゲーム', q: 'Super Famicom game cartridge Japan' },
@@ -60,7 +72,11 @@ function invokeApi(handler, req) {
 }
 
 function mergeSnapshotCategories(previousCategories = [], currentCategories = []) {
-  const byQuery = new Map((previousCategories || []).map(row => [row.query, row]));
+  // Retain cached results only for queries in the current scheduled search plan.
+  const activeQueries = new Set((currentCategories || []).map(row => row.query));
+  const byQuery = new Map((previousCategories || [])
+    .filter(row => activeQueries.has(row.query))
+    .map(row => [row.query, row]));
   for (const row of currentCategories || []) {
     if (row.ok || !byQuery.has(row.query)) byQuery.set(row.query, row);
   }
