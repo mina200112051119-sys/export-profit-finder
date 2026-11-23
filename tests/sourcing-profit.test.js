@@ -182,11 +182,12 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 
 
 test('detail sourcing links use the selected Japanese domestic search terms', () => {
-  const source = fs.readFileSync('index.html', 'utf8');
-  assert.match(source, /function buildDomesticSearchTerms\(p,\s*category,\s*displayName\)/);
-  assert.match(source, /domesticSearchName/);
-  assert.match(source, /const domestic=buildDomesticSearchTerms\(p,cat,displayName\)/);
-  assert.match(source, /item\.domesticSearchName=domestic\.primary/);
+  const html = fs.readFileSync('index.html', 'utf8');
+  const sourcing = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(html, /function buildDomesticSearchTerms\(p,\s*category,\s*displayName\)/);
+  assert.match(html, /item\.domesticSearchName=domestic\.primary/);
+  assert.match(sourcing, /SEARCH_NAME_KEY/);
+  assert.match(sourcing, /p\.domesticSearchName\s*\|\|\s*p\.displayName\s*\|\|\s*p\.name/);
 });
 
 
