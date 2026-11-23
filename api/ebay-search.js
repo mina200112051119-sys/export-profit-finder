@@ -43,6 +43,22 @@ function median(values) {
   return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
 }
 
+function shippingFor(options) {
+  const rows = Array.isArray(options) ? options : [];
+  // Browse API can return an empty first option while a later option has a usable cost.
+  const priced = rows.find(option => option?.shippingCost?.value != null &&
+    Number.isFinite(Number(option.shippingCost.value)));
+  if (priced) return {
+    value: Math.max(0, Number(priced.shippingCost.value)),
+    currency: priced.shippingCost.currency || '',
+    known: true
+  };
+  const free = rows.find(option =>
+    String(option?.shippingCostType || '').toUpperCase() === 'FREE');
+  if (free) return { value: 0, currency: free.shippingCost?.currency || '', known: true };
+  return { value: null, currency: '', known: false };
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=180');
@@ -75,20 +91,26 @@ module.exports = async (req, res) => {
       return res.status(r.status).json({ error: 'eBay search failed', detail: text.slice(0, 500) });
     }
     const data = await r.json();
-    const items = (data.itemSummaries || []).map(item => ({
-      title: item.title,
-      price: Number(item.price?.value || 0),
-      currency: item.price?.currency || 'USD',
-      shipping: item.shippingOptions?.[0]?.shippingCost?.value != null ? Number(item.shippingOptions[0].shippingCost.value) : (String(item.shippingOptions?.[0]?.shippingCostType || '').toUpperCase() === 'FREE' ? 0 : null),
-      shippingKnown: item.shippingOptions?.[0]?.shippingCost?.value != null || String(item.shippingOptions?.[0]?.shippingCostType || '').toUpperCase() === 'FREE',
-      image: item.image?.imageUrl || '',
-      url: item.itemWebUrl || '',
-      condition: item.condition || '',
-      itemId: item.itemId || '',
-      watchCount: Number.isFinite(Number(item.watchCount)) ? Number(item.watchCount) : null,
-      categoryId: item.leafCategoryIds?.[0] || '',
-      categories: item.categories || []
-    })).filter(x => x.price > 0);
+    const items = (data.itemSummaries || []).map(item => {
+      const shipping = shippingFor(item.shippingOptions);
+      const priceCurrency = item.price?.currency || 'USD';
+      const currencyMatches = !shipping.currency || shipping.currency === priceCurrency;
+      return {
+        title: item.title,
+        price: Number(item.price?.value || 0),
+        currency: priceCurrency,
+        shipping: currencyMatches ? shipping.value : null,
+        shippingCurrency: shipping.currency,
+        shippingKnown: shipping.known && currencyMatches,
+        image: item.image?.imageUrl || '',
+        url: item.itemWebUrl || '',
+        condition: item.condition || '',
+        itemId: item.itemId || '',
+        watchCount: Number.isFinite(Number(item.watchCount)) ? Number(item.watchCount) : null,
+        categoryId: item.leafCategoryIds?.[0] || '',
+        categories: item.categories || []
+      };
+    }).filter(x => x.price > 0);
 
     // Daily snapshots can skip translation to avoid hundreds of redundant translation requests.
     if (String(req.query?.skipTranslation || '') !== '1') {
@@ -116,3 +138,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: e.message || 'server error' });
   }
 };
+
+module.exports.shippingFor = shippingFor;

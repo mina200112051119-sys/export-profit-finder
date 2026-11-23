@@ -13,7 +13,7 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
   let receivedProduct;
   let receivedSettings;
   const candidateProfit = vm.runInNewContext('(' + fnSource + ')', {
-    feeOf: () => 0.136,
+    feeOf: () => 0.15,
     window: {
       RankingEngine: {
         calcCosts(product, settings) {
@@ -40,31 +40,31 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
   assert.equal(receivedProduct.cost, 1000);
   assert.equal(receivedProduct.sourcingShippingJpy, 100);
   assert.equal(receivedSettings.fxRate, 150);
-  assert.equal(receivedSettings.feeRate, 0.136);
+  assert.equal(receivedSettings.feeRate, 0.15);
   assert.equal(receivedSettings.internationalRate, 0.0135);
 });
 
-test('break-even includes sourcing shipping, conversion fee, and buyer-paid shipping', () => {
-  const source = fs.readFileSync('ranking-engine.js', 'utf8');
-  const start = source.indexOf('function breakEvenPrice(p,s={}){');
-  assert.notEqual(start, -1, 'breakEvenPrice function exists');
-  const end = source.indexOf('\n}\n', start);
-  assert.notEqual(end, -1, 'breakEvenPrice function closes');
-  const fnSource = source.slice(start, end + 2);
-  const breakEvenPrice = vm.runInNewContext('(' + fnSource + ')', {
-    num: (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback,
-    round: value => Math.round(value),
-    Math,
-    Number
-  });
-  const price = breakEvenPrice(
-    { cost: 1000, sourcingShippingJpy: 100, ship: 5 },
-    { fxRate: 150, feeRate: .136, internationalRate: .0135,
-      conversionFeeRate: 2, domesticShipping: 50, packaging: 80, otherCost: 0 }
-  );
-  assert.equal(price, 5);
+test('break-even includes fee tax, sourcing shipping, conversion fee, and buyer-paid shipping', () => {
+  const product = { cost: 1000, sourcingShippingJpy: 100, ship: 5, shippingKnown: true };
+  const settings = { fxRate: 150, feeRate: .15, internationalRate: .0135,
+    conversionFeeRate: 2, feeTaxRate: .10, salesTaxAllowanceRate: .10, domesticShipping: 50, packaging: 80, otherCost: 0 };
+  for (const path of ['ranking-engine.js', 'cost-fix.js']) {
+    const source = fs.readFileSync(path, 'utf8');
+    const start = source.indexOf('function breakEvenPrice(p,s={}){');
+    assert.notEqual(start, -1, path + ' breakEvenPrice function exists');
+    const end = source.indexOf('\n}', start);
+    assert.notEqual(end, -1, path + ' breakEvenPrice function closes');
+    const fnSource = source.slice(start, end + 2);
+    const breakEvenPrice = vm.runInNewContext('(' + fnSource + ')', {
+      num: (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback,
+      Math,
+      Number
+    });
+    assert.equal(breakEvenPrice(product, settings), 7, path + ' includes buyer tax, fee tax, and rounds upward');
+    assert.equal(breakEvenPrice({ ...product, ship: null, shippingKnown: false }, settings), null,
+      path + ' does not assume unknown shipping is free');
+  }
 });
-
 test('product profit and 30/60/90-day forecasts all include sourcing shipping', () => {
   const source = fs.readFileSync('ranking-engine.js', 'utf8');
   const functionSource = (name, nextName) => {
@@ -106,31 +106,33 @@ test('retro and Gunpla refresh use focused queries instead of long mixed keyword
   assert.match(html, /for\(const c of RankingEngine\.CATEGORIES\)for\(const q of defaultSearchQueriesForCategory\(c\)\)tasks\.push\(\{cat:c,q\}\)/);
 });
 
-test('daily snapshot category mapping matches all current retro, Gunpla, and replacement-part refresh queries', () => {
-  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
-  for (const query of [
-    "'Nintendo Famicom console Japan':'レトロゲーム'",
-    "'Super Famicom game cartridge Japan':'レトロゲーム'",
-    "'Nintendo Game Boy game cartridge Japan':'レトロゲーム'",
-    "'Nintendo 64 game cartridge Japan':'レトロゲーム'",
-    "'Sega Saturn game disc Japan':'レトロゲーム'",
-    "'Sega Dreamcast game disc Japan':'レトロゲーム'",
-    "'Sony PlayStation PS1 PS2 game disc Japan':'レトロゲーム'",
-    "'Nintendo Sega Sony retro game controller gamepad Japan':'レトロゲーム'",
-    "'Game Boy Advance Nintendo DS PSP handheld console Japan':'レトロゲーム'",
-    "'Bandai Gunpla HG 1/144 model kit':'ガンプラ'",
-    "'Bandai Gundam MG Master Grade 1/100 model kit':'ガンプラ'",
-    "'Bandai Gundam RG Real Grade 1/144 model kit':'ガンプラ'",
-    "'Bandai Gundam PG Perfect Grade model kit':'ガンプラ'",
-    "'Vintage Bandai Gundam plastic model kit Japan':'ガンプラ'",
-    "'Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品'",
-    "'Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal':'交換部品・消耗品'",
-    "'Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan':'交換部品・消耗品'",
-    "'Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan':'交換部品・消耗品'",
-    "'Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan':'交換部品・消耗品'"
-  ]) assert.ok(engine.includes(query), 'snapshot map contains ' + query);
+test('daily snapshot refresh includes the focused category searches', () => {
+  const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
+  const queries = [
+    ["レトロゲーム","Nintendo Famicom console Japan"],
+    ["レトロゲーム","Super Famicom game cartridge Japan"],
+    ["レトロゲーム","Nintendo Game Boy game cartridge Japan"],
+    ["レトロゲーム","Nintendo 64 game cartridge Japan"],
+    ["レトロゲーム","Sega Saturn game disc Japan"],
+    ["レトロゲーム","Sega Dreamcast game disc Japan"],
+    ["レトロゲーム","Sony PlayStation PS1 PS2 game disc Japan"],
+    ["レトロゲーム","Nintendo Sega Sony retro game controller gamepad Japan"],
+    ["レトロゲーム","Game Boy Advance Nintendo DS PSP handheld console Japan"],
+    ["ガンプラ","Bandai Gunpla HG 1/144 model kit"],
+    ["ガンプラ","Bandai Gundam MG Master Grade 1/100 model kit"],
+    ["ガンプラ","Bandai Gundam RG Real Grade 1/144 model kit"],
+    ["ガンプラ","Bandai Gundam PG Perfect Grade model kit"],
+    ["ガンプラ","Vintage Bandai Gundam plastic model kit Japan"],
+    ["交換部品・消耗品","Shimano genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal"],
+    ["交換部品・消耗品","Daiwa genuine fishing reel spare parts replacement spool line roller bail arm drag knob Japan -custom -upgrade -universal"],
+    ["交換部品・消耗品","Canon Nikon genuine camera replacement spare parts battery door eyecup body cap lens cap charger Japan"],
+    ["交換部品・消耗品","Nintendo Sega genuine retro game console replacement parts AC adapter power supply AV cable controller Japan"],
+    ["交換部品・消耗品","Bandai Gunpla genuine replacement parts runner parts decals stickers weapon parts Japan"]
+  ];
+  for (const [category, query] of queries) {
+    assert.ok(cron.includes("cat: '"+category+"', q: '"+query+"'"), 'scheduled query is mapped to '+category+': '+query);
+  }
 });
-
 test('scheduled daily refresh has valid separators and all focused replacement-part searches', () => {
   const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
   for (const query of [
@@ -144,7 +146,7 @@ test('scheduled daily refresh has valid separators and all focused replacement-p
 });
 test('applying or clearing a sourcing price refreshes the current ranking view', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /function refreshCurrentRanking\(\)\{if\(!\$\('ranking'\)\)return;renderList\(rank\(currentRankingCategory\),currentRankingTitle\)\}/);
+  assert.match(html, /function refreshCurrentRanking\(\)\{if\(!\$\('ranking'\)\)return;renderList\(rankRecommended\(currentRankingCategory\),currentRankingTitle\)\}/);
   assert.match(html, /updateVisibleProfit\(p\);\s*refreshCurrentRanking\(\);/);
   assert.match(html, /clearSourcingOverride\(id\);if\(p\)\{updateVisibleProfit\(p\);refreshCurrentRanking\(\);\}/);
   assert.match(html, /function category\(c\)\{currentRankingCategory=c;currentRankingTitle=/);
@@ -181,12 +183,13 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 });
 
 
-test('detail sourcing links prefer saved Japanese domestic search name', () => {
-  const source = fs.readFileSync('index.html', 'utf8');
-  assert.match(source, /function domesticSearchQuery\(p\)/);
-  assert.match(source, /localStorage\.getItem\('domesticSearchName:v1:'\+String\(p\.id\)\)/);
-  assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\),p\.cat\)/);
-  assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
+test('sourcing search links use and save the selected Japanese domestic search name', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  assert.match(source, /function getDomesticSearchName\(p\)/);
+  assert.match(source, /localStorage\.getItem\(SEARCH_NAME_KEY \+ String\(p\.id\)\)/);
+  assert.match(source, /value="\$\{esc\(getDomesticSearchName\(p\)\)\}"/);
+  assert.match(source, /saveDomesticSearchName\(p, searchNameInput\.value\)/);
+  assert.match(source, /searchUrl\(p, source, query\)/);
 });
 
 
@@ -204,7 +207,7 @@ test('sourcing selected marker uses stable candidate ID after reorder and deleti
 
 test('saving a sourcing candidate rejects negative domestic shipping', () => {
   const source = fs.readFileSync('sourcing-compare.js', 'utf8');
-  assert.match(source, /if \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)/);
+  assert.match(source, /if \(shipping !== null && \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)\)/);
   assert.match(source, /国内送料は0円以上で入力してください/);
   assert.match(source, /shippingJpy: shipping/);
 });
@@ -294,7 +297,8 @@ test('replacement parts are a first-class category with item detail and official
   assert.match(html, /p\.cat==='交換部品・消耗品'\?classifyPartsDetail\(p\):null/);
   assert.match(html, /部品の種類/);
   assert.match(html, /対象分野/);
-  assert.match(html, /対応機種・型番の手がかり/);
+  assert.match(html, /対応機種候補（未確認）/);
+  assert.match(html, /partsInfo\.compatibilityModels/);
   assert.match(sourcing, /'交換部品・消耗品': \[/);
   assert.match(official, /'交換部品・消耗品': \[/);
 });
@@ -329,8 +333,8 @@ test('camera and fishing model extraction does not mistake ordinary title words 
 
 test('fishing search separates Shimano and Daiwa and rejects mixed-brand listings', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /Shimano fishing reel spinning baitcasting Japan -Daiwa/);
-  assert.match(html, /Daiwa fishing reel spinning baitcasting Japan -Shimano/);
+  assert.match(html, /Shimano fishing reel spinning baitcasting Japan/);
+  assert.match(html, /Daiwa fishing reel spinning baitcasting Japan/);
   assert.match(html, /function fishingBrandConflict\(raw\)/);
   assert.match(html, /if\(cat==='釣具'\) return cleanFishingDisplayName\(p,translated\)/);
   assert.match(html, /lot of\|job lot\|bundle\|assorted\|choose\|select/);
@@ -355,18 +359,22 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
   assert.match(html, /完成品・組立済/);
   assert.match(html, /未組立・未開封の記載あり/);
   assert.match(html, /型番候補あり・対応機種との一致は未確認/);
-  assert.match(html, /レトロゲームの商品分類/);
-  assert.match(html, /ガンプラの商品分類/);
+  assert.match(html, /retroInfo\?'<div class="notice"><b>商品情報/);
+  assert.match(html, /gunplaInfo\?'<div class="notice"><b>商品情報/);
+  assert.match(html, /partsInfo\?'<div class="notice"><b>部品情報/);
+  assert.match(html, /<span>商品種類<\/span>/);
+  assert.match(html, /<span>グレード・縮尺<\/span>/);
+  assert.match(html, /<span>対応機種候補（未確認）<\/span>/);
 });
 
 
-test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
+test('candidate shortlist expands broad categories, caps display at 30, and removes loss-making priced-in candidates', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /Japanese Pokemon TCG graded PSA CGC Japanese cards/);
-  assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
+  assert.match(html, /Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk/);
+  assert.match(html, /Pokemon Center Japan official Pokemon character goods card sleeves deck box playmat binder/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
-  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
+  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,30)'));
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
   assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
@@ -381,11 +389,11 @@ test('deduplication keeps the listing with a saved sourcing cost instead of repl
   assert.ok(html.includes('candidateHasSavedCost&&!priorHasSavedCost'));
 });
 
-test('camera profit calculation uses the standard eBay final value fee rather than the obsolete lower rate', () => {
+test('camera profit calculation uses the conservative 15 percent eBay fee estimate', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(html, /'カメラ':\.136/);
-  assert.match(live, /camera\|カメラ\/i\.test\(cat\)\?0\.136/);
+  assert.match(html, /'カメラ':\.15/);
+  assert.match(live, /camera\|カメラ\/i\.test\(cat\)\?0\.15/);
   assert.doesNotMatch(html, /'カメラ':\.0935/);
   assert.doesNotMatch(live, /camera\|カメラ\/i\.test\(cat\)\?0\.0935/);
 });
@@ -400,3 +408,84 @@ test('manual research form explains the exact data to enter and saves the checke
 });
 
 // Keep regression expectations aligned with the category-specific query set.
+
+test('profit breakdown exposes each fee, Japanese tax, and separate shipping costs', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /function profitBreakdownHtml\(c,p\)/);
+  assert.match(html, /手数料の消費税（10%）/);
+  assert.match(html, /仕入先送料/);
+  assert.match(html, /海外発送送料/);
+});
+
+test('fuzzy official candidates cannot overwrite a translated product name', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const start = html.indexOf('function trustedProductNameCandidate(candidate){');
+  const end = html.indexOf('\n}', start);
+  assert.ok(start >= 0 && end > start);
+  const trusted = vm.runInNewContext('(' + html.slice(start, end + 2) + ')', {
+    hasJapaneseText: value => /[ぁ-んァ-ヶ一-龯]/u.test(String(value || ''))
+  });
+  assert.equal(trusted({
+    score: 100, titleJa: '別のカード名｜別のセット｜169/086',
+    status: 'カード番号一致候補（セット・カード名・画像は要確認）',
+    diagnostic: { provider: 'official search' }
+  }), false);
+  assert.equal(trusted({
+    score: 100, titleJa: 'ゼクロムex｜公式セット｜169/086',
+    status: '公式カード情報で名称・番号・収録パック確認済み',
+    diagnostic: { match: 'exact-number-and-set' }
+  }), true);
+  assert.equal(trusted({
+    score: 100, titleJa: 'キヤノン PowerShot G9',
+    status: '商品名候補（公式情報との一致は未確認）',
+    diagnostic: { match: 'curated-title-rule' }
+  }), true);
+});
+
+
+test('profit margin uses the full cost total rather than purchase price alone', () => {
+  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot handling')[0];
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  const engine = context.window.RankingEngine;
+  const result = engine.calcCosts(
+    { sell: 100, ship: 10, shippingKnown: true, cost: 10000, sourcingShippingJpy: 500 },
+    { fxRate: 150, feeRate: .15, internationalRate: .0135,
+      domesticShipping: 200, packaging: 100, otherCost: 50 }
+  );
+  assert.equal(result.margin, result.profit / result.totalCosts);
+});
+
+
+test('unverified exchange rates suppress profit and break-even estimates', () => {
+  const source = fs.readFileSync('ranking-engine.js', 'utf8').split('/* Daily snapshot handling')[0];
+  const context = { window: {} };
+  vm.runInNewContext(source, context);
+  const engine = context.window.RankingEngine;
+  const product = { sell: 100, ship: 10, shippingKnown: true, cost: 5000 };
+  const settings = { fxRate: 150, fxRateVerified: false, feeRate: .15, internationalRate: .0135 };
+  const costs = engine.calcCosts(product, settings);
+  assert.equal(costs.profit, null);
+  assert.equal(costs.margin, null);
+  assert.equal(engine.breakEvenPrice(product, settings), null);
+});
+
+
+test('photo search does not convert JPY prices using the fallback exchange rate', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const start = html.indexOf('function photoCandidateProduct(x){');
+  assert.notEqual(start, -1, 'photoCandidateProduct function exists');
+  const end = html.indexOf('\n}', start);
+  assert.notEqual(end, -1, 'photoCandidateProduct function closes');
+  const fnSource = html.slice(start, end + 2);
+  const message = { textContent: '' };
+  const photoCandidateProduct = vm.runInNewContext('(' + fnSource + ')', {
+    window: { __exportApp: { getFx: () => 150 } },
+    fxRate: 150,
+    fxRateVerified: false,
+    $: () => message,
+    map: () => []
+  });
+  assert.equal(photoCandidateProduct({ currency: 'JPY', price: 15000, shipping: 0 }), null);
+  assert.match(message.textContent, /為替未取得/);
+});
