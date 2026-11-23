@@ -38,12 +38,12 @@ test('supply and fishing discovery queries use positive terms and leave exclusio
   assert.doesNotMatch(fishing, /\s-[a-z]/i);
 });
 
-test('category cards expose the retrieval, classification, and recommendation stages', () => {
+test('category cards show only the eligible candidate count and keep diagnostics internal', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /検索 '\s*\+\(st\.rawUniqueItems/);
-  assert.match(html, /商品判定 '\s*\+\(st\.matchedItems/);
-  assert.match(html, /条件通過 '\s*\+\(st\.rankedItems/);
-  assert.match(html, /おすすめ '\s*\+\(st\.recommendedItems/);
+  assert.match(html, /現在出品候補 \$\{count\}件/);
+  assert.match(html, /const count=rankRecommended\(c\)\.length/);
+  assert.doesNotMatch(html, /検索 '\s*\+\(st\.rawUniqueItems/);
+  assert.doesNotMatch(html, /送料未取得 '\s*\+\(st\.missingShipping/);
   assert.match(html, /missingShipping/);
   assert.match(html, /missingUrl/);
   assert.match(html, /lowCompleteness/);
