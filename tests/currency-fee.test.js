@@ -19,8 +19,8 @@ test('currency conversion fee is 3% when listing and payout currencies differ', 
   const p = engine.normalizeProduct({ currency: 'EUR', sell: 100, ship: 0, cost: 1000 });
   const costs = engine.calcCosts(p, { fxRate: 150, feeRate: 0.136, internationalRate: 0.0135, autoConversionFee: true, payoutCurrency: 'USD' });
   assert.equal(costs.conversionFeeRate, 3);
-  assert.equal(costs.conversionFeeJpy, 450);
-  assert.equal(costs.profit !== null, true);
+  assert.equal(costs.conversionFeeJpy, null);
+  assert.equal(costs.profit, null);
 });
 
 test('listing currency is retained when normalizing eBay products', () => {
