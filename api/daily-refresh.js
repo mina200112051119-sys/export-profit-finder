@@ -66,7 +66,13 @@ function invokeApi(handler, req) {
 }
 
 function mergeSnapshotCategories(previousCategories = [], currentCategories = []) {
-  const byQuery = new Map((previousCategories || []).map(row => [row.query, row]));
+  // Keep cached data only for queries that still belong to the current search plan.
+  // A failed current query may reuse its matching previous result, but obsolete
+  // one-off queries must not linger and distort category counts forever.
+  const activeQueries = new Set((currentCategories || []).map(row => row.query));
+  const byQuery = new Map((previousCategories || [])
+    .filter(row => activeQueries.has(row.query))
+    .map(row => [row.query, row]));
   for (const row of currentCategories || []) {
     if (row.ok || !byQuery.has(row.query)) byQuery.set(row.query, row);
   }
