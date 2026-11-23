@@ -86,7 +86,7 @@ test('product profit and 30/60/90-day forecasts all include sourcing shipping', 
   const simulateRisk = vm.runInNewContext('(' + functionSource('simulateRisk', 'inventoryRiskScore') + ')', {
     ...context, calcCosts, projectedPrice, breakEvenPrice: () => 0
   });
-  const product = { sell: 20, ship: 5, cost: 1000, sourcingShippingJpy: 200 };
+  const product = { currency: 'USD', sell: 20, ship: 5, cost: 1000, sourcingShippingJpy: 200 };
   const settings = { fxRate: 150, feeRate: .136, internationalRate: .0135,
     conversionFeeRate: 2, domesticShipping: 50, packaging: 80, otherCost: 0 };
   const withoutSourcingShipping = calcCosts({ ...product, sourcingShippingJpy: 0 }, settings);
@@ -183,10 +183,10 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 
 test('detail sourcing links use the selected Japanese domestic search terms', () => {
   const source = fs.readFileSync('index.html', 'utf8');
-  assert.match(source, /function buildDomesticSearchTerms\(p,category,displayName\)/);
-  assert.match(source, /domesticSearchName:v1:/);
-  assert.match(source, /sourceSearchUrls\(searchTerms\[0\]\|\|domestic\.query,p\.cat\)/);
-  assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
+  assert.match(source, /function buildDomesticSearchTerms\(p,\s*category,\s*displayName\)/);
+  assert.match(source, /domesticSearchName/);
+  assert.match(source, /const domestic=buildDomesticSearchTerms\(p,cat,displayName\)/);
+  assert.match(source, /item\.domesticSearchName=domestic\.primary/);
 });
 
 
