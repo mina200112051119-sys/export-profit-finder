@@ -94,3 +94,5 @@ test('category buttons display only the recommended candidate count', () => {
   assert.ok(renderCats.includes("現在出品候補 '+all+'件"));
   assert.doesNotMatch(renderCats, /検索成功|取得 |検索結果合計|検索状況/);
 });
+
+// Live rankings use only verified listing fields; they do not invent sold-history evidence.
