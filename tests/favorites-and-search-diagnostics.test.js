@@ -20,7 +20,8 @@ function makeContext() {
     JSON,
     String,
     Array,
-    Number
+    Number,
+    saveCloudStorage: () => true
   };
   vm.runInNewContext(
     html.slice(start, end) +
@@ -57,8 +58,12 @@ test('favorites: cloud storage includes favorites and schedules their saves', ()
   assert.match(html, /favoriteProducts:v1/);
 });
 
-test('category diagnostics: reports successful queries and combined search-result totals', () => {
+test('category diagnostics remain available internally without cluttering category buttons', () => {
   assert.match(html, /categorySearchStats=searchStats/);
   assert.match(html, /searchResultTotal:merged\.total/);
-  assert.match(html, /検索成功 /);
+  const start = html.indexOf('function renderCats(){');
+  const end = html.indexOf('function refreshCurrentRanking()', start);
+  const renderCats = html.slice(start, end);
+  assert.match(renderCats, /現在出品候補/);
+  assert.doesNotMatch(renderCats, /検索成功|取得 |検索結果合計|検索状況/);
 });
