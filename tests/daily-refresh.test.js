@@ -56,3 +56,27 @@ test('scheduled searches skip duplicate title translations and use bounded paral
   assert.doesNotMatch(source, /req\.headers\.host/);
   assert.match(search, /skipTranslation \|\| ''\) !== '1'/);
 });
+
+
+test('scheduled snapshot searches six queries each for fishing and Pokémon supplies', () => {
+  const fs = require('node:fs');
+  const source = fs.readFileSync('api/daily-refresh.js', 'utf8');
+  const supply = [...source.matchAll(/cat: 'ポケモン関連サプライ用品', q:/g)].length;
+  const fishing = [...source.matchAll(/cat: '釣具', q:/g)].length;
+  assert.equal(supply, 6);
+  assert.equal(fishing, 6);
+});
+
+test('scheduled snapshots discard obsolete queries but preserve failed active-query data', () => {
+  const previous = [
+    { query: 'obsolete query', ok: true, items: [{ itemId: 'obsolete' }] },
+    { query: 'active query', ok: true, items: [{ itemId: 'cached' }] }
+  ];
+  const current = [
+    { query: 'active query', ok: false, items: [], error: 'temporary failure' },
+    { query: 'new query', ok: true, items: [{ itemId: 'new' }] }
+  ];
+  const merged = refresh.mergeSnapshotCategories(previous, current);
+  assert.deepEqual(merged.map(row => row.query).sort(), ['active query', 'new query']);
+  assert.deepEqual(merged.find(row => row.query === 'active query').items, [{ itemId: 'cached' }]);
+});
