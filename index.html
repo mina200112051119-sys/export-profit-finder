@@ -579,9 +579,9 @@ function judgmentReason(r,c,p){const a=[];if(!p.soldHistoryAvailable||Number(p.s
 function riskClass(r){return r==='低'?'low':r==='中'?'mid':r==='高'?'high':'yellow'}
 function renderCats(){
  $('cats').innerHTML=RankingEngine.CATEGORIES.map(c=>{
-  const all=data.filter(p=>p.cat===c&&p.sell>0).length,st=categorySearchStats[c];
-  const summary=st?('検索 '+(st.rawUniqueItems??0)+'件 → 商品判定 '+(st.matchedItems??0)+'件 → 条件通過 '+(st.rankedItems??0)+'件 → おすすめ '+(st.recommendedItems??0)+'件'):('現在出品候補 '+all+'件');
-  const reasons=st?'送料未取得 '+(st.missingShipping??0)+'件・URL不足 '+(st.missingUrl??0)+'件・商品情報不足 '+(st.lowCompleteness??0)+'件':'';
+  const all=data.filter(p=>p.cat===c&&p.sell>0).length,st=categorySearchStats[c],hasDiagnostics=Boolean(st&&Object.prototype.hasOwnProperty.call(st,'rawUniqueItems'));
+  const summary=hasDiagnostics?('検索 '+(st.rawUniqueItems??0)+'件 → 商品判定 '+(st.matchedItems??0)+'件 → 条件通過 '+(st.rankedItems??0)+'件 → おすすめ '+(st.recommendedItems??0)+'件'):('現在出品候補 '+all+'件');
+  const reasons=hasDiagnostics?'送料未取得 '+(st.missingShipping??0)+'件・URL不足 '+(st.missingUrl??0)+'件・商品情報不足 '+(st.lowCompleteness??0)+'件':(st?'内訳は次回更新後に表示':'');
   return `<button class="cat" onclick="category('${c}')"><b>${c}</b><small>${summary}${reasons?'<br>'+reasons:''}</small></button>`;
  }).join('')
 }
