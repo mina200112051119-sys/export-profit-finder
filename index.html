@@ -582,7 +582,7 @@ function renderCats(){
   const all=data.filter(p=>p.cat===c&&p.sell>0).length,st=categorySearchStats[c];
   const summary=st?('検索 '+(st.rawUniqueItems??0)+'件 → 商品判定 '+(st.matchedItems??0)+'件 → 条件通過 '+(st.rankedItems??0)+'件 → おすすめ '+(st.recommendedItems??0)+'件'):('現在出品候補 '+all+'件');
   const reasons=st?'送料未取得 '+(st.missingShipping??0)+'件・URL不足 '+(st.missingUrl??0)+'件・商品情報不足 '+(st.lowCompleteness??0)+'件':'';
-  return '<button class="cat" onclick="category(\\''+c.replaceAll("'","\\\\'")+'\\')"><b>'+c+'</b><small>'+summary+(reasons?'<br>'+reasons:'')+'</small></button>';
+  return `<button class="cat" onclick="category('${c}')"><b>${c}</b><small>${summary}${reasons?'<br>'+reasons:''}</small></button>`;
  }).join('')
 }
 function refreshCurrentRanking(){if(!$('ranking'))return;renderList(rankRecommended(currentRankingCategory),currentRankingTitle)}
