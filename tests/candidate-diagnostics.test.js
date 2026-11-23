@@ -59,8 +59,8 @@ test('scheduled snapshot searches fishing and Pokémon supplies with six positiv
   const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
   const supply = [...cron.matchAll(/cat: 'ポケモン関連サプライ用品', q:/g)].length;
   const fishing = [...cron.matchAll(/cat: '釣具', q:/g)].length;
-  assert.equal(supply, 6);
-  assert.equal(fishing, 6);
+  assert.equal(supply, 4);
+  assert.equal(fishing, 4);
   const start = cron.indexOf('const QUERIES = [');
   const end = cron.indexOf('];', start);
   const queryBlock = cron.slice(start, end);
