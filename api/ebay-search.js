@@ -43,6 +43,22 @@ function median(values) {
   return a.length % 2 ? a[m] : Math.round((a[m - 1] + a[m]) / 2);
 }
 
+function shippingFor(options) {
+  const rows = Array.isArray(options) ? options : [];
+  // Browse API can return an empty first option while a later option has a usable cost.
+  const priced = rows.find(option => option?.shippingCost?.value != null &&
+    Number.isFinite(Number(option.shippingCost.value)));
+  if (priced) return {
+    value: Math.max(0, Number(priced.shippingCost.value)),
+    currency: priced.shippingCost.currency || '',
+    known: true
+  };
+  const free = rows.find(option =>
+    String(option?.shippingCostType || '').toUpperCase() === 'FREE');
+  if (free) return { value: 0, currency: free.shippingCost?.currency || '', known: true };
+  return { value: null, currency: '', known: false };
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=180');
@@ -75,30 +91,17 @@ module.exports = async (req, res) => {
       return res.status(r.status).json({ error: 'eBay search failed', detail: text.slice(0, 500) });
     }
     const data = await r.json();
-    const shippingFor = (options) => {
-      const rows = Array.isArray(options) ? options : [];
-      // Browse API can return an empty first option while a later option has a usable cost.
-      const priced = rows.find(option => option?.shippingCost?.value != null &&
-        Number.isFinite(Number(option.shippingCost.value)));
-      if (priced) return {
-        value: Math.max(0, Number(priced.shippingCost.value)),
-        currency: priced.shippingCost.currency || '',
-        known: true
-      };
-      const free = rows.find(option =>
-        String(option?.shippingCostType || '').toUpperCase() === 'FREE');
-      if (free) return { value: 0, currency: free.shippingCost?.currency || '', known: true };
-      return { value: null, currency: '', known: false };
-    };
     const items = (data.itemSummaries || []).map(item => {
       const shipping = shippingFor(item.shippingOptions);
+      const priceCurrency = item.price?.currency || 'USD';
+      const currencyMatches = !shipping.currency || shipping.currency === priceCurrency;
       return {
         title: item.title,
         price: Number(item.price?.value || 0),
-        currency: item.price?.currency || 'USD',
-        shipping: shipping.value,
+        currency: priceCurrency,
+        shipping: currencyMatches ? shipping.value : null,
         shippingCurrency: shipping.currency,
-        shippingKnown: shipping.known,
+        shippingKnown: shipping.known && currencyMatches,
         image: item.image?.imageUrl || '',
         url: item.itemWebUrl || '',
         condition: item.condition || '',
@@ -135,3 +138,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: e.message || 'server error' });
   }
 };
+
+module.exports.shippingFor = shippingFor;
