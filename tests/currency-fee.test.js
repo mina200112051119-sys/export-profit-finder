@@ -29,6 +29,6 @@ test('listing currency is retained when normalizing eBay products', () => {
 
 test('the settings screen explains that conversion fees are calculated automatically', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /商品通貨を自動確認して0%または3%を計算/);
+  assert.match(html, /換算条件を確認できる場合のみ手数料を反映/);
   assert.match(html, /autoConversionFee:true,payoutCurrency:'USD'/);
 });
