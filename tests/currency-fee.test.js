@@ -4,7 +4,10 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const context = { window: {} };
-vm.runInNewContext(fs.readFileSync('ranking-engine.js', 'utf8'), context);
+const engineSource = fs.readFileSync('ranking-engine.js', 'utf8');
+const coreEnd = engineSource.indexOf('})();');
+if (coreEnd < 0) throw new Error('RankingEngine core block was not found');
+vm.runInNewContext(engineSource.slice(0, coreEnd + 4), context);
 const engine = context.window.RankingEngine;
 
 test('currency conversion fee is 0% when listing and payout currencies match', () => {
