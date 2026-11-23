@@ -73,3 +73,19 @@ test('the live category ranking also holds products with zero sold count', () =>
   const live = fs.readFileSync('live-api.js', 'utf8');
   assert.match(live, /Number\(p\.soldHistoryCount\|\|0\)>0/);
 });
+
+test('recommended candidates exclude unknown shipping and missing eBay URLs, with a 30-item category cap', () => {
+  assert.match(html, /p\\.shippingKnown!==false&&p\\.ship!==null&&p\\.ship!==undefined&&Boolean\\(p\\.url\\)/);
+  assert.match(html, /return safe\\.slice\\(0,cat\\?30:50\\)/);
+  assert.match(html, /\\.slice\\(0,30\\)/);
+});
+
+test('category buttons display only the recommended candidate count', () => {
+  const start = html.indexOf('function renderCats(){');
+  const end = html.indexOf('function refreshCurrentRanking()', start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const renderCats = html.slice(start, end);
+  assert.match(renderCats, /現在出品候補 '\\+all\\+'件/);
+  assert.doesNotMatch(renderCats, /検索成功|取得 |検索結果合計|検索状況/);
+});
