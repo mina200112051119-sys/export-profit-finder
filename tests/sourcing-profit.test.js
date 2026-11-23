@@ -181,11 +181,11 @@ test('selected sourcing candidate remains attached to its stable row ID after in
 });
 
 
-test('detail sourcing links prefer saved Japanese domestic search name', () => {
+test('detail sourcing links use the selected Japanese domestic search terms', () => {
   const source = fs.readFileSync('index.html', 'utf8');
-  assert.match(source, /function domesticSearchQuery\(p\)/);
-  assert.match(source, /localStorage\.getItem\('domesticSearchName:v1:'\+String\(p\.id\)\)/);
-  assert.match(source, /sourceSearchUrls\(domesticSearchQuery\(p\),p\.cat\)/);
+  assert.match(source, /function buildDomesticSearchTerms\(p,category,displayName\)/);
+  assert.match(source, /domesticSearchName:v1:/);
+  assert.match(source, /sourceSearchUrls\(searchTerms\[0\]\|\|domestic\.query,p\.cat\)/);
   assert.match(source, /p\.displayName\|\|p\.titleJa\|\|p\.name/);
 });
 
@@ -204,7 +204,7 @@ test('sourcing selected marker uses stable candidate ID after reorder and deleti
 
 test('saving a sourcing candidate rejects negative domestic shipping', () => {
   const source = fs.readFileSync('sourcing-compare.js', 'utf8');
-  assert.match(source, /if \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)/);
+  assert.match(source, /shipping !== null && \(!Number\.isFinite\(shipping\) \|\| shipping < 0\)/);
   assert.match(source, /国内送料は0円以上で入力してください/);
   assert.match(source, /shippingJpy: shipping/);
 });
@@ -293,8 +293,8 @@ test('replacement parts are a first-class category with item detail and official
   assert.match(engine, /'交換部品・消耗品'/);
   assert.match(html, /p\.cat==='交換部品・消耗品'\?classifyPartsDetail\(p\):null/);
   assert.match(html, /部品の種類/);
-  assert.match(html, /対象分野/);
-  assert.match(html, /対応機種・型番の手がかり/);
+  assert.match(html, /メーカー/);
+  assert.match(html, /対応機種候補（未確認）/);
   assert.match(sourcing, /'交換部品・消耗品': \[/);
   assert.match(official, /'交換部品・消耗品': \[/);
 });
@@ -354,24 +354,26 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
   assert.match(html, /対応機種を特定できる型番なし/);
   assert.match(html, /完成品・組立済/);
   assert.match(html, /未組立・未開封の記載あり/);
-  assert.match(html, /型番候補あり・対応機種との一致は未確認/);
-  assert.match(html, /レトロゲームの商品分類/);
-  assert.match(html, /ガンプラの商品分類/);
+  assert.match(html, /対応機種候補（未確認）/);
+  assert.match(html, /単品・セット/);
+  assert.match(html, /グレード・縮尺/);
+  assert.match(html, /組立状態/);
 });
 
 
-test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
+test('category shortlists use focused searches and cap each category at 30 candidates', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /Japanese Pokemon TCG graded PSA CGC Japanese cards/);
-  assert.match(html, /Pokemon Center Japan official playmat card binder collection file/);
+  assert.match(html, /Japanese Pokemon SAR special art rare single card Japanese/);
+  assert.match(html, /Pokemon Center Japan official Pokemon character goods card sleeves deck box playmat binder/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
   assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
-  assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
+  assert.ok(html.includes('p.shippingKnown!==false&&p.ship!==null&&p.ship!==undefined&&Boolean(p.url)'));
+  assert.ok(html.includes('return safe.slice(0,cat?30:50)'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
-  assert.ok(html.includes('for(let i=0;i<25;i++)'));
-  assert.ok(html.includes('if(hardware[i])first.push(hardware[i]);if(software[i])first.push(software[i]);'));
+  assert.ok(html.includes('for(let i=0;i<15;i++)'));
+  assert.ok(html.includes('].slice(0,30)'));
 });
 
 test('deduplication keeps the listing with a saved sourcing cost instead of replacing it with a cheaper duplicate', () => {
