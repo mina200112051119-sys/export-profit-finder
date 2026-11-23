@@ -69,3 +69,18 @@ test('scheduled snapshot searches fishing and Pokémon supplies with six positiv
   assert.doesNotMatch(supplyQueries, /\\s-[a-z]/i);
   assert.doesNotMatch(fishingQueries, /\\s-[a-z]/i);
 });
+
+test('scheduled snapshots drop obsolete queries but preserve prior data for failed active queries', () => {
+  const dailyRefresh = require('../api/daily-refresh');
+  const previous = [
+    { query: 'old narrow fishing query', category: '釣具', ok: true, items: [{ itemId: 'old' }] },
+    { query: 'active fishing query', category: '釣具', ok: true, items: [{ itemId: 'cached' }] }
+  ];
+  const current = [
+    { query: 'active fishing query', category: '釣具', ok: false, items: [], error: 'temporary failure' },
+    { query: 'new fishing query', category: '釣具', ok: true, items: [{ itemId: 'new' }] }
+  ];
+  const merged = dailyRefresh.mergeSnapshotCategories(previous, current);
+  assert.deepEqual(merged.map(row => row.query).sort(), ['active fishing query', 'new fishing query']);
+  assert.deepEqual(merged.find(row => row.query === 'active fishing query').items, [{ itemId: 'cached' }]);
+});
