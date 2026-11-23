@@ -146,7 +146,7 @@ test('scheduled daily refresh has valid separators and all focused replacement-p
 });
 test('applying or clearing a sourcing price refreshes the current ranking view', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /function refreshCurrentRanking\(\)\{if\(!\$\('ranking'\)\)return;renderList\(rank\(currentRankingCategory\),currentRankingTitle\)\}/);
+  assert.match(html, /function refreshCurrentRanking\(\)\{if\(!\$\('ranking'\)\)return;renderList\(rankRecommended\(currentRankingCategory\),currentRankingTitle\)\}/);
   assert.match(html, /updateVisibleProfit\(p\);\s*refreshCurrentRanking\(\);/);
   assert.match(html, /clearSourcingOverride\(id\);if\(p\)\{updateVisibleProfit\(p\);refreshCurrentRanking\(\);\}/);
   assert.match(html, /function category\(c\)\{currentRankingCategory=c;currentRankingTitle=/);
@@ -333,8 +333,8 @@ test('camera and fishing model extraction does not mistake ordinary title words 
 
 test('fishing search separates Shimano and Daiwa and rejects mixed-brand listings', () => {
   const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /Shimano fishing reel spinning baitcasting Japan -Daiwa/);
-  assert.match(html, /Daiwa fishing reel spinning baitcasting Japan -Shimano/);
+  assert.match(html, /Shimano fishing reel spinning baitcasting Japan/);
+  assert.match(html, /Daiwa fishing reel spinning baitcasting Japan/);
   assert.match(html, /function fishingBrandConflict\(raw\)/);
   assert.match(html, /if\(cat==='釣具'\) return cleanFishingDisplayName\(p,translated\)/);
   assert.match(html, /lot of\|job lot\|bundle\|assorted\|choose\|select/);
@@ -368,13 +368,13 @@ test('retro game, Gunpla, and replacement-part listings receive separate identit
 });
 
 
-test('candidate shortlist expands broad categories, caps display at 50, and removes loss-making priced-in candidates', () => {
+test('candidate shortlist expands broad categories, caps display at 30, and removes loss-making priced-in candidates', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /Japanese Pokemon graded PSA CGC BGS single card Japanese -lot -bulk/);
   assert.match(html, /Pokemon Center Japan official Pokemon character goods card sleeves deck box playmat binder/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
-  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
+  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,30)'));
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
   assert.ok(html.includes('const safe=ranked.filter(p=>p.cost<=0||(p.costs?.profit>0&&p.risk!==\'高\'))'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
