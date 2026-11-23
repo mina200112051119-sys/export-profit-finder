@@ -54,3 +54,18 @@ test('currency-conversion fee defaults conservatively to 3 percent when unset', 
   assert.match(html, /id="conv" type="number" value="3"/);
   assert.match(html, /conversionFeeRate:\$\('conv'\)\.value\.trim\(\)===''\?3/);
 });
+
+test('scheduled snapshot searches fishing and Pokémon supplies with six positive queries each', () => {
+  const cron = fs.readFileSync('api/daily-refresh.js', 'utf8');
+  const supply = [...cron.matchAll(/cat: 'ポケモン関連サプライ用品', q:/g)].length;
+  const fishing = [...cron.matchAll(/cat: '釣具', q:/g)].length;
+  assert.equal(supply, 6);
+  assert.equal(fishing, 6);
+  const start = cron.indexOf('const QUERIES = [');
+  const end = cron.indexOf('];', start);
+  const queryBlock = cron.slice(start, end);
+  const supplyQueries = queryBlock.split("cat: 'ポケモン関連サプライ用品'").slice(1).map(x => x.split('},')[0]).join('');
+  const fishingQueries = queryBlock.split("cat: '釣具'").slice(1).map(x => x.split('},')[0]).join('');
+  assert.doesNotMatch(supplyQueries, /\\s-[a-z]/i);
+  assert.doesNotMatch(fishingQueries, /\\s-[a-z]/i);
+});
