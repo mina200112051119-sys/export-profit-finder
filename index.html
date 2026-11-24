@@ -177,8 +177,14 @@ async function loadCloudStorage(){
     if(!r.ok){if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：確認できません';return;}
     const d=await r.json();
     if(!d.configured){if(el)el.textContent='☁️ クラウド保存：未設定';return;}
-    if(el)el.textContent='☁️ クラウド保存：接続済み（端末ごとにデータ分離）';
-    if(!d.data)return;
+    if(!d.data){
+      const localCount=getFavoriteProducts().length;
+      if(localCount){
+        if(el)el.textContent='☁️ クラウド保存：端末内マイリスト'+localCount+'件をクラウドへ保存中…';
+        await saveCloudStorage();
+      }else if(el)el.textContent='☁️ クラウド保存：保存先接続可（保存データなし）';
+      return;
+    }
     if(d.data.settings&&typeof d.data.settings==='object'){['domestic','pack','other','conv'].forEach(id=>{if(d.data.settings[id]!=null){const value=String(d.data.settings[id]);localStorage.setItem(id,value);if($(id))$(id).value=value;}});}
     Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>{
@@ -214,6 +220,8 @@ async function loadCloudStorage(){
     if(typeof render==='function')render();
     renderFavorites();
     updateFavoriteButtons();
+    const restoredCount=getFavoriteProducts().length;
+    if(el)el.textContent='☁️ クラウド保存：保存データあり（マイリスト'+restoredCount+'件）';
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
 }
 const _setItem=Storage.prototype.setItem;
