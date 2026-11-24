@@ -86,8 +86,8 @@ async function liveSearch(){
    products.slice(0,12).map(p=>'<div class="search-card" data-product-id="'+esc(p.id)+'" onclick="detail(encodeURIComponent(this.dataset.productId))">'+
     (p.image?'<img src="'+esc(p.image)+'" alt="">':'')+
     '<h3>'+esc(p.displayName||p.name)+'</h3>'+
-    '<div class="row"><span>eBay価格</span><b>'+yen(Number(p.sell||0)*fx)+'</b></div>'+
-    '<div class="row"><span>eBay送料</span><b>'+(p.shippingKnown===false?'送料未取得':yen(Number(p.ship||0)*fx))+'</b></div>'+
+    '<div class="row"><span>eBay価格</span><b>'+yenLabel(p.sell,p.currency,fx)+'</b></div>'+
+    '<div class="row"><span>eBay送料</span><b>'+(p.shippingKnown===false?'送料未取得':yenLabel(p.ship,p.currency,fx))+'</b></div>'+
     '<small>'+esc(p.condition||'状態不明')+'｜販売済み価格・販売件数は未確認</small>'+
     '<button class="primary" type="button" style="margin-top:8px" data-product-id="'+esc(p.id)+'" onclick="event.stopPropagation();detail(encodeURIComponent(this.dataset.productId))">利益計算・仕入先を確認</button>'+
     '<button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="event.stopPropagation();toggleFavorite(this.dataset.favoriteId)">'+(typeof window.isFavorite==='function'&&window.isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button></div>').join('')+
