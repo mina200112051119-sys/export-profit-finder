@@ -27,6 +27,17 @@ test('currency conversion fee is 3% when listing and payout currencies differ', 
   assert.equal(costs.profit, null);
 });
 
+test('unverified exchange rate prevents yen amounts, fees, break-even, and profit from being calculated', () => {
+  const p = engine.normalizeProduct({ currency: 'USD', sell: 100, ship: 10, cost: 1000 });
+  const costs = engine.calcCosts(p, { fxRate: 150, fxRateVerified: false, feeRate: 0.136, internationalRate: 0.0135, autoConversionFee: true, payoutCurrency: 'USD' });
+  assert.equal(costs.fxRateVerified, false);
+  assert.equal(costs.saleJpy, null);
+  assert.equal(costs.totalFees, null);
+  assert.equal(costs.totalCosts, null);
+  assert.equal(costs.profit, null);
+  assert.equal(engine.breakEvenPrice(p, { fxRate: 150, fxRateVerified: false }), null);
+});
+
 test('listing currency is retained when normalizing eBay products', () => {
   assert.equal(engine.normalizeProduct({ currency: 'GBP' }).currency, 'GBP');
 });
