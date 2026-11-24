@@ -1,6 +1,6 @@
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=3600');
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=300');
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   try {
     const r = await fetch('https://api.frankfurter.dev/v2/rate/USD/JPY');

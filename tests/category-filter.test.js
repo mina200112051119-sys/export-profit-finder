@@ -47,11 +47,13 @@ test('retro-game candidate guard accepts the expanded console families', () => {
   assert.match(html, /3do/);
 });
 
-test('live eBay category search uses the same sales-evidence-aware ranking as the main app', () => {
+test('live eBay category search uses the shared ranking engine and excludes incomplete listings', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(live, /RankingEngine\.rankV2\(items/);
-  assert.match(live, /p\.soldHistoryAvailable&&Number\(p\.soldHistoryCount\|\|0\)>0\)\?p\.stars/);
-  assert.match(live, /評価保留（販売実績未確認）/);
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  assert.match(live, /RankingEngine\.rankV2\(eligibleItems/);
+  assert.match(live, /p\.shippingKnown!==false&&p\.ship!==null&&p\.ship!==undefined&&Boolean\(p\.url\)/);
+  assert.match(live, /autoConversionFee:true,payoutCurrency:'USD'/);
+  assert.match(engine, /if\(!p\.soldHistoryAvailable\|\|num\(p\.soldHistoryCount\)<=0\) total=Math\.min\(total,44\)/);
 });
 
 test('name enrichment is limited to the 50 candidates that can be displayed', () => {
@@ -69,7 +71,76 @@ test('manual sold-history entry is available in the page and records median sold
   assert.match(html, /renderManualEvidenceList\(\)/);
 });
 
-test('the live category ranking also holds products with zero sold count', () => {
+test('live category ranking does not claim sales evidence when sold history is unavailable', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(live, /Number\(p\.soldHistoryCount\|\|0\)>0/);
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  assert.match(live, /販売済み実績なし/);
+  assert.match(engine, /過去90日実売データは未取得/);
+  assert.match(engine, /total=Math\.min\(total,44\)/);
+});
+
+test('recommended candidates exclude unknown shipping and missing eBay URLs, with a 30-item category cap', () => {
+  assert.ok(html.includes('p.shippingKnown!==false&&p.ship!==null&&p.ship!==undefined&&Boolean(p.url)'));
+  assert.ok(html.includes('return safe.slice(0,30)'));
+  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,30)'));
+  assert.ok(html.includes('.slice(0,30)'));
+});
+
+test('category buttons display only the recommended candidate count', () => {
+  const start = html.indexOf('function renderCats(){');
+  const end = html.indexOf('function refreshCurrentRanking()', start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const renderCats = html.slice(start, end);
+  assert.ok(renderCats.includes("現在出品候補 '+all+'件"));
+  assert.doesNotMatch(renderCats, /検索成功|取得 |検索結果合計|検索状況/);
+});
+
+// Live rankings use only verified listing fields; they do not invent sold-history evidence.
+
+test('photo candidate cards do not repeat an unverified product-name warning', () => {
+  const start = html.indexOf("$('photoResults').innerHTML=window.photoCandidates.map");
+  const end = html.indexOf("catch(e){$('photoMsg')", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const photoCard = html.slice(start, end);
+  assert.doesNotMatch(photoCard, /officialNameStatus\|\|'名称未確認'/);
+  assert.match(photoCard, /condition\|\|'状態不明'/);
+});
+
+
+test('main candidate UI uses recommendation wording and clearly disclaims unavailable sales history', () => {
+  assert.match(html, /カテゴリー別おすすめ/);
+  assert.match(html, /おすすめ候補（現在出品情報ベース）/);
+  assert.match(html, /売れた実績を示すものではありません/);
+  assert.doesNotMatch(html, /仕入れ候補ランキング|カテゴリー別ランキング/);
+});
+
+test('candidate recommendation ordering breaks equal scores using information completeness', () => {
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  assert.match(engine, /b\.dataCompleteness\?\.score/);
+  assert.match(engine, /officialNameVerified/);
+  assert.match(engine, /shippingKnown/);
+});
+
+
+test('all user-facing main-page labels use recommendations rather than rankings', () => {
+  assert.match(html, /カテゴリー別おすすめ/);
+  assert.match(html, /おすすめ候補/);
+  assert.doesNotMatch(html, /候補ランキング|カテゴリー別ランキング|ランキングではありません|ランキングに反映しました/);
+});
+
+
+test('iOS Home Screen cloud identity prefers the app-local ID over a copied cookie', () => {
+  assert.match(html, /let id=localId\|\|cookieId/);
+  assert.doesNotMatch(html, /let id=cookieId\|\|localId/);
+});
+
+
+test('manual cloud save verifies favorites by reading the same cloud identity back', () => {
+  assert.match(html, /onclick="saveCloudStorage\(\)">☁️ 今すぐクラウド保存/);
+  assert.match(html, /const verify=await fetch\(CLOUD_STORAGE_API/);
+  assert.match(html, /保存確認済み（マイリスト/);
+  assert.match(html, /保存後の確認に失敗/);
+  assert.match(html, /let id=localId\|\|cookieId/);
 });

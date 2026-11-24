@@ -105,8 +105,11 @@ function feeOf(p) {
 }
 function settings() {
   const g=id => Number(document.getElementById(id)?.value || 0);
+  const fx = Number(window.__exportApp?.getFx?.());
+  const fxRateVerified = Number.isFinite(fx) && fx > 0;
   return {
-    fxRate: Number(window.__exportApp?.getFx?.() || 150),
+    fxRate: fxRateVerified ? fx : 0,
+    fxRateVerified,
     feeRate: feeOf(window.__exportSourcingProduct || {}),
     internationalRate: .0135,
     domesticShipping: g('domestic'),
@@ -131,13 +134,15 @@ function candidateProfit(p, row) {
   const engine = window.RankingEngine;
   if (!engine || typeof engine.calcCosts !== 'function') return null;
   const g = id => Math.max(0, Number(document.getElementById(id)?.value || 0));
-  const fx = Number(window.__exportApp?.getFx?.() || 150);
+  const fx = Number(window.__exportApp?.getFx?.());
+  if (!Number.isFinite(fx) || fx <= 0) return null;
   const costs = engine.calcCosts({
     ...p,
     cost: Number(row.priceJpy),
     sourcingShippingJpy: Math.max(0, Number(row.shippingJpy || 0))
   }, {
     fxRate: fx,
+    fxRateVerified: true,
     feeRate: feeOf(p),
     internationalRate: .0135,
     conversionFeeRate: g('conv'),
