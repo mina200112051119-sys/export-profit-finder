@@ -57,6 +57,16 @@ test('main app displays original currency and blocks yen/profit claims when FX i
   assert.match(html, /listingYenLabel\(p\.sell,p\.currency\)/);
 });
 
+test('main and live FX reject stale exchange-rate dates', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  const api = fs.readFileSync('api/exchange-rate.js', 'utf8');
+  assert.match(html, /function isRecentFxDate\(date\)/);
+  assert.match(html, /!isRecentFxDate\(date\)/);
+  assert.match(live, /!isRecentFxDate\(fresh\?\.date\)/);
+  assert.match(api, /s-maxage=3600, stale-while-revalidate=300/);
+});
+
 test('live category FX validation never substitutes a hard-coded 150 yen rate', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
   assert.match(live, /有効な為替レートがありません/);
