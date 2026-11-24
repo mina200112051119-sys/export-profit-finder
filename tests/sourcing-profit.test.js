@@ -40,6 +40,7 @@ test('sourcing candidate profit delegates buyer-paid shipping and sourcing costs
   assert.equal(receivedProduct.cost, 1000);
   assert.equal(receivedProduct.sourcingShippingJpy, 100);
   assert.equal(receivedSettings.fxRate, 150);
+  assert.equal(receivedSettings.fxRateVerified, true);
   assert.equal(receivedSettings.feeRate, 0.136);
   assert.equal(receivedSettings.internationalRate, 0.0135);
 });
@@ -403,3 +404,28 @@ test('manual research form explains the exact data to enter and saves the checke
 });
 
 // Keep regression expectations aligned with the category-specific query set.
+
+
+test('sourcing comparison withholds profit when the verified FX rate is unavailable', () => {
+  const source = fs.readFileSync('sourcing-compare.js', 'utf8');
+  const start = source.indexOf('function candidateProfit(p, row) {');
+  const end = source.indexOf('\n}', start);
+  assert.notEqual(start, -1, 'candidateProfit function exists');
+  assert.notEqual(end, -1, 'candidateProfit function closes');
+  const candidateProfit = vm.runInNewContext('(' + source.slice(start, end + 2) + ')', {
+    feeOf: () => 0.136,
+    window: {
+      RankingEngine: {
+        calcCosts() { throw new Error('calcCosts must not run without a verified FX rate'); }
+      },
+      __exportApp: { getFx: () => null }
+    },
+    document: { getElementById: () => ({ value: '0' }) },
+    Math,
+    Number
+  });
+  assert.equal(candidateProfit(
+    { sell: 20, ship: 5, currency: 'USD', cat: '釣具' },
+    { priceJpy: 1000, shippingJpy: 100 }
+  ), null);
+});
