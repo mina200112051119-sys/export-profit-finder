@@ -369,10 +369,10 @@ test('category shortlists use focused searches and cap each category at 30 candi
   assert.match(html, /Pokemon Center Japan official Pokemon character goods card sleeves deck box playmat binder/);
   assert.match(html, /Japanese film camera 35mm rangefinder SLR/);
   assert.match(html, /Japanese mirrorless digital camera body/);
-  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,50)'));
+  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,30)'));
   assert.ok(html.includes('const unique=cat?dedupeCategoryProducts(eligible,cat):eligible'));
   assert.ok(html.includes('p.shippingKnown!==false&&p.ship!==null&&p.ship!==undefined&&Boolean(p.url)'));
-  assert.ok(html.includes('return safe.slice(0,cat?30:50)'));
+  assert.ok(html.includes('return safe.slice(0,30)'));
   assert.ok(html.includes("if(cat==='レトロゲーム')"));
   assert.ok(html.includes('for(let i=0;i<15;i++)'));
   assert.ok(html.includes('].slice(0,30)'));
