@@ -69,7 +69,7 @@ test('main and live FX reject stale exchange-rate dates', () => {
 
 test('live category FX validation never substitutes a hard-coded 150 yen rate', () => {
   const live = fs.readFileSync('live-api.js', 'utf8');
-  assert.match(live, /有効な為替レートがありません/);
+  assert.match(live, /有効で新しい為替レートがありません/);
   assert.match(live, /if\(cur==='USD'&&Number\(rate\)>0\)return value\*Number\(rate\)/);
   assert.doesNotMatch(live, /Number\(state\.fx\?\.rate\|\|window\.EXPORT_FX\|\|150\)/);
 });
