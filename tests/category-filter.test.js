@@ -106,3 +106,18 @@ test('photo candidate cards do not repeat an unverified product-name warning', (
   assert.doesNotMatch(photoCard, /officialNameStatus\|\|'名称未確認'/);
   assert.match(photoCard, /condition\|\|'状態不明'/);
 });
+
+
+test('main candidate UI uses recommendation wording and clearly disclaims unavailable sales history', () => {
+  assert.match(html, /カテゴリー別おすすめ/);
+  assert.match(html, /おすすめ候補（現在出品情報ベース）/);
+  assert.match(html, /売れた実績を示すものではありません/);
+  assert.doesNotMatch(html, /仕入れ候補ランキング|カテゴリー別ランキング/);
+});
+
+test('candidate recommendation ordering breaks equal scores using information completeness', () => {
+  const engine = fs.readFileSync('ranking-engine.js', 'utf8');
+  assert.match(engine, /b\.dataCompleteness\?\.score/);
+  assert.match(engine, /officialNameVerified/);
+  assert.match(engine, /shippingKnown/);
+});
