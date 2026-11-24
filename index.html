@@ -170,11 +170,11 @@ async function loadCloudStorage(){
   const el=$('cloud-status');
   try{
     const r=await fetch(CLOUD_STORAGE_API,{headers:{'X-User-Id':getExportUserId()},cache:'no-store'});
-    if(!r.ok){if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：確認できません';return;}
+    if(!r.ok){if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：確認できません';return false;}
     const d=await r.json();
-    if(!d.configured){if(el)el.textContent='☁️ クラウド保存：未設定';return;}
+    if(!d.configured){if(el)el.textContent='☁️ クラウド保存：未設定';return false;}
     if(el)el.textContent='☁️ クラウド保存：接続済み（端末ごとにデータ分離）';
-    if(!d.data)return;
+    if(!d.data)return true;
     if(d.data.settings&&typeof d.data.settings==='object'){['domestic','pack','other','conv'].forEach(id=>{if(d.data.settings[id]!=null){const value=String(d.data.settings[id]);localStorage.setItem(id,value);if($(id))$(id).value=value;}});}
     Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>{
@@ -210,7 +210,8 @@ async function loadCloudStorage(){
     if(typeof render==='function')render();
     renderFavorites();
     updateFavoriteButtons();
-  }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';}
+    return true;
+  }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
 }
 const _setItem=Storage.prototype.setItem;
 const _removeItem=Storage.prototype.removeItem;
@@ -1413,6 +1414,6 @@ if(typeof originalMap==='function'){
 </script>
 <script>
 // Restore this user's saved cloud data after all app scripts and UI elements are ready.
-window.addEventListener('load',async()=>{ try{if(typeof loadCloudStorage==='function')await loadCloudStorage();}finally{window.__cloudRestoreDone=true;if(window.__cloudSavePending){window.__cloudSavePending=false;await saveCloudStorage();}} });
+window.addEventListener('load',async()=>{ let restored=false;try{if(typeof loadCloudStorage==='function')restored=(await loadCloudStorage())===true;}finally{window.__cloudRestoreDone=restored;if(restored&&window.__cloudSavePending){window.__cloudSavePending=false;await saveCloudStorage();}} });
 </script>
 </body></html>
