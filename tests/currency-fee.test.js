@@ -47,3 +47,19 @@ test('the settings screen explains that conversion fees are calculated automatic
   assert.match(html, /換算条件を確認できる場合のみ手数料を反映/);
   assert.match(html, /autoConversionFee:true,payoutCurrency:'USD'/);
 });
+
+test('main app displays original currency and blocks yen/profit claims when FX is unverified', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /fxRateVerified=false/);
+  assert.match(html, /fxRateVerified=true/);
+  assert.match(html, /getFx:\(\)=>fxRateVerified\?fxRate:null/);
+  assert.match(html, /USD\/JPY：未取得（利益計算を停止中）/);
+  assert.match(html, /listingYenLabel\(p\.sell,p\.currency\)/);
+});
+
+test('live category FX validation never substitutes a hard-coded 150 yen rate', () => {
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  assert.match(live, /有効な為替レートがありません/);
+  assert.match(live, /if\(cur==='USD'&&Number\(rate\)>0\)return value\*Number\(rate\)/);
+  assert.doesNotMatch(live, /Number\(state\.fx\?\.rate\|\|window\.EXPORT_FX\|\|150\)/);
+});
