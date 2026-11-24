@@ -73,3 +73,26 @@ test('live category FX validation never substitutes a hard-coded 150 yen rate', 
   assert.match(live, /if\(cur==='USD'&&Number\(rate\)>0\)return value\*Number\(rate\)/);
   assert.doesNotMatch(live, /Number\(state\.fx\?\.rate\|\|window\.EXPORT_FX\|\|150\)/);
 });
+
+
+test('live search formats each listing in its actual currency', () => {
+  const live = fs.readFileSync('live-api.js', 'utf8');
+  const start = live.indexOf('function amountInYen(');
+  const end = live.indexOf('\nasync function displayListingName', start);
+  assert.notEqual(start, -1, 'currency formatter exists');
+  assert.notEqual(end, -1, 'currency formatter boundary exists');
+  const format = vm.runInNewContext(
+    '(() => {' + live.slice(start, end) + '; return yenLabel; })()',
+    {
+      Number,
+      Math,
+      yen: n => Number.isFinite(Number(n)) ? Math.round(Number(n)).toLocaleString('ja-JP') : '-'
+    }
+  );
+  assert.equal(format(100, 'JPY', 150), '100円');
+  assert.equal(format(100, 'USD', 150), '15,000円');
+  assert.equal(format(100, 'EUR', 150), 'EUR 100.00（円換算未対応）');
+  assert.match(live, /yenLabel\(p\.sell,p\.currency,fx\)/);
+  assert.match(live, /yenLabel\(p\.ship,p\.currency,fx\)/);
+  assert.doesNotMatch(live, /yen\(Number\(p\.(?:sell|ship)\|\|0\)\*fx\)/);
+});
