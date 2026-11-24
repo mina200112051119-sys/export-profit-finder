@@ -129,3 +129,9 @@ test('all user-facing main-page labels use recommendations rather than rankings'
   assert.match(html, /おすすめ候補/);
   assert.doesNotMatch(html, /候補ランキング|カテゴリー別ランキング|ランキングではありません|ランキングに反映しました/);
 });
+
+
+test('iOS Home Screen cloud identity prefers the app-local ID over a copied cookie', () => {
+  assert.match(html, /let id=localId\|\|cookieId/);
+  assert.doesNotMatch(html, /let id=cookieId\|\|localId/);
+});
