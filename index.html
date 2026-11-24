@@ -110,7 +110,8 @@ function writeExportUserCookie(id){
 function getExportUserId(){
   const cookieId=readExportUserCookie();
   const localId=localStorage.getItem('exportUserId:v1');
-  let id=cookieId||localId;
+  // Keep this app instance's stored ID first; iOS Safari and Home Screen cookies may diverge.
+  let id=localId||cookieId;
   if(!id){
     id=(crypto.randomUUID?crypto.randomUUID():'u'+Date.now()+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
   }
