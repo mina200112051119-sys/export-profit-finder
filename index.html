@@ -68,9 +68,9 @@ function updateFavoriteButtons(){document.querySelectorAll('[data-favorite-id]')
 function renderFavorites(){
  const el=$('favorite-list');if(!el)return;const rows=getFavoriteProducts();
  rows.forEach(p=>{if(!data.some(x=>String(x.id)===String(p.id)))data.push(RankingEngine.normalizeProduct(p))});
- el.innerHTML=rows.length?rows.map(p=>'<div class="card"><h3>'+esc(p.displayName||p.name)+'</h3><div class="muted">'+esc(p.cat||'カテゴリー未設定')+'</div><div class="row"><span>eBay価格（送料別）</span><b>'+yen(Number(p.sell||0)*fxRate)+'</b></div><div class="row"><span>eBay送料</span><b>'+(p.shippingKnown===false?'送料未取得':yen(Number(p.ship||0)*fxRate))+'</b></div><button class="secondary" type="button" data-product-id="'+esc(p.id)+'" onclick="detail(encodeURIComponent(this.dataset.productId))">商品詳細を開く</button><button class="secondary" type="button" data-product-id="'+esc(p.id)+'" onclick="removeFavorite(this.dataset.productId)">マイリストから削除</button></div>').join(''):'<p class="muted">まだ登録した商品はありません。商品詳細から「マイリストに追加」を押してください。</p>';
+ el.innerHTML=rows.length?'<p class="muted">為替：1 USD = '+fxRate.toFixed(2)+'円｜更新日：'+esc(fxDate||'不明')+(window.__fxRateStale?'（最新レートを取得できず、保存済みレートを使用中）':'')+'</p>'+rows.map(p=>'<div class="card"><h3>'+esc(p.displayName||p.name)+'</h3><div class="muted">'+esc(p.cat||'カテゴリー未設定')+'</div><div class="row"><span>eBay価格（送料別）</span><b>'+yen(Number(p.sell||0)*fxRate)+'</b></div><div class="row"><span>eBay送料</span><b>'+(p.shippingKnown===false?'送料未取得':yen(Number(p.ship||0)*fxRate))+'</b></div><button class="secondary" type="button" data-product-id="'+esc(p.id)+'" onclick="detail(encodeURIComponent(this.dataset.productId))">商品詳細を開く</button><button class="secondary" type="button" data-product-id="'+esc(p.id)+'" onclick="removeFavorite(this.dataset.productId)">マイリストから削除</button></div>').join(''):'<p class="muted">まだ登録した商品はありません。商品詳細から「マイリストに追加」を押してください。</p>';
 }
-function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');b.classList.add('active');if(id==='favorites')renderFavorites()}
+function tab(id,b){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');b.classList.add('active');if(id==='favorites'){const list=$('favorite-list');if(list)list.textContent='為替レートを更新しています…';fx().then(()=>renderFavorites())}}
 function yen(v){return v==null?'—':Math.round(Number(v||0)).toLocaleString()+'円'}
 function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
 function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:INT,domesticShipping:+$('domestic').value||0,packaging:+$('pack').value||0,otherCost:+$('other').value||0,conversionFeeRate:+$('conv').value||0}}
@@ -219,7 +219,7 @@ Storage.prototype.removeItem=function(k){
 };
 function load(){['domestic','pack','other','conv'].forEach(id=>{const v=localStorage.getItem(id);if(v!==null)$(id).value=v})}
 function samples(){return[{name:'ポケモンカード 人気カード（サンプル）',cat:'ポケモンカード',cost:8000,sell:95,ship:18,sold:72,list:28,trend:'横ばい',risk:'低',source:'サンプル'},{name:'ポケモンTCG デッキケース（サンプル）',cat:'ポケモン関連サプライ用品',cost:2500,sell:39,ship:14,sold:46,list:34,trend:'上昇',risk:'低',source:'サンプル'},{name:'日本製フィッシングリール（サンプル）',cat:'釣具',cost:18000,sell:165,ship:35,sold:31,list:29,trend:'横ばい',risk:'中',source:'サンプル'},{name:'日本製中古カメラ（サンプル）',cat:'カメラ',cost:30000,sell:285,ship:42,sold:18,list:42,trend:'下落',risk:'中',source:'サンプル'},{name:'レトロゲーム本体（サンプル）',cat:'レトロゲーム',cost:9000,sell:105,ship:30,sold:39,list:21,trend:'横ばい',risk:'低',source:'サンプル'}].map(RankingEngine.normalizeProduct)}
-window.__setExportFx=(rate,date)=>{const n=Number(rate);if(Number.isFinite(n)&&n>0){fxRate=n;fxDate=date||fxDate;}};async function fx(){try{const r=await fetch(FX,{cache:'no-store'}),d=await r.json();if(d.rate){window.__setExportFx(d.rate,d.date||'')}}catch(e){}}
+window.__setExportFx=(rate,date)=>{const n=Number(rate);if(Number.isFinite(n)&&n>0){fxRate=n;fxDate=date||fxDate;window.__fxRateStale=false;}};async function fx(){try{const r=await fetch(FX,{cache:'no-store'});if(!r.ok)throw Error('為替取得失敗');const d=await r.json();if(!(Number(d.rate)>0))throw Error('為替レートが不正です');window.__setExportFx(d.rate,d.date||'');return true}catch(e){window.__fxRateStale=true;return false}}
 async function ebay(q,parentSignal){
  const controller=new AbortController();
  const abort=()=>controller.abort();
@@ -1294,7 +1294,7 @@ function detail(id){
  $('body').innerHTML=
   '<button class="secondary" type="button" data-favorite-id="'+esc(p.id)+'" onclick="toggleFavorite(this.dataset.favoriteId)">'+(isFavorite(p.id)?'★ マイリストから削除':'☆ マイリストに追加')+'</button>'+
   (p.image?'<img class="detail-image" src="'+esc(p.image)+'" alt="">':'')+
-  '<div class="row"><span>カテゴリー</span><b>'+esc(p.cat||'未分類')+'</b></div>'+
+  '<div class="row"><span>カテゴリー</span><b>'+esc(p.cat||'未分類')+'</b></div>'+'<div class="row"><span>利益計算に使用する為替</span><b>1 USD = '+fxRate.toFixed(2)+'円（'+esc(fxDate||'更新日不明')+'）'+(window.__fxRateStale?'・最新取得失敗':'')+'</b></div>'+
   '<div class="row"><span>eBay価格</span><b>'+yen(Number(p.sell||0)*fxRate)+'</b></div>'+
   '<div class="row"><span>eBay送料</span><b>'+shipping+'</b></div>'+
   (p.watchCount!=null?'<div class="row"><span>ウォッチ数</span><b>'+Number(p.watchCount).toLocaleString()+'</b></div>':'')+
