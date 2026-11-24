@@ -122,3 +122,10 @@ test('candidate recommendation ordering breaks equal scores using information co
   assert.match(engine, /officialNameVerified/);
   assert.match(engine, /shippingKnown/);
 });
+
+
+test('all user-facing main-page labels use recommendations rather than rankings', () => {
+  assert.match(html, /カテゴリー別おすすめ/);
+  assert.match(html, /おすすめ候補/);
+  assert.doesNotMatch(html, /候補ランキング|カテゴリー別ランキング|ランキングではありません|ランキングに反映しました/);
+});
