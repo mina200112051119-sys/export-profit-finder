@@ -5,9 +5,10 @@ const vm = require('node:vm');
 
 const context = { window: {} };
 const engineSource = fs.readFileSync('ranking-engine.js', 'utf8');
-const coreEnd = engineSource.indexOf('})();');
-if (coreEnd < 0) throw new Error('RankingEngine core block was not found');
-vm.runInNewContext(engineSource.slice(0, coreEnd + 4), context);
+const bridgeStart = engineSource.indexOf('/* Daily snapshot bridge');
+if (bridgeStart < 0) throw new Error('RankingEngine core boundary was not found');
+const coreSource = engineSource.slice(0, bridgeStart);
+vm.runInNewContext(coreSource, context);
 const engine = context.window.RankingEngine;
 
 test('currency conversion fee is 0% when listing and payout currencies match', () => {
