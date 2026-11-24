@@ -155,7 +155,11 @@ async function loadCloudStorage(){
     const d=await r.json();
     if(!d.configured){if(el)el.textContent='☁️ クラウド保存：未設定';return false;}
     if(el)el.textContent='☁️ クラウド保存：接続済み（端末ごとにデータ分離）';
-    if(!d.data)return true;
+    if(!d.data){
+      // First launch on this browser: upload any existing local data after restore completes.
+      window.__cloudSavePending=true;
+      return true;
+    }
     if(d.data.settings&&typeof d.data.settings==='object'){['domestic','pack','other','conv'].forEach(id=>{if(d.data.settings[id]!=null){const value=String(d.data.settings[id]);localStorage.setItem(id,value);if($(id))$(id).value=value;}});}
     Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
     Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>{
@@ -183,7 +187,7 @@ async function loadCloudStorage(){
       });
       const mergedFavorites=[...merged.values()];
       localStorage.setItem(FAVORITES_KEY,JSON.stringify(mergedFavorites));
-      if(mergedFavorites.length!==d.data.favorites.length){
+      if(JSON.stringify(mergedFavorites)!==JSON.stringify(d.data.favorites)){
         // Sync recovered local-only favorites back to the cloud.
         Promise.resolve().then(()=>saveCloudStorage());
       }
