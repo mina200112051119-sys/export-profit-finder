@@ -135,3 +135,12 @@ test('iOS Home Screen cloud identity prefers the app-local ID over a copied cook
   assert.match(html, /let id=localId\|\|cookieId/);
   assert.doesNotMatch(html, /let id=cookieId\|\|localId/);
 });
+
+
+test('manual cloud save verifies favorites by reading the same cloud identity back', () => {
+  assert.match(html, /onclick="saveCloudStorage\(\)">☁️ 今すぐクラウド保存/);
+  assert.match(html, /const verify=await fetch\(CLOUD_STORAGE_API/);
+  assert.match(html, /保存確認済み（マイリスト/);
+  assert.match(html, /保存後の確認に失敗/);
+  assert.match(html, /let id=localId\|\|cookieId/);
+});
