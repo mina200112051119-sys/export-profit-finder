@@ -81,7 +81,8 @@ test('live category ranking does not claim sales evidence when sold history is u
 
 test('recommended candidates exclude unknown shipping and missing eBay URLs, with a 30-item category cap', () => {
   assert.ok(html.includes('p.shippingKnown!==false&&p.ship!==null&&p.ship!==undefined&&Boolean(p.url)'));
-  assert.ok(html.includes('return safe.slice(0,cat?30:50)'));
+  assert.ok(html.includes('return safe.slice(0,30)'));
+  assert.ok(html.includes('function renderList(list,title,reviewList=[]){const ranked=list.slice(0,30)'));
   assert.ok(html.includes('.slice(0,30)'));
 });
 
