@@ -226,7 +226,8 @@ Storage.prototype.removeItem=function(k){
 };
 function load(){['domestic','pack','other','conv'].forEach(id=>{const v=localStorage.getItem(id);if(v!==null)$(id).value=v})}
 function samples(){return[{name:'ポケモンカード 人気カード（サンプル）',cat:'ポケモンカード',cost:8000,sell:95,ship:18,sold:72,list:28,trend:'横ばい',risk:'低',source:'サンプル'},{name:'ポケモンTCG デッキケース（サンプル）',cat:'ポケモン関連サプライ用品',cost:2500,sell:39,ship:14,sold:46,list:34,trend:'上昇',risk:'低',source:'サンプル'},{name:'日本製フィッシングリール（サンプル）',cat:'釣具',cost:18000,sell:165,ship:35,sold:31,list:29,trend:'横ばい',risk:'中',source:'サンプル'},{name:'日本製中古カメラ（サンプル）',cat:'カメラ',cost:30000,sell:285,ship:42,sold:18,list:42,trend:'下落',risk:'中',source:'サンプル'},{name:'レトロゲーム本体（サンプル）',cat:'レトロゲーム',cost:9000,sell:105,ship:30,sold:39,list:21,trend:'横ばい',risk:'低',source:'サンプル'}].map(RankingEngine.normalizeProduct)}
-async function fx(){try{const r=await fetch(FX,{cache:'no-store'});if(!r.ok)throw Error('為替取得失敗');const d=await r.json();const rate=Number(d?.rate);if(!Number.isFinite(rate)||rate<=0)throw Error('有効な為替レートがありません');fxRate=rate;fxDate=d.date||'';fxRateVerified=true;return true}catch(e){fxRateVerified=false;return false}}
+function isRecentFxDate(date){const stamp=Date.parse(String(date||'')+'T00:00:00Z');const age=Date.now()-stamp;return Number.isFinite(stamp)&&age>=-86400000&&age<=7*86400000}
+async function fx(){try{const r=await fetch(FX,{cache:'no-store'});if(!r.ok)throw Error('為替取得失敗');const d=await r.json();const rate=Number(d?.rate),date=String(d?.date||'');if(!Number.isFinite(rate)||rate<=0||!isRecentFxDate(date))throw Error('有効で新しい為替レートがありません');fxRate=rate;fxDate=date;fxRateVerified=true;return true}catch(e){fxRateVerified=false;return false}}
 async function ebay(q,parentSignal){
  const controller=new AbortController();
  const abort=()=>controller.abort();
