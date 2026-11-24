@@ -96,3 +96,13 @@ test('category buttons display only the recommended candidate count', () => {
 });
 
 // Live rankings use only verified listing fields; they do not invent sold-history evidence.
+
+test('photo candidate cards do not repeat an unverified product-name warning', () => {
+  const start = html.indexOf("$('photoResults').innerHTML=window.photoCandidates.map");
+  const end = html.indexOf("catch(e){$('photoMsg')", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const photoCard = html.slice(start, end);
+  assert.doesNotMatch(photoCard, /officialNameStatus\|\|'名称未確認'/);
+  assert.match(photoCard, /condition\|\|'状態不明'/);
+});
