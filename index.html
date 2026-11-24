@@ -1279,7 +1279,7 @@ function sourceSearchUrls(name,category){const q=encodeURIComponent(name),links=
 function detail(id){
  const p=data.find(x=>encodeURIComponent(x.id)===id);if(!p)return;
  window.__detailProduct=p;
- const s=settings(p),r=RankingEngine.scoreV2(p,s,data),c=r.costs;
+ const s=settings(p),c=RankingEngine.calcCosts(p,s);
  const partsInfo=p.cat==='交換部品・消耗品'?classifyPartsDetail(p):null;
  const retroInfo=p.cat==='レトロゲーム'?classifyRetroListing(p):null;
  const gunplaInfo=p.cat==='ガンプラ'?classifyGunplaListing(p):null;
@@ -1295,7 +1295,7 @@ function detail(id){
   '<div class="row"><span>eBay送料</span><b>'+shipping+'</b></div>'+
   (p.watchCount!=null?'<div class="row"><span>ウォッチ数</span><b>'+Number(p.watchCount).toLocaleString()+'</b></div>':'')+
   '<div class="row"><span>予想利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div>'+
-  '<div class="notice"><b>国内フリマで同じ商品を探す</b><div class="muted" style="margin:5px 0 8px">上から順に検索して、同じ商品が見つかる言葉を使ってください</div>'+searchTerms.map((term,i)=>'<div class="row" style="align-items:center;gap:8px"><span>'+(i===0?'おすすめ':'別の検索語')+'</span><a href="https://jp.mercari.com/search?keyword='+encodeURIComponent(term)+'" target="_blank" rel="noopener">'+esc(term)+'</a></div>').join('')+'</div>'+
+  '<div class="notice"><b>国内フリマで同じ商品を探す</b><div class="muted" style="margin:5px 0 8px">上から順に検索して、同じ商品が見つかる言葉を使ってください</div>'+searchTerms.map((term,i)=>'<div class="row" style="align-items:center;gap:8px"><span>'+('検索語'+(i+1))+'</span><a href="https://jp.mercari.com/search?keyword='+encodeURIComponent(term)+'" target="_blank" rel="noopener">'+esc(term)+'</a></div>').join('')+'</div>'+
   (p.officialNameStatus?'<div class="muted">商品名：'+esc(p.officialNameStatus)+'</div>':'')+
   (retroInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>型番</span><b>'+esc(retroInfo.model||'未確認')+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div></div>':'')+
   (gunplaInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>グレード・縮尺</span><b>'+esc(gunplaInfo.grade+' '+gunplaInfo.scale)+'</b></div><div class="row"><span>組立状態</span><b>'+esc(gunplaInfo.state)+'</b></div><div class="row"><span>型番</span><b>'+esc(gunplaInfo.model||'未確認')+'</b></div></div>':'')+
