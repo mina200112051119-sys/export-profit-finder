@@ -141,21 +141,30 @@ async function checkCloudStorage(){
   try{
     const r=await fetch(CLOUD_STORAGE_API,{headers:{'X-User-Id':getExportUserId()},cache:'no-store'});
     const d=await r.json().catch(()=>({}));
-    if(r.ok&&d.configured){if(el)el.textContent='☁️ クラウド保存：接続済み';return true;}
+    if(r.ok&&d.configured){if(el)el.textContent='☁️ クラウド保存：保存先に接続（保存内容は未確認）';return true;}
     if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：接続できません';
     return false;
   }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
 }
+let cloudSaveChain=Promise.resolve();
 async function saveCloudStorage(){
   if(window.__cloudSaveTimer){clearTimeout(window.__cloudSaveTimer);window.__cloudSaveTimer=null;}
-  try{
-    const r=await fetch(CLOUD_STORAGE_API,{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':getExportUserId()},body:JSON.stringify({data:cloudStorageData()}),keepalive:true});
-    const result=await r.json().catch(()=>({}));
-    const saved=Boolean(r.ok&&result.saved===true);
-    const el=$('cloud-status');
-    if(el)el.textContent=saved?'☁️ クラウド保存：保存済み':'☁️ クラウド保存：保存失敗（再確認してください）';
-    return saved;
-  }catch(e){const el=$('cloud-status');if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
+  // Never let startup writes overwrite cloud data before the initial restore finishes.
+  if(!window.__cloudRestoreDone){window.__cloudSavePending=true;return false;}
+  const saveOnce=async()=>{
+    try{
+      const snapshot=cloudStorageData();
+      const r=await fetch(CLOUD_STORAGE_API,{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':getExportUserId()},body:JSON.stringify({data:snapshot}),keepalive:true});
+      const result=await r.json().catch(()=>({}));
+      const saved=Boolean(r.ok&&result.saved===true);
+      const el=$('cloud-status');
+      if(el)el.textContent=saved?'☁️ クラウド保存：保存済み':'☁️ クラウド保存：保存失敗（再確認してください）';
+      return saved;
+    }catch(e){const el=$('cloud-status');if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
+  };
+  // Serialize writes so an older request cannot finish last and replace newer data.
+  cloudSaveChain=cloudSaveChain.then(saveOnce,saveOnce);
+  return cloudSaveChain;
 }
 async function loadCloudStorage(){
   const el=$('cloud-status');
@@ -1404,6 +1413,6 @@ if(typeof originalMap==='function'){
 </script>
 <script>
 // Restore this user's saved cloud data after all app scripts and UI elements are ready.
-window.addEventListener('load',()=>{ if(typeof loadCloudStorage==='function') loadCloudStorage(); });
+window.addEventListener('load',async()=>{ try{if(typeof loadCloudStorage==='function')await loadCloudStorage();}finally{window.__cloudRestoreDone=true;if(window.__cloudSavePending){window.__cloudSavePending=false;await saveCloudStorage();}} });
 </script>
 </body></html>
