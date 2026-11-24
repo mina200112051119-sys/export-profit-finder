@@ -1402,4 +1402,8 @@ if(typeof originalMap==='function'){
 // Legacy evaluation-display overrides removed; simplified ranking and detail views are authoritative.
 })();
 </script>
+<script>
+// Restore this user's saved cloud data after all app scripts and UI elements are ready.
+window.addEventListener('load',()=>{ if(typeof loadCloudStorage==='function') loadCloudStorage(); });
+</script>
 </body></html>
