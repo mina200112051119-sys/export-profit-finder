@@ -67,3 +67,10 @@ test('category diagnostics remain available internally without cluttering catego
   assert.match(renderCats, /現在出品候補/);
   assert.doesNotMatch(renderCats, /検索成功|取得 |検索結果合計|検索状況/);
 });
+
+test('favorites: cloud restore reports the restored list count instead of connection-only status', () => {
+  assert.match(html, /保存データあり（マイリスト'\+restoredCount\+'件）/);
+  assert.match(html, /保存先接続可（保存データなし）/);
+  assert.match(html, /const localCount=getFavoriteProducts\(\)\.length/);
+  assert.match(html, /await saveCloudStorage\(\)/);
+});
