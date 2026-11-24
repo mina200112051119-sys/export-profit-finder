@@ -164,7 +164,7 @@ function rankV2(products,s={},category=null){
   // 「1位が存在しない」「22点の商品しか表示されない」という状態を避ける。
   return src
     .map(p=>scoreV2(p,{...s,feeRate:s.feeRateByCategory?.[p.cat]??s.feeRate},n))
-    .sort((a,b)=>b.totalScore-a.totalScore||(b.riskMetrics.riskAdjustedProfit||-Infinity)-(a.riskMetrics.riskAdjustedProfit||-Infinity));
+    .sort((a,b)=>b.totalScore-a.totalScore||(b.dataCompleteness?.score??0)-(a.dataCompleteness?.score??0)||Number(Boolean(b.officialNameVerified))-Number(Boolean(a.officialNameVerified))||Number(Boolean(b.shippingKnown))-Number(Boolean(a.shippingKnown))||(b.riskMetrics.riskAdjustedProfit??-Infinity)-(a.riskMetrics.riskAdjustedProfit??-Infinity)||a.displayName.localeCompare(b.displayName,'ja'));
 }
 function rankNeedsReview(products,s={},category=null){
   const n=products.map(normalizeProduct),src=category?n.filter(p=>p.cat===category):n;
