@@ -10,6 +10,13 @@ const zones={
   5:['ブラジル','Brazil','アルゼンチン','Argentina','チリ','Chile','ペルー','Peru','コロンビア','Colombia','南アフリカ','South Africa','ナイジェリア','Nigeria','ケニア','Kenya','モロッコ','Morocco','ガーナ','Ghana','エチオピア','Ethiopia','エジプト','Egypt','アルジェリア','Algeria','アンゴラ','Angola','ベナン','Benin','ボツワナ','Botswana','ブルキナファソ','Burkina Faso','ブルンジ','Burundi','カメルーン','Cameroon','カーボベルデ','Cape Verde','中央アフリカ','Central African Republic','チャド','Chad','コモロ','Comoros','コンゴ共和国','Republic of the Congo','コンゴ民主共和国','Democratic Republic of the Congo','コートジボワール','Ivory Coast','ジブチ','Djibouti','赤道ギニア','Equatorial Guinea','エリトリア','Eritrea','エスワティニ','Eswatini','ガボン','Gabon','ガンビア','Gambia','ギニア','Guinea','ギニアビサウ','Guinea-Bissau','レソト','Lesotho','リベリア','Liberia','リビア','Libya','マダガスカル','Madagascar','マラウイ','Malawi','マリ','Mali','モーリタニア','Mauritania','モーリシャス','Mauritius','モザンビーク','Mozambique','ナミビア','Namibia','ニジェール','Niger','ルワンダ','Rwanda','セネガル','Senegal','セーシェル','Seychelles','シエラレオネ','Sierra Leone','ソマリア','Somalia','南スーダン','South Sudan','スーダン','Sudan','タンザニア','Tanzania','トーゴ','Togo','チュニジア','Tunisia','ウガンダ','Uganda','ザンビア','Zambia','ジンバブエ','Zimbabwe','アフガニスタン','Afghanistan','アンティグア・バーブーダ','Antigua and Barbuda','バハマ','Bahamas','バルバドス','Barbados','ベリーズ','Belize','ボリビア','Bolivia','コスタリカ','Costa Rica','キューバ','Cuba','ドミニカ共和国','Dominican Republic','エクアドル','Ecuador','エルサルバドル','El Salvador','グレナダ','Grenada','グアテマラ','Guatemala','ガイアナ','Guyana','ハイチ','Haiti','ホンジュラス','Honduras','ジャマイカ','Jamaica','ニカラグア','Nicaragua','パナマ','Panama','パラグアイ','Paraguay','スリナム','Suriname','トリニダード・トバゴ','Trinidad and Tobago','ウルグアイ','Uruguay','ベネズエラ','Venezuela']
 };
 const countries=['日本',...new Set(Object.values(zones).flat())].filter(x=>!/^(UK|UAE|USA|US)$/.test(x));
+const airPacketRates={
+  1:[720,820,920,1020,1120,1220,1320,1420,1520,1620,1720,1820,1920,2020,2120,2220,2320,2420,2520,2620],
+  2:[750,870,990,1110,1230,1350,1470,1590,1710,1830,1950,2070,2190,2310,2430,2550,2670,2790,2910,3030],
+  3:[880,1060,1240,1420,1600,1780,1960,2140,2320,2500,2680,2860,3040,3220,3400,3580,3760,3940,4120,4300],
+  4:[1200,1410,1620,1830,2040,2250,2460,2670,2880,3090,3300,3510,3720,3930,4140,4350,4560,4770,4980,5190],
+  5:[920,1180,1440,1700,1960,2220,2480,2740,3000,3260,3520,3780,4040,4300,4560,4820,5080,5340,5600,5860]
+};
 const rateTable={
   1:[2050,2750,3450,4150,4850],
   2:[2500,3700,4900,6100,7300],
@@ -17,7 +24,7 @@ const rateTable={
   4:[4200,6700,9200,11700,14200],
   5:[4550,7250,9950,12650,15350]
 };
-// Japan Post International Parcel Post, airmail, 1-5kg bands. Rates checked 2026-11-25.
+// Japan Post International Air Packet (tracked, up to 2kg) and International Parcel Post (air, 1-5kg). Rates checked 2026-11-25.
 const defaults={
  'ポケモンカード':{g:180,d:[25,18,3]},
  'ポケモン関連サプライ用品':{g:450,d:[28,22,10]},
@@ -80,9 +87,14 @@ function estimate(p,country){
   const cost=size<=60?800:size<=80?1000:size<=100?1300:size<=120?1600:size<=140?2000:2400;
   return {cost,reason:'国内向けの大きさ別概算・全国一律の目安',approx:true,weight:g,dims,source:'国内送料の概算'};
  }
+ const size=dims.reduce((a,b)=>a+b,0),longest=Math.max(...dims);
+ if(g<=2000&&size<=90&&longest<=60){
+  const band=Math.max(1,Math.ceil(g/100));
+  return {cost:airPacketRates[z][band-1],reason:'日本郵便・国際エアパケット（追跡あり・2kgまで）の料金目安',approx:true,weight:g,dims,zone:z,service:'国際エアパケット'};
+ }
  const kg=Math.max(1,Math.ceil(g/1000));
- if(kg>5)return {cost:null,reason:'5kgを超えるため料金表の概算対象外です',approx:false,weight:g,dims};
- return {cost:rateTable[z][kg-1],reason:'日本郵便・国際小包（航空便）の料金目安',approx:true,weight:g,dims,zone:z,kg};
+ if(kg>5)return {cost:null,reason:'5kgを超えるため、個別の配送方法確認が必要です',approx:false,weight:g,dims};
+ return {cost:rateTable[z][kg-1],reason:'日本郵便・国際小包（航空便）の料金目安',approx:true,weight:g,dims,zone:z,kg,service:'国際小包（航空便）'};
 }
 function selectedCountry(){return String(document.getElementById('ship-country')?.value||read(KEY,{country:'アメリカ'}).country||'アメリカ')}
 function currentEstimate(p){return estimate(p,selectedCountry())}
