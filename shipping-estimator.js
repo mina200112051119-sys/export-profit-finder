@@ -9,7 +9,7 @@ const zones={
   4:['アメリカ','米国','アメリカ合衆国','United States','United States of America','USA','US'],
   5:['ブラジル','Brazil','アルゼンチン','Argentina','チリ','Chile','ペルー','Peru','コロンビア','Colombia','南アフリカ','South Africa','ナイジェリア','Nigeria','ケニア','Kenya','モロッコ','Morocco','ガーナ','Ghana','エチオピア','Ethiopia','エジプト','Egypt','アルジェリア','Algeria','アンゴラ','Angola','ベナン','Benin','ボツワナ','Botswana','ブルキナファソ','Burkina Faso','ブルンジ','Burundi','カメルーン','Cameroon','カーボベルデ','Cape Verde','中央アフリカ','Central African Republic','チャド','Chad','コモロ','Comoros','コンゴ共和国','Republic of the Congo','コンゴ民主共和国','Democratic Republic of the Congo','コートジボワール','Ivory Coast','ジブチ','Djibouti','赤道ギニア','Equatorial Guinea','エリトリア','Eritrea','エスワティニ','Eswatini','ガボン','Gabon','ガンビア','Gambia','ギニア','Guinea','ギニアビサウ','Guinea-Bissau','レソト','Lesotho','リベリア','Liberia','リビア','Libya','マダガスカル','Madagascar','マラウイ','Malawi','マリ','Mali','モーリタニア','Mauritania','モーリシャス','Mauritius','モザンビーク','Mozambique','ナミビア','Namibia','ニジェール','Niger','ルワンダ','Rwanda','セネガル','Senegal','セーシェル','Seychelles','シエラレオネ','Sierra Leone','ソマリア','Somalia','南スーダン','South Sudan','スーダン','Sudan','タンザニア','Tanzania','トーゴ','Togo','チュニジア','Tunisia','ウガンダ','Uganda','ザンビア','Zambia','ジンバブエ','Zimbabwe','アフガニスタン','Afghanistan','アンティグア・バーブーダ','Antigua and Barbuda','バハマ','Bahamas','バルバドス','Barbados','ベリーズ','Belize','ボリビア','Bolivia','コスタリカ','Costa Rica','キューバ','Cuba','ドミニカ共和国','Dominican Republic','エクアドル','Ecuador','エルサルバドル','El Salvador','グレナダ','Grenada','グアテマラ','Guatemala','ガイアナ','Guyana','ハイチ','Haiti','ホンジュラス','Honduras','ジャマイカ','Jamaica','ニカラグア','Nicaragua','パナマ','Panama','パラグアイ','Paraguay','スリナム','Suriname','トリニダード・トバゴ','Trinidad and Tobago','ウルグアイ','Uruguay','ベネズエラ','Venezuela']
 };
-const countries=[...new Set(Object.values(zones).flat())].filter(x=>!/^(UK|UAE|USA|US)$/.test(x));
+const countries=['日本',...new Set(Object.values(zones).flat())].filter(x=>!/^(UK|UAE|USA|US)$/.test(x));
 const rateTable={
   1:[2050,2750,3450,4150,4850],
   2:[2500,3700,4900,6100,7300],
@@ -92,11 +92,10 @@ function addSettingsUI(){
  const host=card.querySelector('div[style*="padding-top"]');if(!host)return;
  const saved=read(KEY,{country:'アメリカ'});
  const wrap=document.createElement('div');wrap.className='notice';wrap.style.marginTop='10px';
- wrap.innerHTML='<b>購入者の配送先</b><label for="ship-country">国名（入力して選択）</label><input id="ship-country" list="ship-country-list" value="'+esc(saved.country||'アメリカ')+'" placeholder="例：アメリカ、イギリス、カナダ"><datalist id="ship-country-list">'+countries.map(c=>'<option value="'+esc(c)+'">').join('')+'</datalist><p class="muted">購入者の郵便番号は不要です。国名から送料を概算します。料金区分がない国は「概算不可」と表示します。</p><div id="ship-country-status" class="muted"></div>';
+ wrap.innerHTML='<b>購入者の配送先</b><label for="ship-country">国を選択</label><select id="ship-country">'+countries.map(c=>'<option value="'+esc(c)+'" '+(norm(c)===norm(saved.country||'アメリカ')?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select><p class="muted">国名を一覧から選びます。購入者の郵便番号は不要です。料金区分がない国は「概算不可」と表示します。</p><div id="ship-country-status" class="muted"></div>';
  host.appendChild(wrap);
  const input=document.getElementById('ship-country');
  input.addEventListener('change',()=>{localStorage.setItem(KEY,JSON.stringify({country:input.value.trim()}));refreshAll();});
- input.addEventListener('input',()=>{localStorage.setItem(KEY,JSON.stringify({country:input.value.trim()}));refreshAll();});
  // The former one-size shipping field remains available only as an extra expense.
  const label=[...host.querySelectorAll('label')].find(x=>x.textContent.includes('海外発送送料'));
  if(label)label.textContent='追加の発送費用（必要な場合のみ・円）';
@@ -141,6 +140,9 @@ function refreshAll(){
    const row=[...document.querySelectorAll('#body .row')].find(x=>x.querySelector('span')?.textContent.trim()==='予想利益');
    const value=row?.querySelector('b');
    if(value){value.className=result.profit==null?'yellow':result.profit>=0?'green':'red';value.textContent=result.outboundShippingKnown===false?'発送送料が未確認のため未計算':result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
+   const outbound=document.getElementById('profit-outbound-shipping');if(outbound)outbound.textContent='−'+Math.round(result.domesticShippingJpy||0).toLocaleString('ja-JP')+'円';
+   const total=document.getElementById('profit-total-costs');if(total)total.textContent='−'+Math.round(result.totalCosts||0).toLocaleString('ja-JP')+'円';
+   const final=document.getElementById('profit-final');if(final){final.className=result.profit==null?'yellow':result.profit>=0?'green':'red';final.textContent=result.outboundShippingKnown===false?'発送送料が未確認のため未計算':result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
   }
   if(typeof window.updateVisibleProfit==='function')window.updateVisibleProfit(p);
  }
