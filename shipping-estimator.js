@@ -130,8 +130,20 @@ function injectItemPanel(){
 function refreshAll(){
  updateCountryStatus();
  const p=window.__detailProduct;
- if(p){const old=document.getElementById('shipping-item-panel');if(old)old.remove();if(document.getElementById('source-panel'))injectItemPanel();}
- if(typeof window.updateVisibleProfit==='function'&&p)window.updateVisibleProfit(p);
+ if(p){
+  const old=document.getElementById('shipping-item-panel');if(old)old.remove();
+  if(document.getElementById('source-panel'))injectItemPanel();
+  const E=window.RankingEngine;
+  if(E&&typeof E.calcCosts==='function'){
+   const g=id=>Math.max(0,Number(document.getElementById(id)?.value||0));
+   const fee=/ポケモンカード/.test(String(p.cat||''))&&!/サプライ/.test(String(p.cat||''))?.1325:.136;
+   const result=E.calcCosts(p,{fxRate:Number(window.__exportApp?.getFx?.()||150),feeRate:fee,internationalRate:.0135,domesticShipping:g('domestic'),packaging:g('pack'),otherCost:g('other'),conversionFeeRate:g('conv')});
+   const row=[...document.querySelectorAll('#body .row')].find(x=>x.querySelector('span')?.textContent.trim()==='予想利益');
+   const value=row?.querySelector('b');
+   if(value){value.className=result.profit==null?'yellow':result.profit>=0?'green':'red';value.textContent=result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
+  }
+  if(typeof window.updateVisibleProfit==='function')window.updateVisibleProfit(p);
+ }
 }
 const E=window.RankingEngine;
 if(E&&typeof E.calcCosts==='function'){
