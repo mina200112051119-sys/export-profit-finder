@@ -104,7 +104,7 @@ function addSettingsUI(){
  const host=card.querySelector('div[style*="padding-top"]');if(!host)return;
  const saved=read(KEY,{country:'アメリカ'});
  const wrap=document.createElement('div');wrap.className='notice';wrap.style.marginTop='10px';
- wrap.innerHTML='<b>購入者の配送先</b><label for="ship-country">国を選択</label><select id="ship-country">'+countries.map(c=>'<option value="'+esc(c)+'" '+(norm(c)===norm(saved.country||'アメリカ')?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select><p class="muted">国名を一覧から選びます。購入者の郵便番号は不要です。料金区分がない国は「概算不可」と表示します。</p><div id="ship-country-status" class="muted"></div>';
+ wrap.innerHTML='<b>こちらから発送する相手の国</b><label for="ship-country">国を選択</label><select id="ship-country">'+countries.map(c=>'<option value="'+esc(c)+'" '+(norm(c)===norm(saved.country||'アメリカ')?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select><p class="muted">国名を一覧から選びます。購入者の郵便番号は不要です。料金区分がない国は「概算不可」と表示します。</p><div id="ship-country-status" class="muted"></div>';
  host.appendChild(wrap);
  const input=document.getElementById('ship-country');
  input.addEventListener('change',()=>{localStorage.setItem(KEY,JSON.stringify({country:input.value.trim()}));refreshAll();});
