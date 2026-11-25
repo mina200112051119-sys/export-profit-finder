@@ -136,7 +136,7 @@ function refreshAll(){
   const E=window.RankingEngine;
   if(E&&typeof E.calcCosts==='function'){
    const g=id=>Math.max(0,Number(document.getElementById(id)?.value||0));
-   const fee=/ポケモンカード/.test(String(p.cat||''))&&!/サプライ/.test(String(p.cat||''))?.1325:.136;
+   const fee=/ポケモンカード/.test(String(p.cat||''))&&!/サプライ/.test(String(p.cat||'')) ? 0.1325 : 0.136;
    const result=E.calcCosts(p,{fxRate:Number(window.__exportApp?.getFx?.()||150),feeRate:fee,internationalRate:.0135,domesticShipping:g('domestic'),packaging:g('pack'),otherCost:g('other'),conversionFeeRate:g('conv')});
    const row=[...document.querySelectorAll('#body .row')].find(x=>x.querySelector('span')?.textContent.trim()==='予想利益');
    const value=row?.querySelector('b');
