@@ -170,6 +170,7 @@ function refreshAll(){
    if(value){value.className=result.profit==null?'yellow':result.profit>=0?'green':'red';value.textContent=result.outboundShippingKnown===false?'発送送料が未確認のため未計算':result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
    const outbound=document.getElementById('profit-outbound-shipping');if(outbound)outbound.textContent='−'+Math.round(result.domesticShippingJpy||0).toLocaleString('ja-JP')+'円';
    const total=document.getElementById('profit-total-costs');if(total)total.textContent='−'+Math.round(result.totalCosts||0).toLocaleString('ja-JP')+'円';
+   const beforePurchase=document.getElementById('profit-before-purchase');if(beforePurchase)beforePurchase.textContent=Math.round((result.grossSaleJpy||0)-(result.totalCosts||0)+Math.max(0,Number(p.cost)||0)).toLocaleString('ja-JP')+'円';
    const final=document.getElementById('profit-final');if(final){final.className=result.profit==null?'yellow':result.profit>=0?'green':'red';final.textContent=result.outboundShippingKnown===false?'発送送料が未確認のため未計算':result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
   }
   if(typeof window.updateVisibleProfit==='function')window.updateVisibleProfit(p);
