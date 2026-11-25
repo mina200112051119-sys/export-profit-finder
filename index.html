@@ -78,22 +78,28 @@ function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
 function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value));Promise.resolve(saveCloudStorage()).catch(()=>{})}
 const CLOUD_STORAGE_API=API_BASE+'/api/translate?action=storage';
 function readExportUserCookie(){
-  const hit=document.cookie.split(';').map(v=>v.trim()).find(v=>v.startsWith('exportUserIdV1='));
-  return hit?decodeURIComponent(hit.slice('exportUserIdV1='.length)):'';
+  try{
+    const hit=document.cookie.split(';').map(v=>v.trim()).find(v=>v.startsWith('exportUserIdV1='));
+    const id=hit?decodeURIComponent(hit.slice('exportUserIdV1='.length)):'';
+    return /^[a-zA-Z0-9_-]{12,80}$/.test(id)?id:'';
+  }catch(e){return '';}
 }
 function writeExportUserCookie(id){
-  // iOS copies cookies once when a Home Screen web app is created.
-  // This lets Safari and a freshly-added Home Screen app share one cloud identity.
+  // Keep a cookie copy for a newly-created Home Screen app, but do not let
+  // an older cookie replace an identity already saved by this app.
   document.cookie='exportUserIdV1='+encodeURIComponent(id)+'; Max-Age=31536000; Path=/; SameSite=Lax; Secure';
 }
 function getExportUserId(){
   const cookieId=readExportUserCookie();
-  const localId=localStorage.getItem('exportUserId:v1');
-  let id=cookieId||localId;
+  const storedId=localStorage.getItem('exportUserId:v1')||'';
+  const localId=/^[a-zA-Z0-9_-]{12,80}$/.test(storedId)?storedId:'';
+  // localStorage is the persistent identity for this browser/app installation.
+  // A cookie may be a stale snapshot copied when the iOS Home Screen app was added.
+  let id=localId||cookieId;
   if(!id){
     id=(crypto.randomUUID?crypto.randomUUID():'u'+Date.now()+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
   }
-  if(localId!==id)localStorage.setItem('exportUserId:v1',id);
+  if(storedId!==id)localStorage.setItem('exportUserId:v1',id);
   if(cookieId!==id)writeExportUserCookie(id);
   return id;
 }
