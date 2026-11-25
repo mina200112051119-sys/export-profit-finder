@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>輸出利益ファインダー</title><style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;background:#f5f6f8;color:#1f2937}header{background:#111827;color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10}header h1{margin:0;font-size:20px}header p{margin:5px 0 0;color:#cbd5e1;font-size:12px}main{max-width:960px;margin:auto;padding:16px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.tab,button{border:0;border-radius:12px;padding:12px;background:#fff;box-shadow:0 1px 4px #0001;font-weight:700;cursor:pointer}.tab.active{background:#111827;color:#fff}.panel{display:none}.panel.active{display:block}.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px #0000000d}h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:8px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.cat{text-align:left}.cat small{display:block;color:#64748b;margin-top:4px}input,select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;margin:5px 0 10px}.primary{background:#2563eb;color:#fff;width:100%}.secondary{background:#e5e7eb;width:100%;margin-top:8px}.muted{color:#64748b;font-size:12px}.status,.notice{background:#f8fafc;border-radius:12px;padding:12px;margin-top:10px}.notice{background:#eff6ff}.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #eee}.green{color:#15803d}.red{color:#b91c1c}.yellow{color:#a16207}.stars{letter-spacing:1px}.score{font-size:22px;font-weight:900}.product{cursor:pointer}.product:focus{outline:3px solid #93c5fd}.search-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.search-card{border:1px solid #e5e7eb;border-radius:14px;padding:12px;cursor:pointer}.search-card img{width:100%;height:130px;object-fit:contain;background:#f8fafc;border-radius:10px}.photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.photo-card{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#fff}.photo-card img{width:100%;height:160px;object-fit:contain;background:#f8fafc;border-radius:10px}.modal-backdrop{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:50}.modal-backdrop.open{display:flex}.modal{background:#fff;width:min(920px,100%);max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px}.modal-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;padding-bottom:10px;z-index:2}.close{background:#e5e7eb;padding:9px 14px}.detail-image{width:100%;max-height:260px;object-fit:contain;background:#f8fafc;border-radius:12px}.risk-table{width:100%;border-collapse:collapse;font-size:13px}.risk-table th,.risk-table td{padding:9px 6px;border-bottom:1px solid #e5e7eb;text-align:left}.low{color:#15803d;font-weight:800}.mid{color:#a16207;font-weight:800}.high{color:#b91c1c;font-weight:800}@media(max-width:600px){.tabs{grid-template-columns:repeat(2,1fr)}.grid,.search-grid,.photo-grid{grid-template-columns:1fr}.modal{max-height:95vh}}</style></head><body><header><h1>輸出利益ファインダー</h1><p>現在出品と仕入れ費用を確認して候補を比較</p></header><main><div class="tabs"><button class="tab active" onclick="tab('search',this)">商品を検索</button><button class="tab" onclick="tab('favorites',this)">マイリスト</button><button class="tab" onclick="tab('photo',this)">写真から探す</button></div><section id="search" class="panel active"><div class="card"><h2>商品名・型番から検索</h2><label>カテゴリー</label><select id="cat"><option>ポケモンカード</option><option>ポケモン関連サプライ用品</option><option>釣具</option><option>カメラ</option><option>レトロゲーム</option><option>ガンプラ</option><option>交換部品・消耗品</option></select><label>商品名・型番</label><input id="q" placeholder="例：Pokemon 151 Charizard"><div class="notice">過去90日販売データは使用しません。eBayの現在出品価格・送料を確認し、気になる商品を選んでから国内の仕入れ先と価格を調べます。</div><div id="fx" class="status">為替取得中…</div><button class="primary" onclick="search()">eBayで検索</button><div id="results" class="search-grid"></div></div></section><section id="favorites" class="panel"><div class="card"><h2>マイリスト</h2><p class="muted">気になる商品を保存できます。保存内容は利用者ごとに分けて保管されます。</p><div id="cloud-status" class="status">クラウド保存を確認中…</div><button class="secondary" type="button" onclick="checkCloudStorage()">クラウドに保存して確認</button><div id="favorite-list"></div></div></section><section id="photo" class="panel"><div class="card"><h2>写真から探す</h2><div class="notice">写真をeBayの画像検索に送り、似ている出品候補を表示します。写真だけで商品を確定するものではありません。</div><input id="photoFile" type="file" accept="image/*" onchange="photo(event)"><img id="preview" style="display:none;max-width:100%;max-height:220px;border-radius:12px;margin-top:8px"><button id="photoSearch" class="primary" style="display:none;margin-top:10px" onclick="searchByPhoto()">写真からeBay候補を探す</button><div id="photoMsg" class="status" style="display:none"></div><div id="photoResults" class="photo-grid"></div></div></section><details class="card">
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>輸出利益ファインダー</title><style>*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;background:#f5f6f8;color:#1f2937}header{background:#111827;color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10}header h1{margin:0;font-size:20px}header p{margin:5px 0 0;color:#cbd5e1;font-size:12px}main{max-width:960px;margin:auto;padding:16px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.tab,button{border:0;border-radius:12px;padding:12px;background:#fff;box-shadow:0 1px 4px #0001;font-weight:700;cursor:pointer}.tab.active{background:#111827;color:#fff}.panel{display:none}.panel.active{display:block}.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px #0000000d}h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:8px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.cat{text-align:left}.cat small{display:block;color:#64748b;margin-top:4px}input,select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;margin:5px 0 10px}.primary{background:#2563eb;color:#fff;width:100%}.secondary{background:#e5e7eb;width:100%;margin-top:8px}.muted{color:#64748b;font-size:12px}.status,.notice{background:#f8fafc;border-radius:12px;padding:12px;margin-top:10px}.notice{background:#eff6ff}.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #eee}.green{color:#15803d}.red{color:#b91c1c}.yellow{color:#a16207}.stars{letter-spacing:1px}.score{font-size:22px;font-weight:900}.product{cursor:pointer}.product:focus{outline:3px solid #93c5fd}.search-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.search-card{border:1px solid #e5e7eb;border-radius:14px;padding:12px;cursor:pointer}.search-card img{width:100%;height:130px;object-fit:contain;background:#f8fafc;border-radius:10px}.photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.photo-card{border:1px solid #e5e7eb;border-radius:14px;padding:12px;background:#fff}.photo-card img{width:100%;height:160px;object-fit:contain;background:#f8fafc;border-radius:10px}.modal-backdrop{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:50}.modal-backdrop.open{display:flex}.modal{background:#fff;width:min(920px,100%);max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px}.modal-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;padding-bottom:10px;z-index:2}.close{background:#e5e7eb;padding:9px 14px}.detail-image{width:100%;max-height:260px;object-fit:contain;background:#f8fafc;border-radius:12px}.risk-table{width:100%;border-collapse:collapse;font-size:13px}.risk-table th,.risk-table td{padding:9px 6px;border-bottom:1px solid #e5e7eb;text-align:left}.low{color:#15803d;font-weight:800}.mid{color:#a16207;font-weight:800}.high{color:#b91c1c;font-weight:800}@media(max-width:600px){.tabs{grid-template-columns:repeat(2,1fr)}.grid,.search-grid,.photo-grid{grid-template-columns:1fr}.modal{max-height:95vh}}</style></head><body><header><h1>輸出利益ファインダー</h1><p>現在出品と仕入れ費用を確認して候補を比較</p></header><main><div class="tabs"><button class="tab active" onclick="tab('search',this)">商品を検索</button><button class="tab" onclick="tab('favorites',this)">マイリスト</button><button class="tab" onclick="tab('photo',this)">写真から探す</button></div><section id="search" class="panel active"><div class="card"><h2>商品名・型番から検索</h2><label>カテゴリー</label><select id="cat"><option>ポケモンカード</option><option>ポケモン関連サプライ用品</option><option>釣具</option><option>カメラ</option><option>レトロゲーム</option><option>ガンプラ</option><option>交換部品・消耗品</option></select><label>商品名・型番</label><input id="q" placeholder="例：Pokemon 151 Charizard"><div class="notice">過去90日販売データは使用しません。eBayの現在出品価格・送料を確認し、気になる商品を選んでから国内の仕入れ先と価格を調べます。</div><div id="fx" class="status">為替取得中…</div><button class="primary" onclick="search()">eBayで検索</button><div id="results" class="search-grid"></div></div></section><section id="favorites" class="panel"><div class="card"><h2>マイリスト</h2><p class="muted">気になる商品をこの端末のブラウザに保存します。保存したブラウザでご利用ください。Safariとホーム画面アプリ間では共有されません。ブラウザのデータを消去すると登録内容も消えます。</p><div id="favorite-list"></div></div></section><section id="photo" class="panel"><div class="card"><h2>写真から探す</h2><div class="notice">写真をeBayの画像検索に送り、似ている出品候補を表示します。写真だけで商品を確定するものではありません。</div><input id="photoFile" type="file" accept="image/*" onchange="photo(event)"><img id="preview" style="display:none;max-width:100%;max-height:220px;border-radius:12px;margin-top:8px"><button id="photoSearch" class="primary" style="display:none;margin-top:10px" onclick="searchByPhoto()">写真からeBay候補を探す</button><div id="photoMsg" class="status" style="display:none"></div><div id="photoResults" class="photo-grid"></div></div></section><details class="card">
 <summary><b>利益計算の設定</b></summary>
 <div style="padding-top:12px"><div class="grid"><div><label>海外発送送料（日本から購入者へ・1商品あたり）</label><input id="domestic" type="number" value="0"></div><div><label>標準梱包費（1商品あたり・円）</label><input id="pack" type="number" value="0"></div><div><label>その他経費</label><input id="other" type="number" value="0"></div><div><label>eBay為替換算手数料（0% / 3%）</label><input id="conv" type="number" value="0" step="0.01"></div></div><div class="notice">日本登録住所のセラーがeBayで通貨換算を受ける場合、eBayの為替換算手数料は3.0%です。eBay.comのUSD取引など、通貨換算が発生しないケースでは0%です。citeturn0search0turn0search1</div><button class="secondary" onclick="save();render()">保存して再計算</button></div></details></main><div id="modal" class="modal-backdrop" onclick="closeDetail(event)"><div class="modal" onclick="event.stopPropagation()"><div class="modal-head"><h2 id="title">商品詳細</h2><button class="close" type="button" onclick="document.getElementById('modal').classList.remove('open')">× 閉じる</button></div><div id="body"></div></div></div><script src="./ranking-engine.js"></script><script>'use strict';
 const API_BASE=location.hostname.endsWith('.github.io')?'https://export-profit-finder.vercel.app':''; const API=API_BASE+'/api/ebay-search',SOLD=API_BASE+'/api/ebay-sold-search',FX=API_BASE+'/api/exchange-rate',IMAGE_API=API_BASE+'/api/ebay-search-by-image';
@@ -56,13 +56,11 @@ function toggleFavorite(id){
  const a=getFavoriteProducts(),has=a.some(x=>String(x.id)===String(id));
  localStorage.setItem(FAVORITES_KEY,JSON.stringify(has?a.filter(x=>String(x.id)!==String(id)):[...a,JSON.parse(JSON.stringify(p))]));
  renderFavorites();updateFavoriteButtons();
- saveCloudStorage();
  return !has;
 }
 function removeFavorite(id){
  localStorage.setItem(FAVORITES_KEY,JSON.stringify(getFavoriteProducts().filter(p=>String(p.id)!==String(id))));
  renderFavorites();updateFavoriteButtons();
- saveCloudStorage();
 }
 function updateFavoriteButtons(){document.querySelectorAll('[data-favorite-id]').forEach(b=>{b.textContent=isFavorite(b.dataset.favoriteId)?'★ マイリストから削除':'☆ マイリストに追加'})}
 function renderFavorites(){
@@ -75,178 +73,8 @@ function yen(v){return v==null?'—':Math.round(Number(v||0)).toLocaleString()+'
 function esc(v){return String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]))}
 function baseSettings(){return{fxRate,feeRateByCategory:FEES,internationalRate:INT,domesticShipping:+$('domestic').value||0,packaging:+$('pack').value||0,otherCost:+$('other').value||0,conversionFeeRate:+$('conv').value||0}}
 function settings(p){return{...baseSettings(),feeRate:FEES[p.cat]||.136}}
-function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value));Promise.resolve(saveCloudStorage()).catch(()=>{})}
-const CLOUD_STORAGE_API=API_BASE+'/api/translate?action=storage';
-function readExportUserCookie(){
-  try{
-    const hit=document.cookie.split(';').map(v=>v.trim()).find(v=>v.startsWith('exportUserIdV1='));
-    const id=hit?decodeURIComponent(hit.slice('exportUserIdV1='.length)):'';
-    return /^[a-zA-Z0-9_-]{12,80}$/.test(id)?id:'';
-  }catch(e){return '';}
-}
-function writeExportUserCookie(id){
-  // Keep a cookie copy for a newly-created Home Screen app, but do not let
-  // an older cookie replace an identity already saved by this app.
-  document.cookie='exportUserIdV1='+encodeURIComponent(id)+'; Max-Age=31536000; Path=/; SameSite=Lax; Secure';
-}
-function getExportUserId(){
-  const cookieId=readExportUserCookie();
-  const storedId=localStorage.getItem('exportUserId:v1')||'';
-  const localId=/^[a-zA-Z0-9_-]{12,80}$/.test(storedId)?storedId:'';
-  // localStorage is the persistent identity for this browser/app installation.
-  // A cookie may be a stale snapshot copied when the iOS Home Screen app was added.
-  let id=localId||cookieId;
-  if(!id){
-    id=(crypto.randomUUID?crypto.randomUUID():'u'+Date.now()+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'');
-  }
-  if(storedId!==id)localStorage.setItem('exportUserId:v1',id);
-  if(cookieId!==id)writeExportUserCookie(id);
-  return id;
-}
-function cloudStorageData(){
-  const sourcingCandidates={},selectedSourcing={},officialCandidates={},domesticSearchNames={},manualEvidence=getManualEvidence(),favorites=getFavoriteProducts();
-  const prefixes={
-    candidates:'sourcingCandidates:v1:',
-    selected:'selectedSourcingCost:v1:',
-    official:'selectedOfficialCandidate:v1:',
-    searchName:'domesticSearchName:v1:'
-  };
-  for(let i=0;i<localStorage.length;i++){
-    const k=localStorage.key(i)||'';
-    try{
-      if(k.startsWith(prefixes.candidates))sourcingCandidates[k.slice(prefixes.candidates.length)]=JSON.parse(localStorage.getItem(k)||'[]');
-      else if(k.startsWith(prefixes.selected)){const v=JSON.parse(localStorage.getItem(k)||'null');if(v)selectedSourcing[k.slice(prefixes.selected.length)]=v;}
-      else if(k.startsWith(prefixes.official)){const v=JSON.parse(localStorage.getItem(k)||'null');if(v)officialCandidates[k.slice(prefixes.official.length)]=v;}
-      else if(k.startsWith(prefixes.searchName)){const v=localStorage.getItem(k);if(v)domesticSearchNames[k.slice(prefixes.searchName.length)]=v;}
-    }catch(e){}
-  }
-  return {sourcingCandidates,selectedSourcing,officialCandidates,domesticSearchNames,manualEvidence,favorites,settings:{domestic:localStorage.getItem('domestic')??'0',pack:localStorage.getItem('pack')??'0',other:localStorage.getItem('other')??'0',conv:localStorage.getItem('conv')??'0'}};
-}
-async function checkCloudStorage(){
-  const el=$('cloud-status');
-  if(!window.__cloudRestoreDone){
-    if(el)el.textContent='☁️ クラウド保存：初期読み込み未完了。少し待ってから再確認してください';
-    return false;
-  }
-  if(el)el.textContent='☁️ クラウド保存：保存中…';
-  try{
-    const saved=await saveCloudStorage();
-    if(!saved){
-      if(el&&el.textContent!=='☁️ クラウド保存：接続できません')el.textContent='☁️ クラウド保存：保存失敗。もう一度お試しください';
-      return false;
-    }
-    const headers={'X-User-Id':getExportUserId()};
-    const r=await fetch(CLOUD_STORAGE_API,{headers,cache:'no-store'});
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok||!d.configured||!d.data){
-      if(el)el.textContent='☁️ クラウド保存：保存後の確認に失敗しました';
-      return false;
-    }
-    const local=getFavoriteProducts();
-    const remote=Array.isArray(d.data.favorites)?d.data.favorites:[];
-    const remoteIds=new Set(remote.filter(p=>p&&p.id!=null).map(p=>String(p.id)));
-    const missing=local.filter(p=>p&&p.id!=null&&!remoteIds.has(String(p.id)));
-    if(missing.length){
-      if(el)el.textContent='☁️ クラウド保存：未保存の商品があります（'+missing.length+'件）';
-      return false;
-    }
-    if(el)el.textContent='☁️ クラウド保存：保存確認済み（マイリスト'+remote.length+'件）';
-    return true;
-  }catch(e){
-    if(el)el.textContent='☁️ クラウド保存：保存・確認に失敗しました';
-    return false;
-  }
-}
-let cloudSaveChain=Promise.resolve();
-async function saveCloudStorage(){
-  if(window.__cloudSaveTimer){clearTimeout(window.__cloudSaveTimer);window.__cloudSaveTimer=null;}
-  // Never let startup writes overwrite cloud data before the initial restore finishes.
-  if(!window.__cloudRestoreDone){window.__cloudSavePending=true;return false;}
-  const saveOnce=async()=>{
-    try{
-      const snapshot=cloudStorageData();
-      const r=await fetch(CLOUD_STORAGE_API,{method:'PUT',headers:{'Content-Type':'application/json','X-User-Id':getExportUserId()},body:JSON.stringify({data:snapshot}),keepalive:true});
-      const result=await r.json().catch(()=>({}));
-      const saved=Boolean(r.ok&&result.saved===true);
-      const el=$('cloud-status');
-      if(el)el.textContent=saved?'☁️ クラウド保存：保存済み':'☁️ クラウド保存：保存失敗（再確認してください）';
-      return saved;
-    }catch(e){const el=$('cloud-status');if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
-  };
-  // Serialize writes so an older request cannot finish last and replace newer data.
-  cloudSaveChain=cloudSaveChain.then(saveOnce,saveOnce);
-  return cloudSaveChain;
-}
-async function loadCloudStorage(){
-  const el=$('cloud-status');
-  try{
-    const r=await fetch(CLOUD_STORAGE_API,{headers:{'X-User-Id':getExportUserId()},cache:'no-store'});
-    if(!r.ok){if(el)el.textContent=r.status===503?'☁️ クラウド保存：Vercel側の保存先が未設定です':'☁️ クラウド保存：確認できません';return false;}
-    const d=await r.json();
-    if(!d.configured){if(el)el.textContent='☁️ クラウド保存：未設定';return false;}
-    if(el)el.textContent='☁️ クラウド保存：接続済み（端末ごとにデータ分離）';
-    if(!d.data){
-      // First launch on this browser: upload any existing local data after restore completes.
-      window.__cloudSavePending=true;
-      return true;
-    }
-    if(d.data.settings&&typeof d.data.settings==='object'){['domestic','pack','other','conv'].forEach(id=>{if(d.data.settings[id]!=null){const value=String(d.data.settings[id]);localStorage.setItem(id,value);if($(id))$(id).value=value;}});}
-    Object.entries(d.data.sourcingCandidates||{}).forEach(([id,rows])=>localStorage.setItem('sourcingCandidates:v1:'+id,JSON.stringify(rows)));
-    Object.entries(d.data.selectedSourcing||{}).forEach(([id,row])=>{
-      localStorage.setItem('selectedSourcingCost:v1:'+id,JSON.stringify(row));
-      const product=data.find(p=>String(p.id)===String(id));
-      if(product&&row&&typeof row==='object'){
-        product.cost=Number(row.itemPrice??row.cost??0);
-        product.sourcingShippingJpy=Number(row.shippingJpy||0);
-        product.sourcingSource=row.source||'';
-        product.sourcingCondition=row.condition||'';
-        product.sourcingCheckedAt=row.checkedAt||'';
-        product.costs=RankingEngine.calcCosts(product,settings(product));
-      }
-    });
-    Object.entries(d.data.officialCandidates||{}).forEach(([id,row])=>localStorage.setItem('selectedOfficialCandidate:v1:'+id,JSON.stringify(row)));
-    Object.entries(d.data.domesticSearchNames||{}).forEach(([id,name])=>localStorage.setItem('domesticSearchName:v1:'+id,String(name)));
-    if(Array.isArray(d.data.manualEvidence)){localStorage.setItem('manualSalesEvidence:v1',JSON.stringify(d.data.manualEvidence));data=mergeManualEvidence(data);}
-    if(Array.isArray(d.data.favorites)){
-      // Merge cloud and this browser's saved favorites instead of letting an
-      // older/empty cloud response erase items already stored on the device.
-      const localFavorites=getFavoriteProducts();
-      const merged=new Map();
-      [...d.data.favorites,...localFavorites].forEach(p=>{
-        if(p&&p.id!=null)merged.set(String(p.id),p);
-      });
-      const mergedFavorites=[...merged.values()];
-      localStorage.setItem(FAVORITES_KEY,JSON.stringify(mergedFavorites));
-      if(JSON.stringify(mergedFavorites)!==JSON.stringify(d.data.favorites)){
-        // Sync recovered local-only favorites back to the cloud.
-        Promise.resolve().then(()=>saveCloudStorage());
-      }
-    }
-    if(typeof render==='function')render();
-    renderFavorites();
-    updateFavoriteButtons();
-    return true;
-  }catch(e){if(el)el.textContent='☁️ クラウド保存：接続できません';return false;}
-}
-const _setItem=Storage.prototype.setItem;
-const _removeItem=Storage.prototype.removeItem;
-function scheduleSourcingCloudSave(k){
-  const key=String(k);
-  if(['sourcingCandidates:v1:','selectedSourcingCost:v1:','selectedOfficialCandidate:v1:','domesticSearchName:v1:','manualSalesEvidence:v1','favoriteProducts:v1'].some(prefix=>key.startsWith(prefix))){
-    clearTimeout(window.__cloudSaveTimer);
-    window.__cloudSaveTimer=setTimeout(saveCloudStorage,800);
-  }
-}
-Storage.prototype.setItem=function(k,v){
-  const out=_setItem.call(this,k,v);
-  if(this===localStorage)scheduleSourcingCloudSave(k);
-  return out;
-};
-Storage.prototype.removeItem=function(k){
-  const out=_removeItem.call(this,k);
-  if(this===localStorage)scheduleSourcingCloudSave(k);
-  return out;
-};
+function save(){['domestic','pack','other','conv'].forEach(id=>localStorage.setItem(id,$(id).value));}
+
 function load(){['domestic','pack','other','conv'].forEach(id=>{const v=localStorage.getItem(id);if(v!==null)$(id).value=v})}
 function samples(){return[{name:'ポケモンカード 人気カード（サンプル）',cat:'ポケモンカード',cost:8000,sell:95,ship:18,sold:72,list:28,trend:'横ばい',risk:'低',source:'サンプル'},{name:'ポケモンTCG デッキケース（サンプル）',cat:'ポケモン関連サプライ用品',cost:2500,sell:39,ship:14,sold:46,list:34,trend:'上昇',risk:'低',source:'サンプル'},{name:'日本製フィッシングリール（サンプル）',cat:'釣具',cost:18000,sell:165,ship:35,sold:31,list:29,trend:'横ばい',risk:'中',source:'サンプル'},{name:'日本製中古カメラ（サンプル）',cat:'カメラ',cost:30000,sell:285,ship:42,sold:18,list:42,trend:'下落',risk:'中',source:'サンプル'},{name:'レトロゲーム本体（サンプル）',cat:'レトロゲーム',cost:9000,sell:105,ship:30,sold:39,list:21,trend:'横ばい',risk:'低',source:'サンプル'}].map(RankingEngine.normalizeProduct)}
 window.__setExportFx=(rate,date)=>{const n=Number(rate);if(Number.isFinite(n)&&n>0){fxRate=n;fxDate=date||fxDate;window.__fxRateStale=false;}};async function fx(){try{const r=await fetch(FX,{cache:'no-store'});if(!r.ok)throw Error('為替取得失敗');const d=await r.json();if(!(Number(d.rate)>0))throw Error('為替レートが不正です');window.__setExportFx(d.rate,d.date||'');return true}catch(e){try{const saved=JSON.parse(localStorage.getItem('liveFxCache:v1')||'null'),cached=saved?.value;if(Number(cached?.rate)>0){window.__setExportFx(cached.rate,cached.date||'');window.__fxRateStale=true;return false;}}catch(_){}window.__fxRateStale=true;return false}}
@@ -1426,9 +1254,5 @@ if(typeof originalMap==='function'){
 }
 // Legacy evaluation-display overrides removed; simplified ranking and detail views are authoritative.
 })();
-</script>
-<script>
-// Restore this user's saved cloud data after all app scripts and UI elements are ready.
-window.addEventListener('load',async()=>{ let restored=false;try{if(typeof loadCloudStorage==='function')restored=(await loadCloudStorage())===true;}finally{window.__cloudRestoreDone=restored;if(restored&&window.__cloudSavePending){window.__cloudSavePending=false;await saveCloudStorage();}} });
 </script>
 </body></html>
