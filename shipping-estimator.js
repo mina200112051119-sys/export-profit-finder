@@ -104,15 +104,16 @@ function addSettingsUI(){
  const host=card.querySelector('div[style*="padding-top"]');if(!host)return;
  const saved=read(KEY,{country:'アメリカ'});
  const wrap=document.createElement('div');wrap.className='notice';wrap.style.marginTop='10px';
- wrap.innerHTML='<b>こちらから発送する相手の国</b><label for="ship-country-search">国名を検索</label><input id="ship-country-search" type="text" autocomplete="off" value="'+esc(saved.country||'アメリカ')+'" placeholder="例：カナダ、イギリス、フランス"><input id="ship-country" type="hidden" value="'+esc(saved.country||'アメリカ')+'"><div id="ship-country-options" style="display:none;max-height:180px;overflow:auto;border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:6px"></div><p class="muted">国名を入力すると候補が出ます。購入者の郵便番号は不要です。料金区分がない国は「概算不可」と表示します。</p><div id="ship-country-status" class="muted"></div>';
+ wrap.innerHTML='<b>こちらから発送する相手の国</b><label for="ship-country-search">国名を検索・入力</label><input id="ship-country-search" type="text" autocomplete="off" value="'+esc(saved.country||'アメリカ')+'" placeholder="例：カナダ、イギリス、フランス"><input id="ship-country" type="hidden" value="'+esc(saved.country||'アメリカ')+'"><div id="ship-country-options" style="display:none;max-height:180px;overflow:auto;border:1px solid #d1d5db;border-radius:10px;background:#fff;padding:6px"></div><p class="muted">国名を入力すると候補が出ます。購入者の郵便番号は不要です。料金区分がない国は「概算不可」と表示します。</p><div id="ship-country-status" class="muted"></div>';
  host.appendChild(wrap);
  const input=document.getElementById('ship-country-search'),selected=document.getElementById('ship-country'),options=document.getElementById('ship-country-options');
  const drawOptions=()=>{
-  const q=norm(input.value),matches=countries.filter(country=>!q||norm(country).includes(q)).slice(0,30);
+  const q=norm(input.value),matches=countries.filter(country=>!q||norm(country).includes(q));
   options.innerHTML=matches.length?matches.map(country=>'<button type="button" class="ship-country-option" data-country="'+esc(country)+'" style="display:block;width:100%;text-align:left;background:#fff;box-shadow:none;border-radius:6px;padding:9px">'+esc(country)+'</button>').join(''):'<div class="muted" style="padding:8px">該当する国がありません</div>';
   options.style.display='block';
  };
- input.addEventListener('focus',drawOptions);
+ input.addEventListener('focus',()=>{input.value='';drawOptions();});
+ input.addEventListener('blur',()=>{setTimeout(()=>{if(!options.contains(document.activeElement)){input.value=selected.value;options.style.display='none';}},150);});
  input.addEventListener('input',drawOptions);
  options.addEventListener('click',event=>{
   const button=event.target.closest('[data-country]');if(!button)return;
@@ -120,7 +121,7 @@ function addSettingsUI(){
   localStorage.setItem(KEY,JSON.stringify({country:selected.value}));refreshAll();
  });
  input.addEventListener('keydown',event=>{
-  if(event.key==='Enter'){event.preventDefault();const first=options.querySelector('[data-country]');if(first)first.click();}
+  if(event.key==='Enter'){event.preventDefault();const exact=countries.find(country=>norm(country)===norm(input.value));const first=options.querySelector('[data-country]');if(exact){const option=[...options.querySelectorAll('[data-country]')].find(x=>norm(x.dataset.country)===norm(exact));if(option)option.click();}else if(input.value.trim()){selected.value=input.value.trim();localStorage.setItem(KEY,JSON.stringify({country:selected.value}));options.style.display='none';input.blur();refreshAll();}else if(first)first.click();}
   if(event.key==='Escape')options.style.display='none';
  });
  // The former one-size shipping field remains available only as an extra expense.
