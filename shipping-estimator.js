@@ -140,7 +140,7 @@ function refreshAll(){
    const result=E.calcCosts(p,{fxRate:Number(window.__exportApp?.getFx?.()||150),feeRate:fee,internationalRate:.0135,domesticShipping:g('domestic'),packaging:g('pack'),otherCost:g('other'),conversionFeeRate:g('conv')});
    const row=[...document.querySelectorAll('#body .row')].find(x=>x.querySelector('span')?.textContent.trim()==='予想利益');
    const value=row?.querySelector('b');
-   if(value){value.className=result.profit==null?'yellow':result.profit>=0?'green':'red';value.textContent=result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
+   if(value){value.className=result.profit==null?'yellow':result.profit>=0?'green':'red';value.textContent=result.outboundShippingKnown===false?'発送送料が未確認のため未計算':result.profit==null?'仕入価格未入力':Math.round(result.profit).toLocaleString('ja-JP')+'円';}
   }
   if(typeof window.updateVisibleProfit==='function')window.updateVisibleProfit(p);
  }
@@ -151,7 +151,9 @@ if(E&&typeof E.calcCosts==='function'){
  E.calcCosts=(p,s={})=>{
   const e=estimate(p,selectedCountry());
   const extra=Math.max(0,Number(s.domesticShipping||0));
-  return original(p,{...s,domesticShipping:extra+(e.cost==null?0:e.cost)});
+  const result=original(p,{...s,domesticShipping:extra+(e.cost==null?0:e.cost)});
+  if(e.cost==null)return {...result,profit:null,margin:null,outboundShippingKnown:false,outboundShippingEstimate:null};
+  return {...result,outboundShippingKnown:true,outboundShippingEstimate:e.cost};
  };
 }
 window.ExportShippingEstimator={estimate,currentEstimate,classify,countryZone};
