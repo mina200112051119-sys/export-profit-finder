@@ -22,6 +22,7 @@ function updateVisibleProfit(p){
     el.textContent=c.profit==null?'仕入価格未入力':(c.profit>=0?'+':'')+yen(c.profit);
   }
 }
+window.updateVisibleProfit=updateVisibleProfit;
 window.__exportApp={getData:()=>data,getFx:()=>fxRate,getSelectedSourcing:(id)=>{try{return JSON.parse(localStorage.getItem('selectedSourcingCost:v1:'+String(id))||'null')}catch(e){return null}},applySourcingCost:(id,cost,meta={})=>{
   const p=findProductForSourcing(id);
   if(!p)return false;
@@ -1206,6 +1207,7 @@ function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target=
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
 data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}render();fx().then(()=>{const fxEl=$('fx');if(fxEl)fxEl.textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')});</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
+<script src="./shipping-estimator.js"></script>
 <script src="./live-api.js"></script>
 
 <script>
