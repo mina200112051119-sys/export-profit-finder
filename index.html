@@ -1194,7 +1194,7 @@ function detail(id){
   '<div class="row"><span>予想利益</span><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div>'+
   '<details class="card" open><summary><b>利益計算の内訳</b></summary><p class="muted">商品価格を売上の基準にし、手数料・仕入価格・日本からの発送費用などを差し引いています。eBay出品者の送料は参考値で、金額が取得できた場合は売上に加算しています。あなた自身の出品送料と同じとは限りません。発送費用が概算の場合は実際の金額と異なります。</p>'+
   '<div class="row"><span>商品価格（円換算）</span><b>'+yen(c.saleJpy)+'</b></div>'+
-  (c.shippingKnown&&Number(c.shipJpy)>0?'<div class="row"><span>eBay表示の購入者向け送料（売上加算）</span><b>+'+yen(c.shipJpy)+'</b></div>':'')+
+  (c.shippingKnown&&Number(c.shipJpy)>0?'<div class="row"><span>eBay表示の購入者向け送料（参考値・売上加算）</span><b>+'+yen(c.shipJpy)+'</b></div>':'')+
   '<div class="row"><span>売上合計</span><b>'+yen(c.grossSaleJpy)+'</b></div>'+
   '<div class="row"><span>eBay販売手数料</span><b>−'+yen(c.finalValueFeeJpy)+'</b></div>'+
   '<div class="row"><span>海外決済手数料</span><b>−'+yen(c.internationalFeeJpy)+'</b></div>'+
