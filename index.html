@@ -1206,6 +1206,7 @@ function detail(id){
   '<div class="row"><span>その他経費</span><b>−'+yen(c.otherCostJpy)+'</b></div>'+
   '<div class="row"><span>商品仕入価格</span><b>'+(Number(p.cost)>0?'−'+yen(p.cost):'未入力')+'</b></div>'+
   '<div class="row"><b>差し引き経費合計</b><b id="profit-total-costs">−'+yen(c.totalCosts)+'</b></div>'+
+  (Number(p.cost)>0?'':'<div class="row"><b>仕入価格を引く前の残額</b><b id="profit-before-purchase">'+yen(c.grossSaleJpy-(c.totalCosts-Math.max(0,Number(p.cost)||0)))+'</b></div>')+
   '<div class="row"><b>最終的な予想利益</b><b id="profit-final" class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div></details>'+
   '<div class="notice"><b>国内フリマで同じ商品を探す</b><div class="muted" style="margin:5px 0 8px">上から順に検索して、同じ商品が見つかる言葉を使ってください</div>'+searchTerms.map((term,i)=>'<div class="row" style="align-items:center;gap:8px"><span>'+('検索語'+(i+1))+'</span><a href="https://jp.mercari.com/search?keyword='+encodeURIComponent(term)+'" target="_blank" rel="noopener">'+esc(term)+'</a></div>').join('')+'</div>'+
   (p.officialNameStatus?'<div class="muted">商品名：'+esc(p.officialNameStatus)+'</div>':'')+
