@@ -1200,13 +1200,13 @@ function detail(id){
   '<div class="row"><span>海外決済手数料</span><b>−'+yen(c.internationalFeeJpy)+'</b></div>'+
   '<div class="row"><span>取引ごとの固定手数料</span><b>−'+yen(c.fixedFeeJpy)+'</b></div>'+
   '<div class="row"><span>通貨換算手数料</span><b>−'+yen(c.conversionFeeJpy)+'</b></div>'+
-  '<div class="row"><span>日本から購入者への発送費用（概算）</span><b>−'+yen(c.domesticShippingJpy)+'</b></div>'+
+  '<div class="row"><span>日本から購入者への発送費用（概算＋追加費用）</span><b id="profit-outbound-shipping">−'+yen(c.domesticShippingJpy)+'</b></div>'+
   '<div class="row"><span>仕入れ時の送料</span><b>−'+yen(c.sourcingShippingJpy)+'</b></div>'+
   '<div class="row"><span>梱包費</span><b>−'+yen(c.packagingJpy)+'</b></div>'+
   '<div class="row"><span>その他経費</span><b>−'+yen(c.otherCostJpy)+'</b></div>'+
   '<div class="row"><span>商品仕入価格</span><b>−'+yen(p.cost)+'</b></div>'+
-  '<div class="row"><b>差し引き経費合計</b><b>−'+yen(c.totalCosts)+'</b></div>'+
-  '<div class="row"><b>最終的な予想利益</b><b class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div></details>'+
+  '<div class="row"><b>差し引き経費合計</b><b id="profit-total-costs">−'+yen(c.totalCosts)+'</b></div>'+
+  '<div class="row"><b>最終的な予想利益</b><b id="profit-final" class="'+(c.profit==null?'yellow':c.profit>=0?'green':'red')+'">'+(c.profit==null?'仕入価格未入力':yen(c.profit))+'</b></div></details>'+
   '<div class="notice"><b>国内フリマで同じ商品を探す</b><div class="muted" style="margin:5px 0 8px">上から順に検索して、同じ商品が見つかる言葉を使ってください</div>'+searchTerms.map((term,i)=>'<div class="row" style="align-items:center;gap:8px"><span>'+('検索語'+(i+1))+'</span><a href="https://jp.mercari.com/search?keyword='+encodeURIComponent(term)+'" target="_blank" rel="noopener">'+esc(term)+'</a></div>').join('')+'</div>'+
   (p.officialNameStatus?'<div class="muted">商品名：'+esc(p.officialNameStatus)+'</div>':'')+
   (retroInfo?'<div class="notice"><b>商品情報</b><div class="row"><span>対応機種</span><b>'+esc(retroInfo.platform)+'</b></div><div class="row"><span>商品種類</span><b>'+esc(retroInfo.productType)+'</b></div><div class="row"><span>型番</span><b>'+esc(retroInfo.model||'未確認')+'</b></div><div class="row"><span>単品・セット</span><b>'+esc(retroInfo.bundle)+'</b></div></div>':'')+
