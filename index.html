@@ -61,7 +61,7 @@ async function ensureFavoriteAccessKey(){
 }
 async function favoriteCloud(action,items){
  const key=getFavoriteAccessKey();if(!key)throw Error('マイリストの合言葉が設定されていません');
- const r=await fetch('/api/favorites',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify({key,action,items})});
+ const r=await fetch('/api/data-snapshot',{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify({key,action,items})});
  const d=await r.json().catch(()=>({}));
  if(!r.ok||!d.ok)throw Error(d.error||'クラウド保存に失敗しました');
  return Array.isArray(d.items)?d.items:[];
