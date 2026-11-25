@@ -32,4 +32,16 @@ async function loadSnapshot() {
   return typeof value === 'string' ? JSON.parse(value) : value;
 }
 
-module.exports = { saveSnapshot, loadSnapshot, storageConfigured: () => Boolean(config()) };
+async function saveFavoriteList(id, items) {
+  await command(['SET', 'export-profit-finder:favorite-list:v1:' + id, JSON.stringify(items)]);
+  return items;
+}
+
+async function loadFavoriteList(id) {
+  const value = await command(['GET', 'export-profit-finder:favorite-list:v1:' + id]);
+  if (!value) return [];
+  const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+module.exports = { saveSnapshot, loadSnapshot, saveFavoriteList, loadFavoriteList, storageConfigured: () => Boolean(config()) };
