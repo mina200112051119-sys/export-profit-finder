@@ -50,16 +50,22 @@ const $=x=>document.getElementById(x);
 
 const FAVORITES_KEY='favoriteProducts:v1';
 function getFavoriteProducts(){try{const a=JSON.parse(localStorage.getItem(FAVORITES_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+const FAVORITES_DB='export-profit-finder-v1';
+function openFavoritesDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(Error('IndexedDB非対応'));return}const req=indexedDB.open(FAVORITES_DB,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('data'))req.result.createObjectStore('data')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('DBを開けません'))})}
+async function writeFavoriteBackup(rows){try{const db=await openFavoritesDB();await new Promise((resolve,reject)=>{const tx=db.transaction('data','readwrite');tx.objectStore('data').put(rows,'favorites');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('保存できません'));tx.onabort=()=>reject(tx.error||Error('保存が中断されました'))});db.close();return true}catch(e){console.warn('マイリスト予備保存に失敗',e);return false}}
+async function restoreFavoriteBackup(){try{const db=await openFavoritesDB();const rows=await new Promise((resolve,reject)=>{const req=db.transaction('data','readonly').objectStore('data').get('favorites');req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);req.onerror=()=>reject(req.error||Error('読み込みできません'))});db.close();const local=getFavoriteProducts(),seen=new Set(local.map(p=>String(p.id))),merged=[...local,...rows.filter(p=>p&&p.id!=null&&!seen.has(String(p.id)))];if(merged.length){localStorage.setItem(FAVORITES_KEY,JSON.stringify(merged));await writeFavoriteBackup(merged);renderFavorites();updateFavoriteButtons()}}catch(e){console.warn('マイリスト予備データの復元に失敗',e)}}
 function isFavorite(id){return getFavoriteProducts().some(p=>String(p.id)===String(id))}
 function toggleFavorite(id){
  const p=data.find(x=>String(x.id)===String(id));if(!p)return false;
  const a=getFavoriteProducts(),has=a.some(x=>String(x.id)===String(id));
- localStorage.setItem(FAVORITES_KEY,JSON.stringify(has?a.filter(x=>String(x.id)!==String(id)):[...a,JSON.parse(JSON.stringify(p))]));
+ const rows=has?a.filter(x=>String(x.id)!==String(id)):[...a,JSON.parse(JSON.stringify(p))];
+ localStorage.setItem(FAVORITES_KEY,JSON.stringify(rows));writeFavoriteBackup(rows);
  renderFavorites();updateFavoriteButtons();
  return !has;
 }
 function removeFavorite(id){
- localStorage.setItem(FAVORITES_KEY,JSON.stringify(getFavoriteProducts().filter(p=>String(p.id)!==String(id))));
+ const rows=getFavoriteProducts().filter(p=>String(p.id)!==String(id));
+ localStorage.setItem(FAVORITES_KEY,JSON.stringify(rows));writeFavoriteBackup(rows);
  renderFavorites();updateFavoriteButtons();
 }
 function updateFavoriteButtons(){document.querySelectorAll('[data-favorite-id]').forEach(b=>{b.textContent=isFavorite(b.dataset.favoriteId)?'★ マイリストから削除':'☆ マイリストに追加'})}
@@ -1170,7 +1176,7 @@ function detail(id){
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
-data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}render();fx().then(()=>{const fxEl=$('fx');if(fxEl)fxEl.textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')});</script><script src="./cost-fix.js"></script>
+data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}render();restoreFavoriteBackup();fx().then(()=>{const fxEl=$('fx');if(fxEl)fxEl.textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')});</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
 
