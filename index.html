@@ -1204,7 +1204,7 @@ function detail(id){
 function toggleRiskDetail(){const el=$('risk-detail');if(!el)return;const btn=el.previousElementSibling?.querySelector('button');const open=el.style.display!=='none';el.style.display=open?'none':'block';if(btn)btn.textContent=open?'30・60・90日後の詳細を見る':'30・60・90日後の詳細を閉じる'}
 function closeDetail(e){const modal=$('modal');if(!modal)return;if(!e||e.target===modal)modal.classList.remove('open')}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('modal').classList.remove('open')});
-data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}render();restoreFavoriteBackup();fx().then(()=>{const fxEl=$('fx');if(fxEl)fxEl.textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')});</script><script src="./cost-fix.js"></script>
+data=[];try{load()}catch(e){console.error('設定読み込みエラー',e)}render();fx().then(()=>{const fxEl=$('fx');if(fxEl)fxEl.textContent='USD/JPY：'+fxRate.toFixed(2)+'｜更新日：'+(fxDate||'不明')});</script><script src="./cost-fix.js"></script>
 <script src="./sourcing-compare.js"></script>
 <script src="./live-api.js"></script>
 
